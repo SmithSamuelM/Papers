@@ -1,6 +1,6 @@
 # Many Cubed; Solving the *Many-to-Many-to-Many* Problem for Scalable Reliable Secure Distributed Internet Applications
 
-version 0.8
+version 0.9
 
 Samuel M. Smith Ph.D.
 
@@ -10,7 +10,7 @@ Samuel M. Smith Ph.D.
 
 This white paper provides an approach to the scalable design of secure distributed internet applications. The key insight is that, in order to reliably scale, secure distributed internet applications must solve the *many-to-many-to-many*, "*many cubed*\"," problem in how the various components of the application share information. In this discussion the term Internet means systems primarily built on top of the Internet Protocol (IP) stack.
 
-## The Many-to-Many-to-Many Problem
+## The *Many-to-Many-to-Many* Problem
 
 The *many-to-many-to-many* or "*many cubed*" problem arises from several critical constraints relevant to building scalable reliable secure distributed internet applications. 
 
