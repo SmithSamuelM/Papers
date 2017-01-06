@@ -116,7 +116,7 @@ One of the reliability problems with UDP is the MTU (Maximum Transmission Unit) 
 
 TCP's major advantage is that it is well know and many "application stacks" have been built on top of it, such as HTTP, that add the missing layers of reliability that TCP does not provide. But given its scalability and performance problems, TCP will always be problematic for large scale secure distributed internet applications that use diffuse trust perimeterless security.  The additional effort to make UDP work is a one time short term acute resource problem, whereas managing scale with TCP is a long term chronic resource problem. 
 
-## Data Flow Routing
+### Data Flow Routing
 
 The final key to a viable solution to the many-to-many-to-many problem is to use data flow routing to connect the data flows hosted by networked computers where each computer may have multiple cores with multiple processes and each process hosts a coroutine scheduler with multiple coroutines per process. Each process as a single shared memory. Interprocess communications uses datagram unix domain sockets that provide packet framing and are reliable by default. A routed data flow is uniquely addressable by any coroutine within the distributed application. Each routed data flow can have different reliabilty and service types. These are provided by the associated coroutines. 
 The natural way to address dataflows is to map it to the underlying processing architecture. The two major use cases for storing a data flow are as: 
