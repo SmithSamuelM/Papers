@@ -1,6 +1,6 @@
 # Many Cubed; Solving the *Many-to-Many-to-Many* Problem for Scalable Reliable Secure Distributed Internet Applications
 
-version 0.6
+version 0.7
 
 Samuel M. Smith Ph.D.
 
@@ -87,7 +87,7 @@ The ideal structure for optimizing use of processor resources is to have one pro
 
 To fully use all the cores in a CPU, the coroutines in each process need a way to communicate with the coroutines in the other processes. Unix domain sockets provide a convenient reliable performant mechanism for this.
 
-Another well known approach to asynchronous cooperative multi-tasking is to use a call-back (promise, future) approach. In this approach the scheduler is more heavy weight in that it handles the non-blocking I/O. NodeJS and Tornado among others use this approach. The primary disadavntage of this approach vis-a-vis coroutines is that the concurrent logical flows are split any time each must wait for I/O to complete. Each flow registers a call-back (or promise) to be executed by the scheduler when the I/O completes. A flow with multiple I/O steps will be split multiple times. This approach is less performant and much more complex to code and debug than the coroutine approach. The motivation for using a callback approach is that it can be implemented in any language. Whereas coroutines require support by the language compiler/interpreter. Recently, however, many major programming languages have added support for coroutines. The simplicity and performance advantages of coroutines over call-backs and multi-processing make them the best computing architecture for cooperative distributed applications.
+Another well known approach to asynchronous cooperative multi-tasking is to use a call-back (promise, future) approach. In this approach the scheduler is more heavy weight in that it handles the non-blocking I/O. NodeJS, Tornado, and asyncio among others use this approach. The primary disadavntage of this approach vis-a-vis coroutines is that the concurrent logical flows are split any time each must wait for I/O to complete. Each flow registers a call-back (or promise) to be executed by the scheduler when the I/O completes. A flow with multiple I/O steps will be split multiple times. This approach is less performant and much more complex to code and debug than the coroutine approach. The motivation for using a callback approach is that it can be implemented in any language. Whereas coroutines require support by the language compiler/interpreter. Recently, however, many major programming languages have added support for coroutines. The simplicity and performance advantages of coroutines over call-backs and multi-processing make them the best computing architecture for cooperative distributed applications.
 
 ### Network
 
