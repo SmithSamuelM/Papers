@@ -1,6 +1,6 @@
 # Many Cubed; Solving the *Many-to-Many-to-Many* Problem for Scalable Reliable Secure Distributed Internet Applications
 
-version 0.4
+version 0.5
 
 Samuel M. Smith Ph.D.
 
@@ -51,17 +51,17 @@ One additional example, comes from automation systems, where the term endpoint i
 
 ## Solving the Mapping Problem
 
-Solving the many-to-many-to-many problem requires both mapping the many-to-many network hosts to network hosts communication topology to the application protocol stack and also mapping the many different generation, delivery, and storage requirments mentioned previously for component data flows to the application protocol stack. Solving the many-to-many-many or many cubed problem involves solving this mapping in a scalable, reliable, and secure way.
+Solving the many-to-many-to-many problem requires both finding a way to map the communications topology of many-to-many network hosts to the application protocol stack and also finding a way to map component data flow diversity to the application protocol stack. Solving the many-to-many-many or many cubed problem involves solving this mapping in a scalable, reliable, and secure way.
 
 ### Scaling
 
-Take for example a simple distributed application with N internet hosts. Each host runs on a computer with a NIC and a certain number of cores. The requirement is that the system be reliable and secure with respect to diffuse trust perimeterless security. Given N internet hosts participating in a distributed consensus pool there are N<sup>2</sup> internet communication paths if each path is bidirectional or 2N<sup>2</sup> is each path is unidirectional but must support bi-directional data flows. Suppose that D is the number of uniquely diverse types of component data flows per host (unique addressible with unique combination of delivery, generation, maintenance, and storage type). The total number of data flow communications paths is on the order of N<sup>2</sup>D<sup>2</sup>, where D may be a order of magnitude bigger than N. Take for example, N = 10, and D = 10. This results in 100,000 potential unique combinations of data flows/communication paths that must be supported by each application stack and each computer.
+Take for example a simple distributed application with N internet hosts. Each host runs on a computer with a NIC and a certain number of cores. The system must be reliably support the diffuse trust perimeterless security model. Given N internet hosts participating in a distributed consensus pool, then there are N<sup>2</sup> internet communication paths if each path is bidirectional and 2N<sup>2</sup> if each path is unidirectional, but must also support bi-directional data flow. Suppose that D is the number of uniquely diverse types of component data flows per host (uniquely addressible with a unique combination of delivery, generation, maintenance, and storage type). The total number of data flow communications paths is therefore on the order of N<sup>2</sup>D<sup>2</sup>, where D may be an order of magnitude bigger than N. Take for example, a very small system where N = 10, and D = 10. This results in as many as 10<sup>4</sup> = 100,000 unique combinations of data flows/communication paths that must be supported by the application and as many as 10<sup>2</sup> = 100 that must be supported by any host.
 
-One approach to this scaling problem is to make D close to one so there is only one type of data flow, and makes D<sup>2</sup> small. With D<sup>2</sup> small the solution space is focused on optimizing network performance and does not need to be concerned with data flow performance. This will not work in general for perimeterless diffuse trust security model which imply diversity in the data flows thereby making D musch larger than one. 
+One approach to this scaling problem is to make D close to one so there is only one type of data flow. This makes D<sup>2</sup> small. With D<sup>2</sup> small, the solution space is focused on optimizing network performance and does not need to be concerned with data flow performance. This will not work, in general, for a perimeterless diffuse trust security model which requires more diversity in the data flows thereby making D much larger than one. 
 
-Another approach to this scaling problem is make N close to 1 so that N<sup>2</sup> is small. With N<sup>2</sup> small the solution space is focused on optimizing the compute/memory performance of each computer and does not need to be overly concerned with network performance.This also will not work in general for perimeterless diffuse trust security where distributed consensus is needed to manage policy and larger N provides more security. 
+Another approach to this scaling problem is make N close to 1 so that N<sup>2</sup> is small. With N<sup>2</sup> small the solution space is focused on optimizing the compute/memory performance of each computer and does not need to be overly concerned with network performance. This also will not work in general for a perimeterless diffuse trust security because distributed consensus is needed to manage policy and larger N >> 1 is needed to provide enough security. 
 
-A third approach is to make one of the Ns a one, that is, use a many-to-one architecture. while this allows for bigger N and D, this will not work in general for perimeterless security model because the one becomes a single point of failure/exploit. 
+A third approach is to make one of the Ns a one, that is, use a many-to-one architecture. while this allows for bigger N and D, this will not work in general for a perimeterless security model because the one becomes a single point of failure/exploit. 
 
 This paper presents an approach that is designed to work for both large N<sup>2</sup> and large D<sup>2</sup>.
 
