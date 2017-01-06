@@ -1,6 +1,6 @@
 # Many Cubed; Solving the *Many-to-Many-to-Many* Problem for Scalable Reliable Secure Distributed Internet Applications
 
-version 0.1
+version 0.2
 
 Samuel M. Smith Ph.D.
 
@@ -16,7 +16,7 @@ The *many-to-many-to-many* or "*many cubed*" problem arises from several critica
 
 ### Security
 
-The first of these critical constraints is security. The conventional approach to internet security is often described as defense-in-depth where each nested layer forms a secure perimeter that restricts access to higher levels of trust. These perimeters typically include some form of host:port based firewall. The outermost layer faces the wild wild west of the open internet where every interaction may be hostile. The next layer may be in a DMZ and/or behind a firewall. The following layer might be a trusted service running on a private network. VPNs provide a way for an external remote host to tunnel through the outer layers to access a trusted space. What a perimeter model assumes is that network locality can be trusted. Internet hosts and services running in a inner layer can communicate with each other because thay are in a trusted "safe" space. 
+The first of these critical constraints is security. The conventional approach to internet security is often described as defense-in-depth where each nested layer forms a secure perimeter that restricts access to higher levels of trust. These perimeters typically include some form of host:port based firewall. The outermost layer faces the wild wild west of the open internet where every interaction may be hostile. The next layer may be in a DMZ and/or behind a firewall. The following layer might be a trusted service running on a private network. VPNs provide a way for an external remote host to tunnel through the outer layers to access a trusted space. What a perimeter model assumes is that network locality can be trusted. Internet hosts and services running in an inner layer are allowed to share information with each other because thay are in a trusted "safe" space. 
 
 This conventional approach fails for many reasons. Fundamentally it fails because it does not account for the fact that hostile users exist everywhere not just on the open internet. Any mechanism that allows for lower priviledged users to access a network layer provides an attack vector for that user to elevate their priviledges thereby gaining access to everything in that layer. Hence, network locality is not security. Moreover, perimeter security is static and does not respond to dynamically evolving exploits.
 
