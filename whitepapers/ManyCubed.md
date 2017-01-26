@@ -157,7 +157,7 @@ Each message between has a routing dictionary that includes both the source and 
     "route":
     {
         "src": ["peter.piper.picked", "pepper", "peck", "garden"],
-        "dst": ["suzy.sand,sell", "shell", "shore", "sea"]
+        "dst": ["suzy.sand.sell", "shell", "shore", "sea"]
     }
     "tag": "commerce.hot",
     "stamp": "20170125T13:45:62.340123UTC",
