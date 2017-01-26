@@ -139,7 +139,12 @@ The natural way to address a dataflow is to map it to the underlying processing 
 
 In either case a value could be a nested data structure such as a key:value (dictionary) or an array not just a single number or string of characters. A sequence of values can be provided by a queue or deque.
 
-The first level of the address is an identifier for the particular data flow value or queue or values. Call this the data share identifier. The data share identifier could be a name spaced string such as "peter.piper.pickled".
+The first level of the address is an identifier for the particular data flow value or queue or values. Call this the data share identifier. The data share identifier could be a name spaced string such as
+
+```python
+"peter.piper.pickled"
+```
+  
 
 The second level of the address is an identifier for the particular interprocess communications stack (unix domain socket) that runs in the process that provides the data flow memory.
 
