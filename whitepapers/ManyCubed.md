@@ -148,7 +148,12 @@ The third level of the address is an identifier for the UDP socket on the comput
 The fourth level of the address is an identifier for the channel or group of internet hosts that are mutually authenticated for secure communication with each other over UDP sockets. Maintenance of a UDP channel requires that the credentials for each host on the channel be stored on each host. This requires a very small amount of memory so even very large N does not place a meaningful demand on resources.
 
 The complete address is a tuple with the following elements: 
-(datashare name, UXD name, UDP name, channel name). By using named identifiers instead of the actual underlying UXD and UDP addresses, the routed address can be mapped to virtual UXD and UDP stacks to enable transparent debugging, staging, and load balancing of the data flows and associated coroutines. 
+
+```python
+(datashare name, UXD name, UDP name, channel name)
+```
+
+By using named identifiers instead of the actual underlying UXD and UDP addresses, the routed address can be mapped to virtual UXD and UDP stacks to enable transparent debugging, staging, and load balancing of the data flows and associated coroutines. 
 
 Each message between has a routing dictionary that includes both the source and destination addresses as tuples. Each UDP stack has a router that processes incoming and outgoing messages. Each UXD stack has a router that also process incoming and outgoing messages. If a member of an address tuple is empty, this implies that the route is local at that level. This allows relative addressing.  This approach is also forward compatible should additional levels beyond four be added to the routing.
 
