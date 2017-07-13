@@ -246,3 +246,7 @@ Extending RAET to other languages is achieved by building the equivalent of an E
 The RAET UXD protocol adds a header with the source and destination routing information as well as sectioning information for splitting large UXD packets into smaller frames. The header has a simple fixed ascii representation. Because UXD datagrams are framed, reliable, and sequentially ordered there is no need for retries or other complexities. The sectioning is merely to level the load and provide back pressure for large UXD packets. The body of a RAET UXD packet can be raw binary, or JSON, or msgpack just like the RAET UDP. This is a trivial protocol to implement. 
 
 Each language is then given an SDK that supports the RAET UXD socket API and a data flow router. The coroutines for that language run in a dedicated process. The RAET Python UDP Router runs in its own process. Installation consists of installing the Python RAET router and connecting the language specific UXD process to the RAET router's UXD interface. Multiple processes each supporting a different language SDK could share the same Python RAET router. Moreover, there are now good transpilers that can convert Python to Javascript and Go. Python can be run inside Ruby. These could be used to more quickly produce RAET SDKs in those languages.
+
+## References
+
+http://www.onlamp.com/2005/11/17/tcp_tuning.html
