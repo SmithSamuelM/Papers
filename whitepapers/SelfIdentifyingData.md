@@ -184,7 +184,7 @@ One way to reduce lookups is to include key-rotation support directly in the dat
 If the data is used in an immutable data system the original data item is not changed but a new one created with changed keys. If the data item is used in a mutable data system then the original data item may be replaced with a new one.  
 
 
-When the the signer field DID prefix is the same as the item DID but has a fragment that references one of the keys in the keys field list, then the data item is self-signed in that the signer field key reference is contained in the data item itself. A challenge to the public key of the data item DID can establish that the holder of the private signing key is also the holder of the data item's DID private key.
+When the the signer field DID prefix is the same as the item DID but has a fragment that references one of the keys in the keys field list, then the data item is self-signed in that the signer field key reference is contained in the data item itself. To establish that the signer private key and did private key are held by the same entity, either attach two signatures one by each private key or issue a  challenge to the public key of the data item DID.
 
 If the signer field value of a given data item (DID prefix with fragment) references the keys field of a different data item, the the given data item is not self-signed. 
 
