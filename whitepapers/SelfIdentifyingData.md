@@ -43,7 +43,9 @@ The data item is tamper-proof in the sense that any change to any of the fields 
 
 ### HTTP example
 
-In web applications that use HTTP, the simplest most compatible way to associate or attach the signature in an HTTP packet is to include it in a custom HTTP header. Standad JSON parsers raise an error if there are additional characters after a closing object bracket thus it is non-trivial to include the signature in the message body.  A suggested header name is  *Signature* header that provides one or more signatures of the request/response body text.
+In web applications that use HTTP, the simplest most compatible way to associate or attach the signature in an HTTP packet is to include it in a custom HTTP header. Standad JSON parsers raise an error if there are additional characters after a closing object bracket thus one cannot simply append the signature after the JSON serialization in the message body. Another approach would be to use a custom JSON parser that guarantees a cononical representation of a JSON serialization (including white-space) and then wrap the data item and the signature in another JSON object where the signature and the data item are both field in the wrapper object. This is more verbose and is not compatible with the vast majority of web application framework tools for handling JSON serialized message bodies. Thus it is non-trivial to include the signature in the message body.  Using a custome HTTP header is relatively easy and has the advantage that is is compatible with the vast majority of existing web frameworks.  
+
+A suggested header name is  *Signature* header that provides one or more signatures of the request/response body text.
 
 The format of the custom Signature header follows the conventions of [RFC 7230](https://tools.ietf.org/html/rfc7230)
 
@@ -293,4 +295,25 @@ B0Qc72RP5IOodsQRQ_s4MKMNe0PIAqwjKsBl4b6lK9co2XPZHLmzQFHWzjA2PvxWso09cEkEHIeet5pj
 
 
 ## Nested Signatures
+
+
+## Data Canonicalization
+
+Data canonization means that there is a universally defined way of serializing the data that is to be cyptographically signed.
+
+The are few typical approaches to achieving data canonization.
+
+1. Store the serialization and signature as a chunk.
+
+The simplest is that the signer is the only entity that actually serializes the data. All other users of the data only deserialize. This simplifies the work to guarantee canonization. For example JSON is the typical data format used to serialize key:value or structured data. But the JSON specifcation for ser/deser treats whitespace characters as semantically unimportant as well as the order of appearance of keys. For a dictionary (key:value) data structure the typical approach is to represent it internally as a hash table. Most hash algorithms do not store data ordered in any predictable way (Python and other languages have support for Ordered Dicts or Ordered hashes which can be used to partially ameliorate this problem). But from the perspective of equivalence, key:value data structures are "dict" equal if they have the same set of keys with the same values for each key. Thus deserialization can produce uniform equivalent "dict equal" results from multiple but differing serializations (that differ in whitespace and order of appearance of fields). JSON only guarantees *dict* equivalent not serialization equivalence. Unfortunately the signatures for the differing but equivalent serializations will not match.
+
+But in signed at rest data only the signer ever needs to serialize the data. Indeed, only the signer may serialize the data. The signer's serialization is canonical wrt the signature. Users of the data merely need to use a "dict equal" deserialization which is provided by any compliant JSON deserializer. So no additional work is required to support it across multiple languages etc. If the associated data also needs to be stored unserialized then validation of the data is performed by first verifying the signature on the stored serialization and then deserializing in memory and comparing field by field to the stored but unserialized version for equivalence. This is the approach taken for "signed in motion" protocols and many "signed at rest" approaches.
+
+2. Implement perfectly canonical universally reproducibly serialization.
+
+In this approach the serialized data that is signed is not stored but all implementations of the protocol or service use the exact same serialization method including white space and field order so that they can reproduce the exact same serialization that the original signer created when originally signing the data. This is difficult to achieve with something like JSON across multiple languages, platforms, and tool kits. It requires customization of almost all web frameworks. Its usually more work to implement and more work to support because it usually means writing from scratch conformant JSON implementations or at the very least having tight control of how white space and order occurs and ensuring accross updates that this does not change. Unfortunately many overly schematizied standards are based on this approach.
+
+3. Use binary data structures
+
+With binary data structures the canonical form is well defined but it is also highly inflexible. The advantages of flexibility and modularity from key/value store serializations such as JSON usually makes 1) or 2) the preferred approach.
 
