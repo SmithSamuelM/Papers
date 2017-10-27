@@ -1,5 +1,9 @@
 # Decentralized Self-certifying Self-Identifing Data
 
+Samuel M. Smith Ph.D.  
+sam@xaltry.com  
+2017/10/27
+
 The question this white-paper attempts to answer is how best to represent decentralized self-certifing self-identifying data.  The main use case for this type of data are distributed (but with decentralized control) data intensive processing applications. Because data intensive application of often limited by network and processing resources, economy of expression is an important consideration in a data representation schema.  Thus there are trade-offs to be made in the design of the schema.
 
 ## Overview
