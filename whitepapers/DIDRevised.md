@@ -6,7 +6,7 @@ This is detailed proposal for modifying the DID specification. [DID specificatio
 
 The current DID specification explicitly states that DIDs include both the unique non-colliding decentralized generation features of URNs (UUIDs) with the locatability features of URLs. What the current DID specification implies but does not explicitly state is that DIDs also include the self-certifying features of public keys. Indeed it is this feature of DIDs, that is, that they are also derived from the public key of the crytographic public/private key pair that make them most attractive as decentralized identifiers. Moreover their nature as keys means that key management should be a first order feature of the DID specification.
 
-The current DID syntax specification is a minor modification of the existing URL syntax. [RFC3986](https://tools.ietf.org/html/rfc3986). As such it benefits from familiarity which is a boon to adoption. But if it could use the existing URL parsing tools with nothing more than trivial modification, then that would be an even further boon to adoption. Consequently,  this proposal uses a URL parsing tool to verify the degree of reusability of current URL tooling for DIDs. All else being equal when comparing two options for revising the DID spec, if one option can use existing parsing tools it should be preferred over another that requires building new parsing tools (unless trivial).
+The current DID syntax specification is a minor modification of the existing URL syntax. [RFC3986](https://tools.ietf.org/html/rfc3986). As such it benefits from familiarity which is a boon to adoption. Too the extent that the DID spec is compatible with existing URL parsing tools with nothing more than trivial modification, then that would be an even further boon to adoption. Consequently,  this proposal uses a URL parsing tool to verify the degree of reusability of current URL tooling for DIDs. All else being equal when comparing two options for revising the DID spec, if one option can use existing parsing tools it should be preferred over another that requires building new parsing tools (unless trivial).
 
 The parsing tool is the Python3  urllib.parse.urlsplit tool.
 
@@ -82,9 +82,9 @@ did-reference      = did [ "/" did-path ] [ "#" did-fragment ]
 did-fragment      = *( pchar / "/" / "?" )
 ```
 
-Note the DID ABNF above is not complete. The ABNF for the did-path is notably missing.
+Note the DID ABNF above is not complete. The ABNF for the did-path is missing. Given the complexity of the hier-part of the URL spec, the did-path needs to be completely specified.
 
-It is compatible with the URL syntax but the semantics are unique in some important ways. One is that if the did-path is missing the meaning of the did-fragment is special.
+The current DID syntax is compatible with the URL syntax but the semantics are different in some important ways. One difference is that, if the did-path is missing, then the meaning of the did-fragment is special.
 
 ### DID Fragment
 
@@ -190,19 +190,25 @@ A did-query could be used in concert with a did-fragment to combine meta-data fr
 
 This makes it straightforward to extend the DID syntax and semantics in a straightforward, familiar, and compatible way.
 
-### Extended DID Reference
+### Revised DID ABNF with Extended DID Reference and DID Query
 
-The DID specification includes a special case when the did-path is missing the did-fragment is then relative to the DID Document. This special case is very limiting. The URL specification has much more freedom in specifying the hier-part path component of the URL. Indeed there are five different syntax types for specifying the hier-part in a URL. These are lost in the DID specification. The service endpoints in the DID Document are then used to restore some of that functionality but at the cost of additional lookups for each service endpoint. As external lookups are expensive, it is desirable that there be a standard way to cache or otherwise manage the information that might be obtained at the service endpoints. This is important for self-certifying data.
+The DID specification includes a special case, that is, when the did-path is missing the did-fragment is relative to the DID Document. This special case is very limiting. The URL specification has much more freedom in specifying the hier-part path component of the URL. Indeed, a URL has five different syntax types for specifying the hier-part. These are lost in the DID specification. The service endpoints in the DID Document are then used to restore some of that functionality but at the cost of additional lookups for each service endpoint. Because external lookups are expensive, it is desirable, that there be a standard way to cache or otherwise manage the information that might be obtained at the service endpoints. This is important for self-certifying data in data intensive applications.
 
-We propose restoring some more extensibility in the DID reference to allow more flexibility for using the did:fragment to reference meta-data to better manage external lookups.  The extension is allow for additional semi-colon separated components in the did reference to indicate meta-data paths. This provides a way of indicating a path to meta-data that might be cached differentially. Currently additional colon separated components are part of the idstring. Because the idstring allows for period characters providing namespacing within an idstring can easily be accomplished with period separation. We repurpose the colon for meta-data path name-spacing.
+We propose restoring some of the lost flexibility or equivalently adding extensibility to the DID specification by changing the syntax and semantics for the the DID reference. The proposed change will enable more flexibility in how the *did:fragment* is used to reference meta-data. This will enable to better management of external lookups.  
+
+The change is as follows:
+The DID reference will now support additional semi-colon separated components to indicate meta-data paths. This provides a way of indicating a path to meta-data that might be cached differentially. Currently additional colon separated components are part of the idstring. Because the idstring also allows for period characters. Repurposing the colon does not lose any generality. The period can be used instead to provide namespacing within an idstring. We re-purpose the colon for meta-data path name-spacing.
+
+The proposed revised ABNF for DIDs is as follows:
 
 
 ```abnf
 did-reference       = did [ "/" did-path ] [ "?" did-query ] [ "#" did-fragment ]
- did                = "did:" method ":" specific-idstring *( ":" metadata)
+ did                = "did:" method ":" specific-idstring *( ":" meta-path)
  method             = 1*methodchar
  methodchar         = %x61-7A / DIGIT
  specific-idstring  = idstring 
+ meta-path          = idstring
  idstring           = 1*idchar
  idchar             = ALPHA / DIGIT / "." / "-"
  
