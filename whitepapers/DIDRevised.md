@@ -1,4 +1,4 @@
-# DID Hardening
+# DID Revision Proposal
 
 ## Overview
 
@@ -15,6 +15,8 @@ The parsing tool is the Python3  urllib.parse.urlsplit tool.
 >>> urlsplit("did:sid:ABCDEFGHI=/abc/def#path/0")
 SplitResult(scheme='did', netloc='', path='sid:ABCDEFGHI=/abc/def', query='', fragment='path/0')
 ```
+
+https://tools.ietf.org/html/rfc5234
 
 The relevant portions of the ABNF syntax for URLs are as follows.
 
@@ -190,25 +192,25 @@ A did-query could be used in concert with a did-fragment to combine meta-data fr
 
 This makes it straightforward to extend the DID syntax and semantics in a straightforward, familiar, and compatible way.
 
-### Revised DID ABNF with Extended DID Reference and DID Query
+#### Revised DID ABNF with Extended DID Reference and DID Query
 
 The DID specification includes a special case, that is, when the did-path is missing the did-fragment is relative to the DID Document. This special case is very limiting. The URL specification has much more freedom in specifying the hier-part path component of the URL. Indeed, a URL has five different syntax types for specifying the hier-part. These are lost in the DID specification. The service endpoints in the DID Document are then used to restore some of that functionality but at the cost of additional lookups for each service endpoint. Because external lookups are expensive, it is desirable, that there be a standard way to cache or otherwise manage the information that might be obtained at the service endpoints. This is important for self-certifying data in data intensive applications.
 
-We propose restoring some of the lost flexibility or equivalently adding extensibility to the DID specification by changing the syntax and semantics for the the DID reference. The proposed change will enable more flexibility in how the *did:fragment* is used to reference meta-data. This will enable to better management of external lookups.  
+We propose restoring some of the lost flexibility or equivalently adding extensibility to the DID specification by changing the syntax and semantics for the the DID reference. The proposed change will enable more flexibility in how the *did:fragment* is used to reference meta data. This will enable to better management of external lookups.  
 
 The change is as follows:
-The DID reference will now support additional semi-colon separated components to indicate meta-data paths. This provides a way of indicating a path to meta-data that might be cached differentially. Currently additional colon separated components are part of the idstring. Because the idstring also allows for period characters. Repurposing the colon does not lose any generality. The period can be used instead to provide namespacing within an idstring. We re-purpose the colon for meta-data path name-spacing.
+The DID reference will now support additional semi-colon separated components to indicate meta-data paths. This provides a way of indicating a path to meta-data that might be cached differentially. Currently additional colon separated components are part of the idstring. Because the idstring also allows for period characters. Repurposing the colon does not lose any generality. The period can be used instead to provide namespacing within an idstring. We re-purpose the colon for meta data path name spacing.
 
 The proposed revised ABNF for DIDs is as follows:
 
 
 ```abnf
 did-reference       = did [ "/" did-path ] [ "?" did-query ] [ "#" did-fragment ]
- did                = "did:" method ":" specific-idstring *( ":" meta-path)
+ did                = "did:" method ":" specific-idstring *( ":" meta)
  method             = 1*methodchar
  methodchar         = %x61-7A / DIGIT
  specific-idstring  = idstring 
- meta-path          = idstring
+ meta               = idstring
  idstring           = 1*idchar
  idchar             = ALPHA / DIGIT / "." / "-"
  
@@ -218,7 +220,7 @@ did-reference       = did [ "/" did-path ] [ "?" did-query ] [ "#" did-fragment 
 
 The semantics are as follows:
 
-If no metadata path component are provided after the idstring the the did-fragment refers to the default DID Document wherever that is. A metadata path of *:dd *is the same as the default DID Document. If the a meta-data path is provided then it refers to a predefined meta-data document given by the path. Thus the meta-data in a DID document could be split up into different documents with different lookup/caching behavior.
+If no meta data path component is provided after the idstring then the did-fragment refers to the default DID Document wherever that is. A meta data path of *:dd *is the same as the default DID Document. If a meta data path is provided then it refers to a predefined meta data document given by the path. Thus the meta data in a DID document could be split up into different documents with different lookup/caching behavior.
 
 Example:
 
@@ -231,8 +233,121 @@ urlsplit("did:rep:ABNCDEF=:recovery#shards/0")
 SplitResult(scheme='did', netloc='', path='rep:ABNCDEF=:recovery', query='', fragment='shards/0')
 ```
 
+#### Alternate Semantics 
+
+The addition of the meta data path component opens up some additional semantic choices. 
+
+
 ## Conclusion
 
 The two proposed changes to the DID spec provide a significantly improved degree of flexibility and extensibility while maintaining familiarity and compatibility with existing URL parsing tools. What remains is to define specific semantics for did-query parameters and did metadata paths. The improved extensibility means that these use-case specific specifications can be left as future enhancements. 
+
+
+## Comments
+
+Drummond,
+
+Thanks for your feedback
+
+Responses in-line
+
+
+1) I don't understand why you need both HD key paths AND "metadata paths" in DID syntax. In the Utah discussions we only discussed the first one. What are "metadata paths", and can you give me an example of how you would use one?
+
+Currently the DID specificaiton has a special case when the did-path component is missing from a DID. In that case the fragment is relative to a "well-known" DID Document that holds all the meta-data.
+But meta-data has different uses and different purposes as I outlined in my write up. Some meta-data has to do with key management, some with DID Document management etc. Some meta-data might be dynamic and some highly static.  The idea is too allow breaking up the metadata according to function/purpose/operation/caching.
+
+An analogy is the convention in DNS to have certain services at well known locations such as  mail.example.com  web.example.com ftp.example.com etc.
+
+(as an aside I was struck by the realization that using dot as a name space, as is so prevalent in URLs for DNS, is not used at all in DIDs. Seems like a loss of expressive power or an oversight) =(
+
+So key recovery meta-data might be at
+
+did:rep:ABCEDFg;recover  (using semicolon)
+did:rep:ABCEDFg:recover   (using colon)
+did:rep:ABCEDFg.recover   (using dot)
+
+DID expressions have two main functions.
+
+1) To identify resources associated with a DID
+2) To identify meta-data affiliated with the DID in order to manage the DID as an identity.  (key management, AuthN, AuthZ, Provenance etc)
+
+Currently the only way to reference meta-data is by the absence of a did-path in the DID expression and then with a did-fragment.  
+The proposal is to make meta data references explicit as well as using the query to specify operations on either the meta-data or the DID itself.
+
+With this approach we could alter the semantics and allow the did-path to be present in the case that there is a meta-data path present.  In this case  we have two choices. 
+* the did-path does not refer to a resource but is relative to the meta data.
+* the did-path still referes to a resource but we lose the special nature of the did-fragment and must rely on the did-query to provide the meta-data relative access.
+
+
+
+
+2) Using the query component to express HD key paths is a cool idea. It might work because queries can still contain forward-slash delimited paths and fragments. But how would we delimit between an HD key path and an ordinary "resource path" if you want to provide a DID that has a both an HD key path and a resource path?
+
+Good question.  Since query is not a current part of the spec. we could modify the semantics to be that any time a query occurs it is for a meta-data operation only. That way both a did-path and and a did-query could exist in a DID expression.  The did-query has the HD-path and the did-path is the resource path.  I like this.
+
+
+3) For the metadata path, your text says to use semicolon as the delimiter but your ABNF proposes to reuse colons. Here's the reason I don't want to reuse colons: some DID methods are already using colons for namespacing within their method-specific identifier. I think it's important to allow that. So we need to use another delimiter for "metadata paths". I like semicolons for that because they can follow the same rule—you can use as many as you need to provide hierarchical "metadata paths", and semicolons would be reserved for that purpose.
+
+
+I was not aware that they were namespacing methods.   It is a different semantic than the ABNF for the DID implies.  (colons are name-spacing idstrings not methods). But I suppose the effect ends up being the same.
+
+I am a little confused about  this namespacing of a DID within a method definition.  From the spec the primary purpose of the method is to specify how to generate the name string.  
+
+"The DID method specification for the specific DID scheme MUST specify how to generate the specific-idstring component of a DID. The specific-idstring value MUST be able to be generated without the use of a centralized registry service. The specific-idstring value SHOULD be globally unique by itself. The fully qualified DID as defined by the did rule in Section 3.1 The Generic DID Scheme MUST be globally unique.
+If needed, a specific DID scheme MAY define multiple specific specific-idstring formats. It is RECOMMENDEDthat a specific DID scheme define as few specific-idstring formats as possible.
+
+"
+
+the example method docs for Sovrin and Veres don't have any namespacing with colons that I can see. So an example would help me understand.
+
+My suspicion is that we are actually talking about a very similar function (namespacing in the DID Document meta data, not the method).  
+
+So maybe it is a very similar thing.
+
+
+
+The semi-colon is ok  but it seems a waste to use up both dots and colons for the idstring.
+
+Given that the dot (period) is allowed in the idstring. it seems to me that the spec has consumed the two best name spacing characters for one effective name space.
+
+Why not name space methods with dot ? Or remove the dot from the idstring so we can use it to namespace meta data.
+
+Any way to roll that back?
+
+
+
+4) Your parsing examples are great, but once I saw them, I realized we need to update the language in the spec because the parser, since it does not see the "//" for an authority component, is treating everything after the first colon (and before a hash or question mark) as a "path". In the URI ABNF it's actually a "rootless path"—the portion before the first forward slash is considered the first segment. So to summarize what I'm proposing, the options would look like:
+
+URL parsers usually punt if the netloc (authority) section is missing and put everything that is not a query or fragment into the path.  For DIDS this means that another parsing step is needed to split the resultant path.
+A URI path parameter is part of a path segment that occurs after its name. Path parameters offer a unique opportunity to control the representations of resources. Since they can't be manipulated by standard Web forms, they have to be constructed out of band. Since they're part of the path, they're sequential, unlike query strings. Most importantly, however, their behaviour is not explicitly defined.
+
+When defining constraints for the syntax of path parameters, we can take these characteristics into account, and define parameters that stack sequentially, and each take multiple values.
+
+In the last paragraph of section 3.3, The URI specification suggests employing the semicolon ;, equals = and comma , characters for this task. Therefore:
+
+The semicolon ; will delimit the parameters themselves. That is, anything in a path segment to the right of a semicolon will be treated as a new parameter, like this: /path/name;param1;p2;p3.
+The equals sign = will separate parameter names from their values, should a given parameter take values. That is, within a path parameter, everything to the right of an equals sign is treated as a value, like this: param=value;p2.
+The comma , will separate individual values passed into a single parameter, like this: ;param=val1,val2,val3.
+This means that although it may be visually confusing, parameter names can take commas but no equals signs, values can take equals signs but no commas, and no part of the path segment can take semicolons literally. All other sub-delimiters should be percent-encoded.
+This also means that one's opportunities for self-expression with URI paths are further constrained.
+
+
+did:method:methodsegment:methodsubsegment;metadatasegment;metadatasegment/segment/segment?query#fragment
+
+Where is the idstring in your example above?  Is it subsumed in the methodsegment?
+
+As I noted in my write up the ABNF you gave me for DIDs is incomplete. It does not include the ABNF for the did-path
+
+
+...where everything except 
+
+did:method:methodsegment
+ 
+is optional.
+
+I'm gonna be working hard on the DID spec the rest of this week and this weekend (when I'm going to be in Utah), so the faster we can close this up, the better.
+
+Thanks,
 
 
