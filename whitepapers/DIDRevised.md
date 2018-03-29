@@ -133,7 +133,7 @@ Possibles classes of operations that might be worth considering as as follows:
 
 5) Operations with data associated with a DID path
 
-Class 1 may be the most important. It has to do with key management. Class 2 is only important to the extent that it is used to support the other classes. Classes 3 and 4 are very similar, the difference being wether or not the meta-data is self-contained. Class 5 is less important but relevant.
+Class 1 may be the most important. It has to do with key management. Class 2 is only important to the extent that it is used to support the other classes. Classes 3 and 4 are very similar, the difference being whether or not the meta-data is self-contained. Class 5 is less important but relevant.
 
 ## Key Management
 

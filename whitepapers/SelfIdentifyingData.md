@@ -239,6 +239,13 @@ B0Qc72RP5IOodsQRQ_s4MKMNe0PIAqwjKsBl4b6lK9co2XPZHLmzQFHWzjA2PvxWso09cEkEHIeet5pj
 
 ```
 
+A pair-wise interaction is reasonably private if a unique key pair is generated for the interaction and not reused else where.  The idea I presented which he helped refine is that for public services, the hd key could be generated from the public service identifier so the
+client would not have to remember anything to recreate the key pair.  For non-public services this would not be true but would require the client remember some information about the interaction. 
+
+The other idea is to pre-rotate each key pair by publishing in the DID document associated with the DID key pair the next key to rotate too. This eliminates an exploit where a key gets compromised and then is used to rotate to a key not in control of the orginal owner. By pre-rotating a comprimized key can at best trigger a rotation to a key that is not compromised at which point the orignal owner uses the rotated key to generate a new pre-rotated key.  The pre-rotated key  is not vulnerable to exploit since it is not used to sign anything.
+
+The client then needs to keep a list of all the rotated keys so that if the client needs to regenerate an hd-key and doesnt remember which master key was used it can try the list of pre-rotated keys. Key recovery would also keep this list. This a couple of orders of magnitude less effort than having to keep all the keys pairs. Only the master keys in sequence.
+
 #### Cryptographic Suite Representation
 
 Best practices cryptography limits the option that user may choose from for the various cryptographic operations, such as, signing, encrypting, hashing to a suite of balanced and tuned set of protocols, one for each operation. Each member of the set should be the one and only one best suited to that operation. This prevents the user from making bad choices. In most key representation schemes each operation is completely free to be specified independent of the others. This is a very bad idea.  Users should not be custom combining different protocols that are not part of a best practices cypher suite. Each custom configuration may be vunerable to potential attack vectors for exploit. The suggested approach is to specify a cypher suite with a version. If an exploit is discovered for a member of a suite and then fixed, the suite is updated totally to a new version. The number of cypher suites should be minimized to those essential for compatibility but no more. This approach increases expressive power because only one element is needed to specify a whole suite of operations instead of a different element per operation.
