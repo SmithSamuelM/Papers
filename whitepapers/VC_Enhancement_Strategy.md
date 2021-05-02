@@ -4,7 +4,12 @@ email: sam@samuelsmith.org
 version: 1.00
 ---
 
-# Strategic Technology Choices: JSON-LD/RDF END State
+# VC Spec Enhancement Proposal
+
+[![hackmd-github-sync-badge](https://hackmd.io/rnY5xiXESWqWBlyDPHDorA/badge)](https://hackmd.io/rnY5xiXESWqWBlyDPHDorA)
+
+
+Strategic Technology Choices vis-a-vis the JSON-LD/RDF End State.
 
 
 ## Adoption Strategy
