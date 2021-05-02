@@ -19,7 +19,7 @@ end state but I hope not because of any technical reason nor because of a bad ad
 
 In my opinion the primary role of an identifier system to solve the secure attribution problem. The core of such a solution is to establish control authority over an identifier where such control authority consists of a set of asymmetric (public, privae) key pairs for non-repudiable digital signature(s) (PKI). Other cryptographic operations may serve a similar role but the simplest most universal method of establishing provable control authority is an asymmetric key pair based digital signature on some statement. Only the controller of the private keys may make a verifiable non-repudiable commitment to some statement via such a signature. Any second party may verify that signature given the public key. The role of any identifier system is to securely map identifiers to the authoritative public keys in order to cryptographically verify the signatures and thereby make sucure attribution. Secure attribution via digital signatures is a cryptographic way of establishing the authenticity of any signed statement.
 
-KERI is one such identifier system. DID indentifiers belonging to the named space of some DID method are another such system. 
+KERI is one such identifier system. DID identifiers belonging to the name space of some DID method are another such system. 
 
 Once one can make secure attribution then one can built secure transactional system on top of that secure attribution system. One such transactional system is a Verifiable Credential (VC) but that is only one. The end state for decentralized identifier systems is to enable all transactional systems to be securely attributed using that decentralize identifier system.
 
