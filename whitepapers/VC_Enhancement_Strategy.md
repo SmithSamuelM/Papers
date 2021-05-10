@@ -18,7 +18,7 @@ The purpose of this write up is to better memorialize my increasingly worrisome 
 
 A VC is a member of a more general class of data that may be described as securely attributed data or provenanced data or more simply authentic data. My overriding interest for this class of data is to reach the end state where we have universal adoption of securely attributed data. This would fix the broken internet. As a result, the underlying technology and adoption strategy must be compatible with that end state. We may never reach that end state but my goal is that it won't be because of any technical reason nor because of a bad adoption strategy.
 
-In my opinion the primary role of an identifier system to solve the secure attribution problem. The core of such a solution is to establish control authority over an identifier where such control authority consists of a set of asymmetric (public, privae) key pairs for non-repudiable digital signature(s) (PKI). Other cryptographic operations may serve a similar role but the simplest most universal method of establishing provable control authority is an asymmetric key pair based digital signature on some statement attributed to an identifier. Only the controller of the private keys that control an identifier may make a verifiable non-repudiable commitment to some statement via such a signature. Any second party may verify that signature given the public key. The role of any identifier system is to securely map identifiers to the authoritative public keys in order to cryptographically verify the signatures and thereby make secure attribution. Secure attribution via digital signatures is a cryptographic way of establishing the authenticity of any signed statement.
+In my opinion the primary role of an identifier system to solve the secure attribution problem. The core of such a solution is to establish control authority over an identifier where such control authority consists of a set of asymmetric (public, private) key pairs for non-repudiable digital signature(s) (PKI). Other cryptographic operations may serve a similar role but the simplest most universal method of establishing provable control authority is an asymmetric key pair based digital signature on some statement attributed to an identifier. Only the controller of the private keys that control an identifier may make a verifiable non-repudiable commitment to some statement via such a signature. Any second party may verify that signature given the public key. The role of any identifier system is to securely map identifiers to the authoritative public keys in order to cryptographically verify the signatures and thereby make secure attribution. Secure attribution via digital signatures is a cryptographic way of establishing the authenticity of any signed statement.
 
 KERI is one such identifier system. DID identifiers that belong to the name space of some DID method are another such system. 
 
@@ -87,7 +87,7 @@ Semantic interoperability levels:
 - Knowledge Graph level  
     - Depending on the graph database: consume JSON Schema, custom schema or schema.org schema
     - Graph databases (Property Graphs, Weighted Directed Edge Graphs, Is-a has-a triples)
-        - Open property graphs (Neo4j, Arrango, various GraphQL)
+        - Open property graphs (Neo4j, Arrango, various Cypher supporting or GraphQL wrapped databases
         - Repurposed SQL or other NoSQL to act like property graphs
         - Proprietary property graphs
         - Machine Learning Oriented graphs (weighted directed edge property graphs)
@@ -110,7 +110,7 @@ Semantic interoperability levels:
 - Knowledge Graph level ranking by market adoption: (relative to data lakes)
     -  First proprietary knowledge graphs for social networks or page rank 
         - Consume JSON schema or custom schema serializations with one exception)
-    -  Second open labeled property graphs (LPG) (GraphQL) for social networks
+    -  Second open labeled property graphs (LPG) (Cypher) for social networks
         - Consume JSON schema or custom schema serializations)
     -  Third repurpose SQL or NoSQl to act like labeled property graph
         - Consume JSON schema or custom schema serializations)
@@ -166,7 +166,8 @@ My survey of other attempts to implement RDF at scale end this same way. Great i
 ### One narrow use case for JSON-LD: Google SEO
 
 According to the JSON-LD site, 10 million sites use JSON-LD. However in my survey of the uses, I could find  one and only one narrow use case, that is, to provide JSON-LD/schema.org encoded content for Google SEO of their site. Not for any semantic inference on the sites themselves. Most if not all of those sites also use either JSON Schema or custom schema for every other schematic purpose on their site (not schema.org). And most if not all do not use an RDF graph database backend for any purpose. Many either use a different graph database backend or no graph database backend at all.
-In stark contrast to schema.org, JSON Schema is part of the OpenAPI spec (Swagger). JSON Schema is already the de facto web standard for interoperable schema. JSON-LD/schema.org will never ever displace it. JSON Schema has already won that battle.
+In stark contrast to schema.org, JSON Schema is part of the OpenAPI spec [Swagger](https://swagger.io/docs/specification/data-models/keywords/).
+JSON Schema is already the de facto web standard for interoperable schema. JSON-LD/schema.org will never ever displace it. JSON Schema has already won that battle.
 
 This is comparable to the XML vs JSON battle. In almost every technical way except simplicity and compactness, XML is better than JSON as a serialization format. But JSON is good enough for the 99% of use cases that simplicity became the deciding feature.  JSON won the battle. 
 Likewise json-ld/RDF/schema.org may superior in many ways to JSON Schema but JSON Schema is already good enough for the 99% use case which it already serves and is alsomuch simpler. JSON schema has already won that battle. The decentralized identity community just hasn't realized it yet.
@@ -257,7 +258,7 @@ The end state of JSON-LD RDF is antithetical to this concept. Indeed I am disapp
 
 #### Carrot is LPG (Layered Property Graphs) and JSON Schema
 
-Layered property graphs (LPG) are better almost every way for semantic inference than RDF. This is a huge advantage to any standard that wants to convert the payload to some format for inference. One can create a LPG in several open standard graph database that support it and (GraphQl) is an open standard query language for LPGs. Secondly existing SQL and NoSQL databases can be designed support the semantics of LPGs. Further reducing adoption barriers. But in all cases one uses immutable schema for over the white transmission and this schema is JSON Schema which everyone is already using anyway for over the wire schema. So adding immutability is a small extra effort.
+Layered property graphs (LPG) are better almost every way for semantic inference than RDF. This is a huge advantage to any standard that wants to convert the payload to some format for inference. One can create an LPG in several open standard graph databases. [Cypher](https://en.wikipedia.org/wiki/Cypher_query_language)  is an open standard query language for LPGs. And [GraphQl](https://graphql.org/learn/) is an open standard wrapper library for queries that enables a standard query interface for custom LPG APIs. Secondly existing SQL and NoSQL databases can be designed support the semantics of LPGs. Further reducing adoption barriers. But in all cases one would use immutable JSON schema for over-the-wire transmission. JSON Schema is already universally adopted anyway for over-the-wire transmission when communicating with ReST APIs.  So adding immutability to JSON Schema is a small extra effort.
 
 ## End State for JSON-LD/RDF Security is not scalable nor widely adoptable
 
