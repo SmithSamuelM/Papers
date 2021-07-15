@@ -227,9 +227,7 @@ Nonetheless, I strongly believe that the ultimate goal is not semantic interoper
 
 ### Selection Bias
 
-Based on my survey the decentralized identity community is suffering from a severe case of selection bias induced by the grossly disproportionate participation of members of the Linked Data (JSON-LD/RDF) community.
-
-This bias has been exacerbated by the infusion of funding directed towards Linked Data, largely of government origin. Funding within a nascent community when ill-placed distorts the market and when that nascent community is already small, that distortion becomes large. Many in the JSON-LD camp within the decentralized identity community are there largely because they are funded by government money directed to Linked Data. They would not be there otherwise and certainly not for any meaningful commercially driven market demand. They are leveraging the government money to bootstrap to commercial markets. This is normally fine, but in this case it is effectively masking the genuine market demand which has already selected LPGs and JSON Schema.
+Based on my survey the decentralized identity community is suffering from a severe case of selection bias induced by the disproportionate participation of members of the more vocal Linked Data (JSON-LD/RDF) community.
 
 The broader decentralized identity community majority is allowing itself to be stampeded by the minority Linked Data community into an adoption box canyon because it has been blinded to other better options by the selection bias of that more vocal minority. 
 
