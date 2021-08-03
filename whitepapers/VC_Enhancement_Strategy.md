@@ -1,7 +1,7 @@
 ---
 tags: ACDC, KERI, JSON-LD, RDF
 email: sam@samuelsmith.org
-version: 1.2.5
+version: 1.2.6
 ---
 
 # VC Spec Enhancement Proposal
@@ -11,7 +11,7 @@ version: 1.2.5
 
 Strategic Technology Choices vis-a-vis the Linked Data (JSON-LD/RDF) End State.
 
-2021/08/02 Version 1.2.5
+2021/08/02 Version 1.2.6
 
 ## Barriers to Adoption of Linked Data VCs
 
@@ -384,7 +384,7 @@ Certainly, we could define a new standard for VCs that required immutable schema
 
 ## Immutability Requirements on JSON Schema
 
-All schema definitions must be securely immutable, full stop. Identifying schema with versioned identifiers does not guarantee immutability. Secure immutability comes from either embedding the schema definition in the VC or embedding a digest of the schema definition in the VC, with the schema definition stored elsewhere. In either case the signature on the VC will not verify if the schema is changed. A digest is a verifiable cryptographic commitment to the schema stored elsewhere. When embedding a content digest of the schema definition within the VC, the schema definition itself must be stored elsewhere in a highly available repository or registry or database. Any change to schema results in a new, content-addressable instance of that schema stored in that repository. To clarify, the signature on the VC makes a verifiable commitment to the digest, which in turn makes a verifiable commitment to the immutable schema. The VC will not be verifiable if the actual schema definition is not found in the repository, which is why it must be highly available. But availability is a much easier problem to solve than security.
+All schema definitions must be securely immutable, full stop. Identifying schema with versioned identifiers does not guarantee immutability. Secure immutability comes from either embedding the schema definition in the VC or embedding a digest of the schema definition in the VC, with the schema definition stored elsewhere. In either case the VC will not verify against its schema if the schema is changed after the VC is issued and signed. A digest is a verifiable cryptographic commitment to the schema stored elsewhere. When embedding only a content digest of the schema definition within the VC, the schema definition itself must be stored elsewhere in a highly available repository or registry or database. Any change to a schema results in a new, content-addressable instance of that schema stored in that repository. To clarify, the signature on the VC makes a verifiable commitment to the digest, which in turn makes a verifiable commitment to the immutable schema. The VC will not be verifiable against its schema if the actual schema definition is not found in the repository, which is why it must be highly available. But availability is a much easier problem to solve than security.
 
 Immutable schema definitions require a content-addressable identifier namespace. One will need to be designed for JSON schema so that they be known as immutable. Issuers are responsible for designating a highly available repository for the immutable schema they reference in VCs. Alternatively, the issuer may embed a copy of the schema in the VC itself, thereby making the VC self-contained with respect to the schema and removing the requirement for a highly available schema repository.
 
