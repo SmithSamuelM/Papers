@@ -1,7 +1,7 @@
 ---
 tags: ACDC, KERI, JSON-LD, RDF
 email: sam@samuelsmith.org
-version: 1.2.6
+version: 1.2.7
 ---
 
 # VC Spec Enhancement Proposal
@@ -11,7 +11,7 @@ version: 1.2.6
 
 Strategic Technology Choices vis-a-vis the Linked Data (JSON-LD/RDF) End State.
 
-2021/08/02 Version 1.2.6
+2021/08/02 Version 1.2.7
 
 ## Barriers to Adoption of Linked Data VCs
 
@@ -588,3 +588,8 @@ assert.deepEqual(Reflect.ownKeys(myObject), ['foo', 'bar', Symbol.for('baz'), Sy
 -   [https://2ality.com/2015/10/property-traversal-order-es6.html#traversing-the-own-keys-of-an-object](https://2ality.com/2015/10/property-traversal-order-es6.html#traversing-the-own-keys-of-an-object)
 -   [https://www.stefanjudis.com/today-i-learned/property-order-is-predictable-in-javascript-objects-since-es2015/](https://www.stefanjudis.com/today-i-learned/property-order-is-predictable-in-javascript-objects-since-es2015/)
 -   [https://medium.com/@robertgrosse/how-es6-classes-really-work-and-how-to-build-your-own-fd6085eb326a](https://medium.com/@robertgrosse/how-es6-classes-really-work-and-how-to-build-your-own-fd6085eb326a)
+
+
+# Acknowledgments
+
+Many thanks to Timothy Ruff, Alan Davies and others in the community for feedback. Special thanks Timothy for help in editing this paper for clarity, grammar, and punctuation.
