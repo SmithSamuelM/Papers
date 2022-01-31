@@ -6,12 +6,16 @@ version: 1.00
 
 # XORA (Exclusive Or Accumulator)
 
+[![hackmd-github-sync-badge](https://hackmd.io/ZjNWbybtRom4wGfkwyTyYg/badge)](https://hackmd.io/ZjNWbybtRom4wGfkwyTyYg)
+
+
+
 ## XOR and OTP for Blinding Digests
 
 
 ### Information Theoretic Security and Perfect Security
 
-The highest level of crypto-graphic secruity with respect to a cryptographic secret (seed, salt, or private key) is called  [information-theoretic security](https://en.wikipedia.org/wiki/Information-theoretic_security). A cryptosystem that has this level of security cannot be broken algorithimically even if the adversary has nearly unlimited computing power including quantum computing. It must be broken by brute force if at all. Brute force means that in order to guarantee success the adversary must search every combination of key or seed. A special case of information-theoretic security is called [perfect security](https://en.wikipedia.org/wiki/Information-theoretic_security). Perfect security means that the cipher text provides no information about the key. There are two well-known cryptosystems that can exhibit perfect sercurity. One is [*secret sharing or splitting*](https://en.wikipedia.org/wiki/Secret_sharing) (see also [ss](http://users.telenet.be/d.rijmenants/en/secretsplitting.htm)). The other is a [*one-time pad*](https://en.wikipedia.org/wiki/One-time_pad) (see also [otp](http://users.telenet.be/d.rijmenants/en/onetimepad.htm). Correct implementation of either/or a combination of these two approaches is appropriate for private-key recovery.
+The highest level of crypto-graphic security with respect to a cryptographic secret (seed, salt, or private key) is called  [information-theoretic security](https://en.wikipedia.org/wiki/Information-theoretic_security). A cryptosystem that has this level of security cannot be broken algorithmically even if the adversary has nearly unlimited computing power including quantum computing. It must be broken by brute force if at all. Brute force means that in order to guarantee success the adversary must search every combination of key or seed. A special case of information-theoretic security is called [perfect security](https://en.wikipedia.org/wiki/Information-theoretic_security). Perfect security means that the cipher text provides no information about the key. There are two well-known cryptosystems that can exhibit perfect security. One is [*secret sharing or splitting*](https://en.wikipedia.org/wiki/Secret_sharing) (see also [ss](http://users.telenet.be/d.rijmenants/en/secretsplitting.htm)). The other is a [*one-time pad*](https://en.wikipedia.org/wiki/One-time_pad) (see also [otp](http://users.telenet.be/d.rijmenants/en/onetimepad.htm). 
 
 ### Sufficient Cryptographic Strength to Withstand a Brute-force Attack
 
@@ -27,7 +31,7 @@ There are about 3600 * 24 * 365 = 313,536,000 = 2<sup>log<sub>2</sub>313536000</
 
 As mentioned previously, the [*one-time pad* (OTP)](https://en.wikipedia.org/wiki/One-time_pad) (see also [OTP](http://users.telenet.be/d.rijmenants/en/onetimepad.htm)) may exhibit perfect security. The OTP is a venerable cyphersystem that has the advantage that it can be used manually without a computer. Basically a long string of random characters forms the *pad*. Someone can use the pad to encrypt a plain-text message. The procedure is to combine each plain-text character in order with the corresponding character from the pad. The combination is typically performed using modulo N addition of the two characters. The simplest case is when  N = 2 which is equivalent to the  bitwise XOR (e.g. XOR is modulo 2 addition). Because characters from the pad may only be used once, the pad must be at least as long as the plain-text message.  The one time use of a random string of characters from the pad is what gives the system its perfect security property. If two parties wish to exchange multiple messages, then the pad must be at least as long as the sum of the length of all the messages. The main disadvantage of a one-time pad is that the two parties must each obtain a copy of the same *pad*. This is not necessarly a problem for blinding secrets with respect to third parties because unblinding operations usually involve sharing a secret.
 
-Suppose for example, a OTP is used to bline the a digest of a document (such as an ACDC or VC). Given that the adversary does not have access to the OTP then the blinding encryption has perfect secrecy which means that the only viable attack is via brute force. If the blinding pseudo random string has at least 128 bits of entropy then brute force attack is practicaly infeasible. Consequently the OTP encrypted digest history could be safely stored in a public database. 
+Suppose for example, a OTP is used to blind the a digest of a document (such as an ACDC or VC). Given that the adversary does not have access to the OTP then the blinding encryption has perfect secrecy which means that the only viable attack is via brute force. If the blinding pseudo random string has at least 128 bits of entropy then brute force attack is practicaly infeasible. Consequently the OTP encrypted digest history could be safely stored in a public database. 
 
 ## Properties of the XOR
 
