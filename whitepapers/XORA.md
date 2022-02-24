@@ -99,9 +99,12 @@ Given that `A` is public, a proover may privately commit to, and disclose to a p
 We can use this proof mechanism to construct a privacy preserving selective disclosure mechanisms for ACDCs such as hidden attributes or selectively disclosed attributes or a revocation registry of one-time-use ACDCs [[9]].
 
 
-## Privacy Preserving Disclosre Mechanisms for ACDCs
+## Confidentiality and Privacy Preserving Disclosure Mechanisms for ACDCs
+
+An authentic chained data container (ACDC) is an IETF internet draft focused specification being incubated at the ToIP (Trust over IP) foundation. An ACDC is a variant of the W3C Verifiable Credential (VC) specification. Some of the major distinquishing features of ACDCs are a well defined security model based on the IETF focused family of KERI related standards, normative support for chaining, use of JSON schema, multiple serialization formats, and support for Ricardian contracts. One of the new features of ACDC is support for hidden attributes that enable private disclosure under a non-disclosure agreement as part of a chain-link confidentiality protection mechanism.
 
 ### Hidden Attribute ACDC
+
 
 
 
