@@ -1,7 +1,7 @@
 ---
 tags: XORA, KERI, ACDC, Accumulator
 email: sam@samuelsmith.org
-version: 1.00
+version: 0.04
 ---
 
 # XORA (Exclusive Or Accumulator)
@@ -71,13 +71,13 @@ We can add it back by xoring it again to `A'`
 
 If we let the variable `A` be the current value of the accumulated `Bi`s then we can think of it as a compact way of storing the set of `Bi`s that are members of the set accumulated into the `A`.  We now have everything we need to construct a XORA, an XORed Accumulator [[9]]. 
 
-This is exactly the proceedure for secret splitting [[4]] mentioned above. The splits are each of the indexed strings `Bi`. The secret is the accumulated value `A`.  In other words `A` is a XORA.
+This is exactly the procedure for secret splitting [[4]] mentioned above. The splits are each of the indexed strings `Bi`. The secret is the accumulated value `A`.  In other words `A` is a XORA.
 
 
 
 ## XORA as a Cryptographic Accumulator
 
-In its simplest form, a Cryptographic Accumulator [[8]] is a one way hash function for membership. An accumulator enables users to proof that a given value is a member of a certain set without revealing the individual values of the other members of the set. A hash function maps data of arbitrary size to fixed sized values. A cryptographic digest is an example of a hash function. A set of digests that is combined to a single value that is same size as any individual digest would be of the form of a cryptographic accumulator. If there is a way to prove that a given digest is a member of that set represented by that accumulator without revealing each and everyone of the other members then that combination could be used as a cryptographic accumulator. There are several types of cryptographic accumulators with additional features beyond the basic one way hash membership function. 
+In its simplest form, a Cryptographic Accumulator [[8]] is a one way hash function for membership. An accumulator enables users to proof that a given value is a member of a certain set without revealing all the individual values of all the other members of the set. A hash function maps data of arbitrary size to fixed sized values. A cryptographic digest is an example of a hash function. A set of digests that is aggregated or combined or acculumated into a single value that is same size as each of the individual digests is in the form of a cryptographic accumulator. If there is a way to prove that a given digest is a member of that set represented by that accumulator without revealing each and everyone of the other members then that aggregated combination (accumulation) could be used as a cryptographic accumulator. There are several types of cryptographic accumulators with additional features beyond those provided by a basic one way hash membership function. 
 
 Given that we use XOR as the one way hash function we have a very simple membership proof.
 
@@ -93,7 +93,9 @@ Then
 
 ``` A = Rj + Bj```
 
-Given that `A` is public, a proover may privately commit to, and disclose to a provee both `Rj` and `Bj`  without disclosing any other `Bi`. The proovee may then verify that `Bj` is a member of `A` but without knowing any other `Bi` `j≠i`. The only public information is `A`. The members of `A`, i.e. the `Bi` are blinded by each other with perfect security. Should one of the `Bi`, say `B0` have at least 128 bits of entropy then it serves as a OTP to encrypt all the other accumulated `Bi`. This makes a brute force attack on `A` to reveal the `Bi`  practically infeasible
+Given that `A` is public, a proover may privately commit to, and disclose to a proovee (verifier) both `Rj` and `Bj`  without disclosing any other `Bi`. The proovee may then verify that `Bj` is a member of `A` but without knowing any other `Bi` `j≠i`. The only public information is `A`. The members of `A`, i.e. the `Bi` are blinded by each other with perfect security. Should one of the `Bi`, say `B0` have at least 128 bits of entropy then it serves as a OTP to encrypt all the other accumulated `Bi`. This makes a brute force attack on `A` to reveal the `Bi`  practically infeasible. The proof is based on cryptographic commitments by the proover.
+
+One way to make such commitments may be via non-repudiable digital signatures on `A`, `Rj`, and `Bj`. The main limitation of this type of proof is that the provee must have some bais for trusting that the proover is consistent such as having recourse against the prover when not. A non-repudiable digital  signature means that the prover cannot subsequently repudiate their commitment made with that signature and therefore may be held accountable by the proovee (verifier), thus providing a basis for trust.
 
 
 We can use this proof mechanism to construct a privacy preserving selective disclosure mechanisms for ACDCs such as hidden attributes or selectively disclosed attributes or a revocation registry of one-time-use ACDCs [[9]].
@@ -101,7 +103,7 @@ We can use this proof mechanism to construct a privacy preserving selective disc
 
 ## Confidentiality and Privacy Preserving Disclosure Mechanisms for ACDCs
 
-An authentic chained data container (ACDC) is an IETF internet draft focused specification being incubated at the ToIP (Trust over IP) foundation. An ACDC is a variant of the W3C Verifiable Credential (VC) specification. Some of the major distinquishing features of ACDCs are a well defined security model based on the IETF focused family of KERI related standards, normative support for chaining, use of JSON schema, multiple serialization formats, and support for Ricardian contracts. One of the new features of ACDC is support for hidden attributes that enable private disclosure under a non-disclosure agreement as part of a chain-link confidentiality protection mechanism.
+An authentic chained data container (ACDC) [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[24]]. Some of the major distinquishing features of ACDCs are a well defined security model based on the IETF focused family of KERI related standards, normative support for chaining, use of JSON schema, multiple serialization formats, and support for Ricardian contracts. One of the new features of ACDC is support for hidden attributes that enable private disclosure under a non-disclosure agreement as part of a chain-link confidentiality protection mechanism.
 
 ### Hidden Attribute ACDC
 
@@ -151,23 +153,75 @@ An authentic chained data container (ACDC) is an IETF internet draft focused spe
 
 [9]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/XORA.md
 
+[10]. IETF ACDC (Authentic Chained Data Containers) Internet Draft.
+
+[10]: https://github.com/trustoverip/tswg-acdc-specification
+
+[11]. Authentic Chained Data Containers (ACDC White Paper.  
+
+[11]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/ACDC.web.pdf
+
+[12]. Trust Over IP (ToIP) Foundation.  
+
+[12]: https://trustoverip.org  
+
+[13]. ACDC (Authentic Chained Data Container) Task Force.  
+
+[13]: https://wiki.trustoverip.org/display/HOME/ACDC+%28Authentic+Chained+Data+Container%29+Task+Force  
+
+[14]. Smith, S. M., "Key Event Receipt Infrastructure (KERI) Design"  
+
+[14]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/KERI_WP_2.x.web.pdf  
+
+[15]. IETF KERI (Key Event Receipt Infrastructure) Internet Draft.  
+
+[15]: https://github.com/WebOfTrust/ietf-keri  
+
+[16]. IETF CESR (Composable Event Streaming Representation) Internet Draft.  
+
+[16]: https://github.com/WebOfTrust/ietf-cesr  
+
+[17]. IETF SAID (Self-Addressing IDentifier) Internet Draft.  
+
+[17]: https://github.com/WebOfTrust/ietf-said  
+
+[18]. IETF PTEL (Public Transaction Event Log) Internet Draft.  
+
+[18]: https://github.com/WebOfTrust/ietf-ptel
+
+[19]. IETF CESR-Proof Internet Draft.  
+
+[19]: https://github.com/WebOfTrust/ietf-cesr-proof  
+
+[20]. IPEX (Issuance and Presentation EXchange) Draft.  
+
+[20]: https://github.com/WebOfTrust/keripy/blob/master/ref/Peer2PeerCredentials.md
+
+[21]. IETF DID-KERI Internet Draft.  
+
+[21]: https://github.com/WebOfTrust/ietf-did-keri  
+
+[22]. IETF (Internet Engineering Task Force).
+
+[22]: https://www.ietf.org  
+
+[23]. GLEIF vLEI.
+
+[23]: https://github.com/WebOfTrust/vLEI
+
+[23]. GLEIF with KERI Architecture.  
+
+[23]: https://github.com/SmithSamuelM/Papers/blob/master/presentations/GLEIF_with_KERI.web.pdf  
+
+[24]. W3C Decentralized Identifiers (DIDs) v1.0.  
+
+[24]: https://w3c-ccg.github.io/did-spec/
+
+[25]. W3C Verifiable Credentials Data Model v1.1.  
+
+[25]: https://www.w3.org/TR/vc-data-model/  
 
 
 
-[10]. Smith, S. M., "Key Event Receipt Infrastructure (KERI) Design"  
-
-[10]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/KERI_WP_2.x.web.pdf  
 
 
-
-[10]. GLEIF with KERI Architecture.  
-
-[10]: https://github.com/SmithSamuelM/Papers/blob/master/presentations/GLEIF_with_KERI.web.pdf  
-
-[11]. “Decentralized Identifiers (DIDs),” W3C Draft Community Group Report 23 August 2018.  
-
-[11]: https://w3c-ccg.github.io/did-spec/
-
-[12]. W3C Verifiable Credentials Data Model.  
-
-[12]: https://www.w3.org/TR/vc-data-model/
