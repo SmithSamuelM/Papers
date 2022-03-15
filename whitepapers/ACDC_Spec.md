@@ -1,15 +1,20 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure
 email: sam@samuelsmith.org
-version: 0.1.0
+version: 0.1.1
 ---
 
-## ACDC Specification
+[![hackmd-github-sync-badge](https://hackmd.io/Ml5eciWhT2K7mUEIAGO9Xw/badge)](https://hackmd.io/Ml5eciWhT2K7mUEIAGO9Xw)
+
+
+# ACDC Specification
+
+## Introduction
 
 An authentic chained data container (ACDC) [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include  normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats, compact formats, support for Ricardian contracts [[40]], and a well defined security model derived from KERI [[14]][[15]].
 
 
-### ACDC Fields
+## ACDC Fields
 
 An ACDC may be abstractly modeled as a nested key:value mapping or dictionary. A key in this context is a field label. To avoid confusion with cryptographic keys we use the term field to refer to mapping pair and the terms field label and field value, (label, value) for element of the pair instead of the more common (key, value). Each nesting is composed of a set of fields or (label, value) pairs. We call this nested set of fields a nested map and when represented by a block delimited serialization such as JSON [[37]], it may be called a block. ACDCs support multiple serialization formats but for the sake of simplicity we will only use JSON here [[37]]. The basic set of field labels is defined in the following table.
 
@@ -37,14 +42,6 @@ Several fields may have either a SAID for a value or a nested map of fields. The
 
 SAIDs are essentially cryptographic digests (hashes). Given that both the digest and signature operations have sufficient cryptographic strength including collision resistance [[32]][[42]], then a verifiable cryptographic non-repudiable commitment made by a digital signature of that SAID is equivalent to a verifiable non-repudiable commitment made by a digital signature of the full serialization of the associated block from which the SAID was derived. This enables reasoning about ACDCs in a fully interoperable, verifiable, compact and secure manner. This also supports the well-known bow-tie model of Ricardian Contracts [[40]]
 
-### Composable JSON Schema for Selective Disclosure
-
-otable is the fact that there are no top level type fields in an ACDC. This because the schema, `s` field is the type field. ACDCs follow the design principle of separation of concerns between type information  about a container's payload and the actual payload information in the container. Type information is metadata not data. Composable and conditional JSON Schema allow a validator to answer complex questions about the type of even optional payload elements without mixing type fields into a payload data structure. 
-
-One of the most important features of ACDCs is support for Chain-Link Confidentiality[[41]]. This provides a powerful mechanism for protecting against un-permissiond exploitation of the data disclosed via an ACDC. Essentially an exchange of information compatible with chain-link confidentiality starts with an offer by the discloser of confidention information to be disclosed. This offer includes sufficient partial disclosure about the information to be disclosed (metadata) including the terms of use of the disclosure such that the disclosee can agree to those terms. Once the disclosee has accepted the terms then full disclosure is made. We call the full disclosure that happens after contracrtual acceptance of the terms of use, permissioned disclosure.
-
-Composable JSON Schema [[38]][[39]], enable use of the same base schema to provide validation of the partial disclosure of the offer prior to contract acceptance, and validation of full or detailed disclosure after contract acceptance. A cryptographic committment to the base schema securely specifies the allowable semantics. Decomposition of the base schema enables a validator to impose more specific semantics at later stages of the exchange process. Specifically, the `oneOf` sub-schema composition operator validates against both the compact SAID of the block and the full block. Decomposing the schema to remove the optional compact form enable a validator to ensure complaint full disclosure. To clarify, a validator can confirm schema compliance both pre and post detailed disclosure by using a composed base schema pre-disclosure and a decomposed more specific schema post-disclosure. These features provide a mechanism for secure schema validated contractually bound selective disclosure of confidential data via ACDCs. 
-
 
 ### Autonomic IDentifiers
 
@@ -52,43 +49,54 @@ Some fields, such as the `i` and `ri` fields, MUST each have an AID (Autonomic I
 
 An `i` field MUST appear at the top level of an ACDC. The `i` field value is always the AID of the *Issuer* of the ACDC. The *Issuer* is the author or originator of the ACDC. This is the AID to which secure attribution may be made as the source of the ACDC.
 
+
+
+## Composable JSON Schema for Selective Disclosure
+
+Notable is the fact that there are no top level type fields in an ACDC. This because the schema, `s` field is the type field. ACDCs follow the design principle of separation of concerns between type information  about a container's payload and the actual payload information in the container. Type information is metadata not data. Composable and conditional JSON Schema allow a validator to answer complex questions about the type of even optional payload elements without mixing type fields into a payload data structure. 
+
+One of the most important features of ACDCs is support for Chain-Link Confidentiality[[41]]. This provides a powerful mechanism for protecting against un-permissiond exploitation of the data disclosed via an ACDC. Essentially an exchange of information compatible with chain-link confidentiality starts with an offer by the discloser of confidention information to be disclosed. This offer includes sufficient partial disclosure about the information to be disclosed (metadata) including the terms of use of the disclosure such that the disclosee can agree to those terms. Once the disclosee has accepted the terms then full disclosure is made. We call the full disclosure that happens after contracrtual acceptance of the terms of use, permissioned disclosure.
+
+Composable JSON Schema [[38]][[39]], enable use of the same base schema to provide validation of the partial disclosure of the offer prior to contract acceptance, and validation of full or detailed disclosure after contract acceptance. A cryptographic committment to the base schema securely specifies the allowable semantics. Decomposition of the base schema enables a validator to impose more specific semantics at later stages of the exchange process. Specifically, the `oneOf` sub-schema composition operator validates against both the compact SAID of the block and the full block. Decomposing the schema to remove the optional compact form enable a validator to ensure complaint full disclosure. To clarify, a validator can confirm schema compliance both pre and post detailed disclosure by using a composed base schema pre-disclosure and a decomposed more specific schema post-disclosure. These features provide a mechanism for secure schema validated contractually bound selective disclosure of confidential data via ACDCs. 
+
+
 ### Selective Disclosure Facility
 
 A `u` field may optionally appear in any block at any level of an ACDC. Whenever a block in an ACDC includes a `u` field it makes that block potentially securely selectively disclosable notwithstanding disclosure of the associated schema of the block. The purpose of the `u` field is to provide sufficient entropy to the SAID of the associated block to make brute force attack on the SAID computationally infeasble. The `u` field may considered a salty nonce [[27]]. Without the entropy provided the `u` field, an adversary may be able to reconstruct the block contents merely from the SAID of the block and the schema of the block using a rainbow or dictionary attack on the set of field values allowed by the schema [[28]][[29]]. The effective entropy of the schema compliant field values may be much less than the strength of the SAID digest. Another way of saying this is that the cardinality of the power set of all combinations of allowed field values may be much less than the cryptographic strength of the SAID. Thus an adversary could successfully brute force discover the exact block by creating digests of all the elements of the power set which if small enough may be computationally feasible. The entropy in the `u` field ensures that the cardinality of the power set allowed by the schema is at least as big as the entropy of the SAID.
 
 When a `u` field appears at the top level of an ACDC then the whole ACDC itself, not merely some block within the ACDC, may be disclosed in a privacy preserving (correlation minimizing) manner such as a one-time use ACDC. 
 
-### ACDC Variants
+## ACDC Variants
 
 There are several variants of ACDCs determined by the presence/absence of certain fields and the value of those fields. 
 
 
 At the top level, the presence (absence) absence  of the `u` field produces two variants private (public) and when present an empty `u` enables a private meta-data only variant
 
-#### Public ACDC
+### Public ACDC
 
 Given that there is no `u` field at the top level of an ACDC, then knowledge of both the the SAID, `d`, field at the top level of an ACDC and the schema of the ACDC may enable discovery of the remaining contents of the ACDC via a rainbow table attack [[28]][[29]]. Therefore the `d` field at the top level, although, a cryptographic digest, does not securely blind the contents of the ACDC given knowledge of the schema.  Therefore any cryptographic commitments to that `d` field provide a fixed point of correlation potentially to the ACDC field values themselves in spite of non-disclosure of those field values. Thus an ACDC without a `u` field must be considered a public (non-confidential) ACDC.
 
-#### Private ACDC
+### Private ACDC
 
 Given that there is `u` field at the top level of an ACDC whose value has sufficient cryptographic entropy, then the SAID, `d`, field at the top level of an ACDC  may provide a secure cryptographic digest of the contents of the ACDC. An adversary when given both the schema of the ACDC and the  SAID, `d` field, is not able to discover the remaining contents of the ACDC in a computationally feasible manner such as a rainbow table attack[[28]][[29]]. Therefore the `u` field (UUID) may be used to securely blind the contents of the ACDC notwithstanding knowledge of the schema and `d` field (SAID).  Moreover a cryptographic commitment to that `d` field (SAID) does not provide a fixed point of correlation to the other ACDC field values themselves unless and until there has been disclosure of those field values. Thus an ACDC with a sufficiently high entropy `u` field may be considered a private or (confidential) ACDC. This allows a commitment to the the SAID of a private ACDC to be made prior to disclosure of the ACDC. It allows a set of multiple copies of essentially the same ACDC that differ only in their SAIDs to be used publicaly in different contexts but without provable public correlation of their contents including their use of a shared registry.
 
-#### Metadata ACDC
+### Metadata ACDC
 
 An empty `u` field appearing at the top level of an ACDC indicates that the ACDC is a metadata ACDC. The purpose of the ACDC is to provide a mechanism so that a presenter can make cryptographic commitments to the metadata of a yet to be disclosed private ACDC without providing any point of correlation with the SAID, `d` field of that yet to be disclosed ACDC. The SAID, `d` field, of the metadata ACDC is cryptographically derived from an ACDC with an empty `u` field so it will necessarily be different from an ACDC with a high entropy `u` field. But the presenter may make a non-repudiable cryptographic commitment to the metadata SAID to initiate a chain-link confidentiality exchange without leaking correlation to the actual ACDC to be disclosed [[41]]. A verifier may validate the metadata in the metadata ACDC before agreeing to any restrictions imposed by the future disclosure. The metadata includes the issuer, the schema, the provenance edges, and rules. The attributes field of a metadata ACDC may be empty so that its value is not correlatable across presentations. Should the verifier refuse to agree to the rules then the presenter has not leaked the SAID of the actual ACDC or the SAID of the attributes block that would have been presented. The verifier is able to verify the issuer, the schema, the provenaced edges, and rules prior to agreeing to the rules.  Similarly an Issuer of an ACDC may use a metadata ACDC to initiate a contractual waiver with an Issuee prior to issuance. Should the Issuee refuse the waiver then the Issuer has not leaked the SAID of the actual ACDC that would have been issued nor the SAID of its attributes block.
 
 When a metadata ACDC is presented only the presenter's signatures are attached not the Issuer's signatures. This precludes the Issuer's signatures from being used as a point of correlation. The issuer's signatures are only disclosed to the verifier after the verifier has agreed to keep them confidential. The verifier is still protected because ultimately its validation will fail if the presenter does not eventually provide verifiable Issuer signatures. But should the verifier not agree to the terms of the disclosure expressed in the rules section the Issuer signatures are not leaked by the presenter.
 
-### Three Party Exploitation Model
+## Three Party Exploitation Model
 
-#### Principle of Least Disclosure
+### Principle of Least Disclosure
 
 
 
-### Compact ACDC
+## Compact ACDC
 A compact ACDC includes only the SAIDs of each top level section.
 
-#### Compact Public ACDC
+### Compact Public ACDC
 A fully compact public ACDC is shown below. 
 
 
@@ -106,7 +114,7 @@ A fully compact public ACDC is shown below.
 
 ```
 
-#### Compact Private ACDC
+### Compact Private ACDC
 A fully compact private ACDC is shown below. 
 
 
@@ -126,7 +134,7 @@ A fully compact private ACDC is shown below.
 ```
 
 
-### Attribute Section
+## Attribute Section
 
 In the examples above the attribute section has been compacted into merely the SAID of that section. 
 
@@ -149,7 +157,7 @@ The `d` field at the top level of the attribute block is the SAID of that block 
 The combinations of the presence (absence) of an `i` field in the attribute section produce two more variants of ACDCs.
 
 
-#### Targeted ACDC
+### Targeted ACDC
 
 When present, the value of the `i` field at the top level of an attribute block is the AID of the *Issuee* of the ACDC. This *Issuee* is provably controllable identifier that is the *Target*. This enables such targeted ACDCs to be used for many different purposes such as authorization or delegation directed at the *Target* AID, i.e. the *Issuee*. In other words this form of an ACDC, by virtue of the attribute block top level `i` field  provides a container for authentic data that may also be used as some form of credential that is verifiably bound to the *Issuee* as *Target* by the *Issuer* and that by virtue of provable control over the *Issuee* AID may also be verifiably presented by the controller of the *Issuee*.
 
@@ -165,7 +173,7 @@ Likewise, the presence of an *Issuee*, `i` field, enables the *Issuer* to use th
 
 
 
-#### Untargeted ACDC
+### Untargeted ACDC
 
 Consider the case where the `i` field is absent at the top level of the attributes block as shown below:
 
@@ -187,7 +195,7 @@ This form of an ACDC provides a container for authentic data only (not specified
 A hybrid chain of one or more targeted ACDCs ending in a chain of one or more untargeted ACDCs enables a delegated authorized attestations at the tail of that chain. This may be very useful in many regulated supply chain applications such as verifiable authorized authentic data sheets for a given pharmaceutical.
 
 
-#### Public-Attributes ACDC
+### Public-Attributes ACDC
 
 Consider the following uncompacted attributes block:
 
@@ -206,7 +214,7 @@ Given the absence of a `u` field at the top level of the attributes block, then 
 
 
 
-#### Private-Attributes ACDC
+### Private-Attributes ACDC
 
 Consider the following form of an uncompacted attributes block:
 
@@ -228,7 +236,7 @@ To elaborate, when an ACDC includes a sufficiently high entropy `u` field at the
 Because the *Issuee* AID is nested in the attributes as its top level `i` field, a presentation exchange could be initiated on behalf of a different AID that has not yet been correlated to the *Issuee* AID and then only correlated to the Issuee AID after the verifier has agreed to the chain-link confidentiality provisions in the rules section of the private-attributes ACDC [[41]].
 
 
-#### Selective Disclosure ACDC
+### Selective Disclosure ACDC
 
 Consider the following uncompacted attribute block:
 
@@ -329,14 +337,14 @@ A private selective disclosure ACDC provides significant correlation minimizatio
 
 Furthermore as explained in the XORA section, the four tuple XORA non-repudiable inclusion proof provides support for zero-trust authentic data storage and computing architecures because the pair `(ai, si)` may be stored together on one device to provided zero trust verifiability of the authenticity of that devices data without exposing the full inclusion proof. The signature `Si` on `Ri` may be stored separately on a different device. This prevents a side channel attack on the Issuee's storage device that exposes only the `ai` and `si` from being able to forge alternate non-repudiable inclusion proofs or to discover provable non-repudiable inclusion of the undisclosed fields.
 
-#### Hierarchical Derivation at Issuance of Selective Disclosure ACDC
+### Hierarchical Derivation at Issuance of Selective Disclosure ACDC
 
 The amount of data transferred between the Issuer and Issuee or other recipient of issuance of a selective disclosure ACDC can be minimized by using a hierarchical deterministic derivation function to derive the value of the `u` fields from a shared secret salt [[27]]. The Issuer may use a Diffie-Hellman key exchange to share a secret salt with the Issuee [[43]][[44]]. The Issuer also provides a template of the ACDC but with empty `u` (UUID) and `d` (SAID) fields for each block with such fields. Each `u` field value is then derived from the shared salt with a path prefix that indexes a given a given block. Given the `u` field (UUID) value, the `d` field (SAID) may then be derived and both full and compact versions of the ACDC may then be generated. An example path could be "0" for the top level 'u' field (for private ACDCS) and "0/0" for the zeroth indexed attribute in the attributes array. Likewise "0/1" for the next attributed and so on. 
 
 In addition to the shared salt and ACDC template, the Issuer also provides the list of inclusion proof tuples, a signature on the SAID of the compact ACDC and references to the anchoring seals. Everything else an Issuee needs to make a verifiable presentation can be calculated by the Issuee. 
 
 
-### Selective Disclosure via Bulk Issuance of Private ACDCs
+## Selective Disclosure via Bulk Issuance of Private ACDCs
 
 A private ACDC may be issued in bulk as a set. The only difference between each ACDC is the SAID. The point of bulk issuance is to minimize the data transfer at issuance and the storage requirements for a set of copies of essentially the same ACDC. Essentially each copy of a bulk issued ACDC shares a template that both the Issuer and Issuee use to generate a given ACDC in the set without requiring that the Issuer and Issuee exchange and store each member of the set independently. This minimizes the data transfer and storage requirements for the Issuer and Issuee.
 
@@ -353,7 +361,7 @@ In some applications, chain-link-confidentiality is insufficient to deter un-per
 It is important to note that any group of colluding malicious verifiers may always make statistical correlation between presentations despite technical barriers to cryptographically provable correlation. In general there is no cryptographic mechanism that precludes statistical correlation among a set of colluding verifiers because they may make cryptographically unverifiable or unprovable assertions about information presented to them that may be proven as likely true using merely statistical correlation techniques.
 
 
-#### Basic Bulk Issuance
+### Basic Bulk Issuance
 
 To elaborate, bulk issuance is provided via a set of copies of essentially the same ACDC which only differ in the top level `u` field (UUID) and `d` field (SAID) values. The Issuer and Issuee employ a hierarchical deterministic derivation function from a shared secret salt to generate the `u` fields (UUIDs) of each copy. This is analogous to that described in the section for selective disclosure ACDCs. To recapitulate, the Issuer shares a secret salt with the Issuee (such as with a Diffie-Hellman key exchange [[43]][[44]]). The Issuer also shares a template of the ACDC but with empty top level `u` (UUID) and `d` (SAID) field values. The salt is used with a deterministic index to generate unique `u` field (UUID) field values for each copy of the ACDC. Given the `u` field (UUID) value the associated `d` field (SAID) of the ACDC may be generated from the template. An example deterministic derivation path would be to use the copy index such as "0", "1", "2" etc.  
 
@@ -446,14 +454,14 @@ To summarize, the purpose of using a XORA from which the TEL identifier is deriv
 
 
 
-#### Bulk Issuance of Private ACDCs with Unique Issuee AIDs
+### Bulk Issuance of Private ACDCs with Unique Issuee AIDs
 
 One potential point of provable but unpermissioned correlation among any group of colluding malicious verifiers is when the same Issuee AID is used for presentation to all verifiers in that group. Recall that the contents of private ACDCs are not disclosed except to permissioned verifiers, thus a common Issuee AID would only be point of correlation for a group of colluding malicious verifiers.
 
 One solution to this problem is for the Issuee to use a unique AID for the copy of a bulk issued ACDC presented to each verifier in a given context. This requires that each ACDC copy in bulk issued set use a unique Issuee AID. This would enable the Issuee in a given context to minimize provable correlation by malicious verifiers against any given Issuee AID. In this case, the bulk issuance process may be augmented to include the derivation of a unique AID for each copy of the ACDC by including in the inception event that defines the Issuee's self-addressing AID, a digest seal derived from the shared salt and copy index. This can be re-generated at time of presentation by the Issuee. Each unique Issuee AID would need its own KEL. But generation and publication of the associated KEL can be delayed until the bulk issued ACDC is actually used. This approach completely isolates a given Issuee AID in a given context with respect to the use of a bulk issued private ACDC to even better protect against un-permissioned correlation by malicious verifiers.
 
 
-#### Independent TEL Bulk Issued ACDCs
+### Independent TEL Bulk Issued ACDCs
 
 In some applications where chain-link confidentiality does not sufficiently deter malicious provable correlation by verifiers, an Issuee may benefit from using ACDC with independent TELs but that are still issued in bulk manner. 
 
@@ -466,7 +474,7 @@ In this case the set of private ACDCs may or may not share the same Issuee AID b
 To summarize the main benefit of this approach, in spite of its storage and compute burden is that in some applications chain-link confidentialty does not sufficiently deter unpermission malicious collusion and so completely independent ACDCs must be used.
 
 
-### Edge Section
+## Edge Section
 
 In the compact ACDC examples above the edge section has been compacted into merely the SAID of that section. 
 
@@ -554,7 +562,7 @@ Private ACDCs (nodes) and private edges may be used in combination to prevent un
 In general lookup of a the details of an ACDC reference as a node, `n` field value, in an edge begins with its provided SAID. Because the SAID is cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC. Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC. Alternatively the issuer may provide as an attachment at issuance a copy of the referenced ACDC. In either case after a successful issuance exchange the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essence of percolated discovery.
 
 
-### Rule Section
+## Rule Section
 
 In the compact ACDC examples above the rule section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the rule section denoted by the `r` field is as follows:
 
@@ -607,7 +615,7 @@ When in compact form either for the rule section as a whole or for each clause,
 the lookup of the details of associated clause begins with its provided SAID. Because the SAID is cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced clause details. Discovery of a service endpoint URL that provides database access to a copy of the rule section as contract or any of its clauses may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the contract of clause. Alternatively the issuer may provide as an attachment at issuance a copy of the referenced contract of clause. In either case after a successful issuance exchange the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced contracts or clauses of all ACDCs involved in the presentation. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essense of percolated discovery.
 
 
-### Schema Section
+## Schema Section
 
 TBD
 
