@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure
 email: sam@samuelsmith.org
-version: 0.1.1
+version: 0.1.2
 ---
 
 [![hackmd-github-sync-badge](https://hackmd.io/Ml5eciWhT2K7mUEIAGO9Xw/badge)](https://hackmd.io/Ml5eciWhT2K7mUEIAGO9Xw)
@@ -87,9 +87,48 @@ An empty `u` field appearing at the top level of an ACDC indicates that the ACDC
 
 When a metadata ACDC is presented only the presenter's signatures are attached not the Issuer's signatures. This precludes the Issuer's signatures from being used as a point of correlation. The issuer's signatures are only disclosed to the verifier after the verifier has agreed to keep them confidential. The verifier is still protected because ultimately its validation will fail if the presenter does not eventually provide verifiable Issuer signatures. But should the verifier not agree to the terms of the disclosure expressed in the rules section the Issuer signatures are not leaked by the presenter.
 
-## Three Party Exploitation Model
+## Unpermissioned Exploitation
+
+The primary goal is to protect against unpermissioned exploitation of data. The primary goal is not privacy per se but privacy may be a mechanism to protect against unpermissioned exploitation of data.
+There are two primary mechanisms we may use to protect against unpermissioned exploitation. These are
+- Chain-link Confidentiality [[41]]
+- Selective Disclosure
+
 
 ### Principle of Least Disclosure
+
+> The system should disclose only the minimum amount of information about a given party needed to facilitate a transaction and no more. [[45]]
+
+
+### Three Party Exploitation Model
+
+First Party = *Discloser* of data.  
+Second Party = *Disclosee* of data received from First Party (*Discloser*).  
+Third Party = *Observer* of data disclosed by First Party (*Discloser*)  to Second Party (*Disclosee*).  
+
+#### Second Party (Disclosee) Exploitation
+- implicit permissioned correlation.
+    - no contractual restrictions on use of disclosed data. 
+- explicit permissioned correlation.
+    - use as permitted by contract
+- explicit unpermissioned correlation with other second parties or third parties.
+    - malicious use in violation of contract
+
+#### Third Party (Observer) Exploitation
+- implicit permissioned correlation. 
+    - no contractual restrictions on use of observed data. 
+- explicit unpermissioned correlation via collusion with second parties.
+    - malicious use in violation of second party contract
+
+### Chain link confidentiality exchange
+- *Discloser* provides non-repudiable *Offer* with verifiable metadata (sufficient partial disclosure) which include any terms or restrictions on use. 
+- *Disclosee* verifies *Offer* against composed schema and metadata adherence to desired data.
+- *Disclosee* provides non-repudiable *Accept* of terms subject compliant disclosure.
+- *Discloser* provides non-repudiable *Disclosure* with sufficient compliant detail.
+- *Disclosee* verifies *Disclosure* using decomposed schema and adherence to offered data.
+
+*Disclosee* may now enagage in permissioned use and carries liability as deterrent against unpermissioned use.
+
 
 
 
@@ -1027,3 +1066,7 @@ An important application of XORA and related techniques are to provide confident
 [44]: Key Exchange.  
 
 [44]: https://libsodium.gitbook.io/doc/key_exchange  
+
+[45]. Identity System Essentials.  
+
+[45]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/Identity-System-Essentials.pdf  
