@@ -16,11 +16,11 @@ The primary purpose of the ACDC protocol is to provide granular provenanced proo
 
 The dictionary definition of ***credential*** is *evidence of authority, status, rights, entitlement to privileges, or the like*.  Appropriately structured ACDCs may be used as credentials because they may provide verifiable evidence of authority. Chained ACDCs may provide delegated credentials.
 
-Chains of ACDCs that merely provide proof-of-authorship (authenticity) of data may be appended to chains of ACDCs that provide proof-of-authority (delegation) to enable verifiable delegated authorized authorship of data. This is a vital facility for authentic data supply chains. Furthermore, any physical supply chain may be measured, monitored, regulated, audited, and/or archived by a data supply chain acting as a digital twin. Therefore ACDCs provide the critical enabling facility for an authentic data economy and by association an authentic real economy.
+Chains of ACDCs that merely provide proof-of-authorship (authenticity) of data may be appended to chains of ACDCs that provide proof-of-authority (delegation) to enable verifiable delegated authorized authorship of data. This is a vital facility for authentic data supply chains. Furthermore, any physical supply chain may be measured, monitored, regulated, audited, and/or archived by a data supply chain acting as a digital twin [57]. Therefore ACDCs provide the critical enabling facility for an authentic data economy and by association an authentic real (twinned) economy.
 
 The ACDC specification (including its selective disclosure mechanisms) leverages two primary cryptographic operations namely digests and digital signatures [[47]][51]]. These operations when used in an ACDC MUST have a security level, cryptographic strength, or entropy of approximately 128 bits [[52]]. (See the appendix for a discussion of cryptographic strength and security)
 
-An important property of high-strength cryptographic digests is that a verifiable cryptographic commitment (such as a digital signature) to the digest of some data is equivalent to a commitment to the data itself. ACDCs leverage this property to enable compact chains of ACDCs that anchor data via digests. The data *contained* in an ACDC may therefore be merely its equivalent anchoring digest. The anchored data is thereby equivalently authenticated or authorized by the chain of ACDCS. 
+An important property of high-strength cryptographic digests is that a verifiable cryptographic commitment (such as a digital signature) to the digest of some data is equivalent to a commitment to the data itself. ACDCs leverage this property to enable compact chains of ACDCs that anchor data via digests. The data *contained* in an ACDC may therefore be merely its equivalent anchoring digest. The anchored data is thereby equivalently authenticated or authorized by the chain of ACDCs. 
 
 
 ## ACDC Fields
@@ -1131,5 +1131,8 @@ The highest level of crypto-graphic security with respect to a cryptographic sec
 
 [56]: https://github.com/WebOfTrust  
 
+[57]. Digital Twin.  
+
+[57]: https://en.wikipedia.org/wiki/Digital_twin  
 
 
