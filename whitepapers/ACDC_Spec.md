@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.1.7
+version: 0.1.8
 notes: non-hackmd version
 
 ---
@@ -59,6 +59,8 @@ Several fields may have for their value either a *field map* or a SAID. A SAID f
 Several ACDC fields may have for their value either a serialized *field map* or the SAID of that *field map*. Each SAID provides a stable universal cryptographically verifiable and agile reference to its encapsulating block (serialized *field map*). 
 
 Recall that given sufficient cryptographic strength including collision resistance [[32]][[42]] a cryptographic commitment (such as a digital signature or cryptographic digest) on a given digest is equivalent to a commitment to the block from which the given digest was derived.  Specifically, a digital signature on a SAID makes a verifiable cryptographic non-repudiable commitment to the SAID that is equivalent to the commitment made by a digital signature on the full serialization of the associated block from which the SAID was derived. This enables reasoning about ACDCs in whole or in part via their SAIDS in a fully interoperable, verifiable, compact, and secure manner. This also supports the well-known bow-tie model of Ricardian Contracts [[40]]. This includes reasoning about the whole ACDC given by its top-level SAID, `d`, field as well as reasoning about any nested sections using their SAIDS. Specifically, at the top level, the value of the `s`, `a`, `e`, and `r` fields may be a SAID instead of a field map. The exploded blocks for each associated SAID may be attached or cached to optimize bandwidth and availability without decreasing security. 
+
+Normally the convention is that the field label for SAID fields is `d`. In the case of the schema section, however, the field label is `$id`. This is defined by JSON Schema as the field label whose field value is the unique identifier of the schema instance. In ACDC we repurpose that field to provide the verifiable SAID of the schema as a SAD. The value of the top-level schema, `s` field may be either the schema itself for the SAID in the schema's top-level `$id` field.
 
 ### UUID (Universally Unique IDentifier) Fields
 
