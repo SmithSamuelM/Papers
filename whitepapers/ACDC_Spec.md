@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.1.8
+version: 0.1.9
 notes: non-hackmd version
 
 ---
@@ -12,7 +12,15 @@ notes: non-hackmd version
 
 An authentic chained data container (ACDC) [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats (JSON, CBOR, MGPK, and CESR) [[53]][[54]][[55]][[16]], compact formats, support for Ricardian contracts [[40]], a well defined security model derived from KERI [[14]][[15]], support for chain-link confidentiality [[41]], and simple selective disclosure mechanisms. 
 
+The primary purpose of the ACDC protocol is to provide granular provenanced proof-of-authorship (authenticity) of their contained data via a tree or chain of linked ACDCs (technically a directed acyclic graph or DAG). Similar to the concept of a chain-of-custody, ACDCs provide a verifiable chain of proof-of-authorship of the contained data. With a little additional syntactic sugar, this primary facility of chained (treed) proof-of-authorship (authenticity) is extensible to a chained (treed) verifiable authentic proof-of-authority (proof-of-authorship-of-authority). A proof-of-authority may be used to provide verifiable authorizations or permissions or rights or credentials. A chained (treed) proof-of-authority enables delegation of authority and delegated authorizations. 
+
+The dictionary definition of ***credential*** is *evidence of authority, status, rights, entitlement to privileges, or the like*.  Appropriately structured ACDCs may be used as credentials because they may provide verifiable evidence of authority. Chained ACDCs may provide delegated credentials.
+
+Chains of ACDCs that merely provide proof-of-authorship (authenticity) of data may be appended to chains of ACDCs that provide proof-of-authority (delegation) to enable verifiable delegated authorized authorship of data. This is a vital facility for authentic data supply chains. Furthermore, any physical supply chain may be measured, monitored, regulated, audited, and/or archived by a data supply chain acting as a digital twin. Therefore ACDCs provide the critical enabling facility for an authentic data economy and by association an authentic real economy.
+
 The ACDC specification (including its selective disclosure mechanisms) leverages two primary cryptographic operations namely digests and digital signatures [[47]][51]]. These operations when used in an ACDC MUST have a security level, cryptographic strength, or entropy of approximately 128 bits [[52]]. (See the appendix for a discussion of cryptographic strength and security)
+
+An important property of high-strength cryptographic digests is that a verifiable cryptographic commitment (such as a digital signature) to the digest of some data is equivalent to a commitment to the data itself. ACDCs leverage this property to enable compact chains of ACDCs that anchor data via digests. The data *contained* in an ACDC may therefore be merely its equivalent anchoring digest. The anchored data is thereby equivalently authenticated or authorized by the chain of ACDCS. 
 
 
 ## ACDC Fields
@@ -22,14 +30,14 @@ An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid con
 
 | Label | Title | Description |
 |:-:|:--|:--|
-|`v`| Version String| Regexable format: ACDCvvSSSShhhhhh_ that provides protocol type, version, serialization type, size and terminator. | 
+|`v`| Version String| Regexable format: ACDCvvSSSShhhhhh_ that provides protocol type, version, serialization type, size, and terminator. | 
 |`d`| Digest (SAID) | Self-referential fully qualified cryptographic digest of enclosing map. |
 |`i`| Identifier (AID)| Semantics determined by the context of its enclosing map. | 
 |`u`| UUID | Random Universally Unique IDentifier as fully qualified high entropy pseudo-random string, a salted nonce. |
 |`ri`| Registry Identifier (AID) | Issuance and/or revocation, transfer, or retraction registry for ACDC. | 
 |`s`| Schema| May be a block or SAID of schema block expressed as JSON schema. | 
 |`a`| Attribute| May be a block or SAID of a block that provides the data being disclosed or presented as either an attestation or authorization. | 
-|`e`| Edge| May be a block or SAID of block that provides chained provenance by connecting this ACDC node to other ACDC nodes via directed edges as a fragment of a distributed labeled property graph.| 
+|`e`| Edge| May be a block or SAID of a block that provides chained provenance by connecting this ACDC node to other ACDC nodes via directed edges as a fragment of a distributed labeled property graph.| 
 |`n`| Node| SAID of another ACDC as terminating point of a directed edge that connects the encapsulating ACDC to the specified ACDC node as a fragment of a distributed labeled property graph.| 
 |`r`| Rule | May be a block or SAID of a block that provides contractual restrictions, terms-of-use, consent, waivers, or a chain-link confidentiality agreement under which disclosure is made. | 
 
@@ -42,7 +50,7 @@ The primary field labels are compact in that they use only one or two characters
 
 The version string, `v`, field MUST be the first field in any top-level ACDC field map. It provides a regular expression target for determining the serialization format and size (character count) of a serialized ACDC. A stream-parser may use the version string to extract and deserialize (deterministically) any serialized ACDC in a stream of serialized ACDCs. Each ACDC in a stream may use a different serialization type. 
 
-The format of the version string is `ACDCvvSSSShhhhhh_`. The first four characters `ACDC` indicate the enclosing field map serialization. The next two characters, `vv` provide the lowercase hexadecimal notation for the major and minor version numbers of the version of the ACDC specification used for the serialization. The first `v` provides the major version number and the second `v` provides the minor version number. For example, `01` indicates major version 0 and minor version 1 or in dotted-decimal notation `0.1`. Likewise `1c` indicates major version 1 and minor version decimal 12 or in dotted-decimal notation `1.12`. The next four characters `SSSS` indicate the serialization type in uppercase. The four supported serialization types are `JSON`, `CBOR`, `MGPK`, and `CESR` for the JSON, CBOR, MessagePack, and CESR serialization standards respectively [[53]][[54]][[55]][[16]]. The next six characters provide in lowercase hexadecimal notation the total number of characters in the serialization of the ACDC . The maximum length of a given ACDC is thereby constrained to be *2<sup>24</sup> = 16,777,216* characters in length. The final character `-` is the version string terminator. This enables later versions of ACDC to change the total version string size and thereby enable versioned changes to the composition of the fields in the version string while preserving deterministic regular expression extractability of the version string. Although a given ACDC serialization type may have field map delimiter or framing code characters that appear before (i.e. prefix) the version string field value in a serialization, the set of possible prefixes is sufficiently constrained by the allowed serialization protocols to guarantee that a regular expression can determine unambiguously the start of any ordered field map serialization that includes the version string as the first field value. Given the version string, a parser may then determine the end of the serialization so that it can extract the full ACDC from the stream without first deserializing it. This enables performant stream parsing and off-loading of ACDC streams that include any or all of the supported serialization types.
+The format of the version string is `ACDCvvSSSShhhhhh_`. The first four characters `ACDC` indicate the enclosing field map serialization. The next two characters, `vv` provide the lowercase hexadecimal notation for the major and minor version numbers of the version of the ACDC specification used for the serialization. The first `v` provides the major version number and the second `v` provides the minor version number. For example, `01` indicates major version 0 and minor version 1 or in dotted-decimal notation `0.1`. Likewise `1c` indicates major version 1 and minor version decimal 12 or in dotted-decimal notation `1.12`. The next four characters `SSSS` indicate the serialization type in uppercase. The four supported serialization types are `JSON`, `CBOR`, `MGPK`, and `CESR` for the JSON, CBOR, MessagePack, and CESR serialization standards respectively [[53]][[54]][[55]][[16]]. The next six characters provide in lowercase hexadecimal notation the total number of characters in the serialization of the ACDC. The maximum length of a given ACDC is thereby constrained to be *2<sup>24</sup> = 16,777,216* characters in length. The final character `-` is the version string terminator. This enables later versions of ACDC to change the total version string size and thereby enable versioned changes to the composition of the fields in the version string while preserving deterministic regular expression extractability of the version string. Although a given ACDC serialization type may have field map delimiter or framing code characters that appear before (i.e. prefix) the version string field value in a serialization, the set of possible prefixes is sufficiently constrained by the allowed serialization protocols to guarantee that a regular expression can determine unambiguously the start of any ordered field map serialization that includes the version string as the first field value. Given the version string, a parser may then determine the end of the serialization so that it can extract the full ACDC from the stream without first deserializing it. This enables performant stream parsing and off-loading of ACDC streams that include any or all of the supported serialization types.
 
 
 ### AID (Autonomic IDentifier) Fields
@@ -569,7 +577,7 @@ Selective disclosure in combination with chain-link confidentiality provides com
 
 ### Selective Disclosure Attribute ACDC
 
-Consider the following uncompacted attribute block:
+Consider the following uncompacted targeted attribute block:
 
 ``` json
 "a":
@@ -592,7 +600,7 @@ Consider the following uncompacted attribute block:
 ]
 ```
 
-The set of attributes are provided as an array of blocks. Each attribute in the set has its own dedicated block. Each block has its own SAID, `d`, field and `u` field in addition to its attribute field or fields. When an attribute block has more than one attribute field then the set of fields in that block are not independently selectively discloseable but MUST be disclosed together as a set. Note the presence of an Issuer attribute block in the example above, thus making that example a targeted selective disclosure ACDC. An untargeted selective disclosure ACDC would be missing the *Issuer* attribute block as follows:
+The set of attributes are provided as an array of blocks. Each attribute in the set has its own dedicated block. Each block has its own SAID, `d`, field and `u` field in addition to its attribute field or fields. When an attribute block has more than one attribute field then the set of fields in that block are not independently selectively discloseable but MUST be disclosed together as a set. Note the presence of an Issuer attribute block in the example above, thus making that example a targeted selective disclosure ACDC. An untargeted uncompacted selective disclosure ACDC would be missing the *Issuer* attribute block as follows:
 
 
 ``` json
@@ -611,8 +619,7 @@ The set of attributes are provided as an array of blocks. Each attribute in the 
 ]
 ```
 
-Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of the contents of its attribute block that effectively blinds the attribute value from discovery given only its SAID and schema. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and its SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
-
+Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of the contents of its attribute block that effectively blinds the attribute value from discovery given only its SAID and schema. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
 
 Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as 
 
@@ -660,26 +667,26 @@ Given the aggregate value *A* appearing as the compact value of the top-level `a
 The actual detailed disclosed attribute block is only disclosed after the disclosee has agreed to the terms of the rules section. Therefore, in the event the potential disclosee declines to accept the terms of disclosure, then a presentation of the compact version of the ACDC and/or the list of attribute digests, *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*. does not provide any point of correlation to any of the attribute values themselves. The attributes of block *j* are hidden by *a<sub>j</sub>* and the list of attribute digests *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]* is hidden by the aggregate *A*.
 
 The disclosee may then verify the disclosure by:
-- computing *a<sub>j</sub>* on the disclosed attributed block details.
-- confirming that the computed *a<sub>j</sub>* appears in the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
-- computing *A* from the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
-- confirming that the computed *A* matches the provided *A* in the provided ACDC.
-- computing the top level SAID, *d*, field of the provided ACDC.
-- confirming presence of issuance seal digest in the Issuer's KEL 
-- confirming that the issuance seal digest in the KEL of the Issuer is bound to the ACDC SAID either directly or indirectly through a TEL registry entry.
-- verifying the provided signature(s) of the Issuee on the provided top level SAID
+* computing *a<sub>j</sub>* on the disclosed attributed block details.
+* confirming that the computed *a<sub>j</sub>* appears in the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
+* computing *A* from the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
+* confirming that the computed *A* matches the *A* of the attribute section, `a`, field value in the provided ACDC.
+* computing the top-level SAID, `d`, field of the provided ACDC.
+* confirming the presence of the issuance seal digest in the Issuer's KEL 
+* confirming that the issuance seal digest in the Issuer's KEL is bound to the ACDC top-level SAID, `d`, field either directly or indirectly through a TEL registry entry.
+* verifying the provided signature(s) of the Issuee on the provided top-level SAID, `d` field value.
 
-The last 3 steps that culminate with verifying the signature(s) requires determining the key state of the Issuer at the time of issuance, this may require additional information and additional verification steps as per the KERI, PTEL, and CESR-Proof protocols.
+The last 3 steps that culminate with verifying the signature(s) require determining the key state of the Issuer at the time of issuance, this may require additional verification steps as per the KERI, PTEL, and CESR-Proof protocols. 
 
-To protect against later forgery given a later compromise of the signing keys of the Issuer , the issuer Must have anchored an issuance proof digest seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case an issuance/revocation registry is used. In the second case an issuance/revocation registry is not used. 
+To protect against later forgery given a later compromise of the signing keys of the Issuer, the issuer MUST anchor an issuance proof digest seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case, an issuance/revocation registry is used. In the second case, an issuance/revocation registry is not used. 
 
-When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the the issuance proof digest seal is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes the SAID of the ACDC. This indirectly binds the ACDC to the issuance proof seal in the Issuer's KEL through the TEL. 
+When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the issuance proof seal digest is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes the SAID of the ACDC. This binds the ACDC to the issuance proof seal in the Issuer's KEL through the TEL entry. 
 
-When the ACDC is not registered using an issuance/revocation TEL then the issuance proof is a digest seal of the SAID of the ACDC itself. 
+When the ACDC is not registered using an issuance/revocation TEL then the issuance proof seal digest is the SAID of the ACDC itself. 
 
-In either case this issuance proof seal makes a verifiable binding between the issuance of the ACDC and the key state of the Issuer at the time of issuance. Because the SAID of the ACDC is also bound to the attribute section SAID, *a* field, then the attribute details of each attribute block are also bound to the key state.
+In either case, this issuance proof seal makes a verifiable binding between the issuance of the ACDC and the key state of the Issuer at the time of issuance. Because the SAID of the ACDC is also bound to the aggregated value *A* provided as the attribute section, `a`, field, value, then the attribute details of each attribute block are also bound to the key state.
 
-The requirement of an anchored issuance proof seal means that forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a forged ACDC. This makes any forgery attempt detectable. Moreover the only way to successfully publish such a seal is in a KEL that has not changed its key state. This makes the forgery attempt detectable as duplicity in any KEL that has changed its key state and recoverble via rotation in any KEL that has not yet changed its key state. To clarify, the issuance proof seal makes any later attempt at forgery using compromised keys detectable. 
+The requirement of an anchored issuance proof seal means that the forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a forged ACDC. This makes any forgery attempt detectable. To elaborate, the only way to successfully publish such a seal is in a subsequent interaction event in a KEL that has not yet changed its key state via a rotation event. Whereas any KEL that has changed its key state via a rotation must be forked before the rotation. This makes the forgery attempt either detectable as duplicity in any KEL that has changed its key state or both detectable and recoverable via rotation in any KEL that has not yet changed its key state. In any event, the issuance proof seal makes any later attempt at forgery using compromised keys detectable. 
 
 A private selective disclosure ACDC provides significant correlation minimization because a presenter may use a metadata ACDC prior to acceptance by the disclosee of the terms of the chain-link confidentiality expressed in the rule section [[41]]. Thus only malicious disclosees who violate chain-link confidentiality may correlate between presentations of a given private selective disclosure ACDC. Nonetheless, they are not able to discover any undisclosed attributes.
 
@@ -704,130 +711,7 @@ In addition to the secret salt, the Issuer provides to the Issuee (recipient) a 
 In addition to the shared salt and ACDC template, the Issuer also provides its signature(s) on its own generated compact version ACDC. The Issuer may also provide references to the anchoring issuance proof seals. Everything else an Issuee (recipient) needs to make a verifiable presentation can be computed at the time of presentation by the Issuee. 
 
 
-## Bulk-Issued Private ACDCs
-
-The purpose of bulk issuance is to more efficiently enable the Issuee to use unique ACDC SAIDs to isolate and thereby minimize correlation across different usage contexts of essentially the same ACDC while allowing public commitments to the ACDC SAIDs. A private ACDC may be issued in bulk as a set. In its basic form, the only difference between each ACDC is the top-level SAID, *d*, and UUID, *u* field values. To elaborate bulk issuance enables the use of un-correlatable copies while minimizing the associated data transfer and the storage requirements. Essentially each copy of a bulk issued ACDC set shares a template that both the Issuer and Issuee use to generate a given ACDC in that set without requiring that the Issuer and Issuee exchange and store a unique copy of each member of the set independently. This minimizes the data transfer and storage requirements for both the Issuer and the Issuee.
-
-An ACDC provenance chain is connected via references to the SAIDs given by the top-level `d` fields, of the ACDCs in that chain.  A given ACDC thereby makes commitments to other ACDCs. Expressed another way, an ACDC may be a node in a directed graph of ACDCs. Each directed edge in that graph emanating from one ACDC includes a reference to the SAID of some other connected ACDC. These edges provide points of correlation to an ACDC via their SAID reference. Private bulk issued ACDCs enable the Issuee to better control the correlatability of presentations using different presentation strategies.  
-
-For example, the Issuee could use one copy of a bulk-issued private ACDC per presentation even to the same verifier. This strategy would consume the most copies. It is essentially a one-time-use ACDC strategy. Alternatively, the Issuee could use the same copy for all presentations to the same verifier and thereby only permit the verifier to correlate between presentations it received directly but not between other verifiers. This limits the consumption to one copy per verifier. In yet another alternative, the Issuee could use one copy for all presentations in a given context with a group of verifiers thereby only permitting correlation among that group. 
-
-In this context, we are talking about permissioned correlation. Any verifier that has received a full presentation of a private ACDC has access to all the fields disclosed by the presentation but the terms of the chain-link confidentiality agreement may forbid sharing those field values outside a given context. Thus an Issuee may use a combination of bulk issued ACDCs with chain-link confidentiality to control permissioned correlation of the contents of an ACDC while allowing the SAID of the ACDC to be more public. The SAID of a private ACDC does not expose the ACDC contents to an un-permissioned third party. Unique SAIDs belonging to bulk issued ACDCs prevent third parties from making a provable correlation between ACDCs via their SAIDs in spite of those SAIDs being public. This does not stop malicious verifiers (as second parties) from colluding and correlating against the disclosed fields but it does limit provable correlation to the information disclosed to a given group of malicious colluding verifiers. To restate unique SAIDs per copy of a set of private bulk issued ACDC prevent un-permissioned third parties from making provable correlations in spite of those SAIDs being public unless they collude with malicious verifiers (second parties).
-
-In some applications, chain-link-confidentiality is insufficient to deter un-permissioned correlation. Some verifiers may be malicious with sufficient malicious incentives to overcome whatever counter incentives the terms of the contractual chain-link confidentiality may impose. In these cases more aggressive technological anti-correlation mechanisms such as bulk issued ACDCs may be useful. To elaborate, in spite of the fact that chain-link confidentiality terms of use may forbid such malicious correlation, making such correlation more difficult technically may provide better protection than chain-link confidentiality alone [[41]].
-
-It is important to note that any group of colluding malicious verifiers may always make statistical correlation between presentations despite technical barriers to cryptographically provable correlation. In general, there is no cryptographic mechanism that precludes statistical correlation among a set of colluding verifiers because they may make cryptographically unverifiable or unprovable assertions about information presented to them that may be proven as likely true using merely statistical correlation techniques.
-
-
-### Basic Bulk Issuance
-
-The amount of data transferred between the Issuer and Issuee (or recipient of an untargeted ACDC) at issuance of a set of bulk issued ACDCs may be minimized by using a hierarchical deterministic derivation function to derive the value of the *u* fields from a shared secret salt [[27]]. 
-
-As described above, there are several ways that the Issuer may securely share that secret salt. Given that Ed25519 key pairs control the Issuer and Issuee  AIDs, (or recipient AID in the case of an untargeted ACDC) corresponding X15519 asymmetric encryption key pairs may be derived from the controlling Ed25519 key pairs. An X25519 public key may be derived from an Ed25519 public key. Likewise, an X25519 private key may be derived from an Ed25519 private key.
-
-In an interactive approach, the Issuer derives a public asymmetric X25519 encryption key from the Issuee's published Ed25519 public key and the Issuee derives a public asymmetric X25519 encryption key from the Issuer's published Ed25519 public key. The two then interact via a Diffie-Hellman (DH) key exchange to create a shared symmetric encryption key [43]][[44]]. The shared symmetric encryption key may be used to encrypt the secret salt or the shared symmetric encryption key itself may be used has high entropy cryptographic material from which the secret salt may be derived. 
-
-In a non-interactive approach, the Issuer derives an X25519 asymmetric public encryption key from the Issuee's (recipient's) public Ed25519 public key. The Issuer then encrypts the secret salt with that public asymmetric encryption key and signs the encryption with the Issuer's private Ed25519 signing key. This is transmitted to the Issuee, who verifies the signature and decrypts the secret salt using the private X25519 decryption key derived from the Issuee's private Ed25519 key. This non-interactive approach is more scalable for AIDs that are controlled with a multi-sig group of signing keys. The Issuer can broadcast to all members of the Issuee's (or recipient's) multi-sig signing group individually asymmetrically encrypted and signed copies of the secret salt.
-
-
-In addition to the secret salt, the Issuer also provides a template of the private ACDC but with empty UUID, `u1` and SAID, `d`, fields for the top-level and each nested block with such fields. Each UUID, `u`, field value is then derived from the shared salt with a deterministic path prefix that indexes both its membership in the bulk issued set and its location in the ACDC. Given the UUID, `u`,field value, the associated *d* field (SAID) may then be derived. Likewise both full and compact versions of the ACDC may then be generated. This is analogous to that described in the section for selective disclosure ACDCs but extended to a set of private ACDCs. An example deterministic derivation path would be to use a string of the copy index such as "0", "1", "2" etc as the initial element in each path. 
-
-
-In general, if *k* is the index of an ordered set of bulk issued private ACDCs of size *M*, the derivation path could start with the string *"k"* where *k* is replaced with the decimal or hexidecimal textual representation of the numeric index *k*. Furthermore, a bulk-issued private ACDC with a private attribute section could use *"k"* for its top level UUID and *"k/0"* for the attribute section UUID. This hierarchical path could be extended to any nested private attribute blocks. This approach can be further extended to enable bulk issued selective disclosure ACDCs by using a similar hierarchical derivation path for the UUID field value in each of the selectively disclosable blocks in the array of attributes. For example, the path *"k/j"* may be used to generate the UUID of attribute index *j* at ACDC index *k*.
-
-In addition to the shared salt and ACDC template, the Issuer also provides a list of signatures of SAIDs, one for each SAID of each copy of the associated compact ACDC.  The Issuee at the time of presentation can generate from the template and the salt the full ACDC along with the non-repudiable signature. The Issuee does not need to store a copy of each bulk issued ACDC, merely the template, the salt, and the list of signatures. 
-
-The Issuer must also anchor in its KEL an issuance proof digest seal of the set of bulk issued ACDCs. The issuance proof digest seal makes a cryptographic commitment to the set of top-level SAIDS belonging to the bulk issued ACDCs. This protects against later forgery of ACDCs in the event the Issuer's signing keys become compromised.  A later attempt at forgery requires a new event or new version of an event that includes a new anchoring issuance proof digest seal that makes a cryptographic commitment the set of new forged ACDC SAIDS. This new anchoring event of the forgery is therefore detectable.
-
-Similarly to the selective disclosure attribute ACDC, the issuance proof digest is aggregated from all members in the bulk issued set of ACDCs. The complication of this approach is that it must be done in such a way as to not enable provable correlation by a third party of the actual SAIDS of the bulk issued set of ACDCs. Therefore the actual SAIDs must not be part of the aggregation but blinded commitments to those SAIDs instead. With blinded commitments, knowledge of any or all members of such a set does not disclose the membership of any SAID unless and until it is unblinded. Recall that the purpose of bulk issuance is to allow the SAID of an ACDC in a bulk issued set to be used publicly without disclosing in an un-permissioned provable way the SAIDs of the other members. 
-
-The basic approach is to compute the aggregation as the digest of the concatenation of a set of blinded digests of bulk issued ACDC SAIDS. Each ACDC SAID is first blinded via concatenation to a UUID (salty nonce) and then the digest of that concatenation is concatenated with the other blinded SAID digests. Finally, a digest of that concatenation provides the aggregate. 
-
-Suppose there are *M* ACDCs in a bulk issued set. Using zero-based indexing for each member of the bulk issued set of ACDCs, such that index *k* satisfies *k ∈ \{0, ..., M-1\}, let *d<sub>k</sub>* denote the top-level SAID of an ACDC in an ordered set of bulk issued ACDCs. Let *v<sub>k</sub>* denote the UUID (salty nonce) used to blind that said. This is not the top-level UUID, *u*, field of the ACDC itself but an entirely different UUID used to blind the ACDC's SAID for the purpose of aggregation. The derivation path for *v<sub>k</sub>* from the shared secret salt is *"k."* where *k* is the index of the ACDC. 
-
-Let *c<sub>k</sub> = v<sub>k</sub> + d<sub>k</sub>* where *+* is the infix concatenation operator denote the blinding concatenation.  
-Then the blinded digest *b<sub>k</sub>* is given by,  
-*b<sub>k</sub> = H(c<sub>k</sub>) = H(v<sub>k</sub> + d<sub>k</sub>)*   
-where *H* is the digest operator. The aggregation of blinded digests, *B*, and is given by,  
-*B = H(C(b<sub>k</sub> for k ∈ \{0, ..., M-1\}))*   
-where *C* is the concatenation operator and  *H* is the digest operator. This aggregation, *B* provides the issuance proof digest. 
-
-This aggregate *B* makes a blinded cryptographic commitment to the ordered elements in the list
-*[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*. A commitment to *B* is a commitment to all the *b<sub>k</sub>* and hence all the d<sub>k</sub>.
-
-Given sufficient collision resistance of the digest operator, the digest of an ordered concatenation is not subject to a birthday attack on its concatenated elements [[30]][[31]][[32]][[42]].
-
-Disclosure of any given *b<sub>k</sub>* element does not expose or disclose any discoverable information detail about either the SAID of its associated ACDC or any other ACDC's SAID. Therefore one may safely disclose the full list of *b<sub>k</sub>* elements without exposing the blinded bulk issued SAID values, d<sub>k</sub>.
-
-Proof of inclusion in the list consists of checking the list for a matching value. A computationally efficient way to do this is to create a hash table or B-tree of the list and then check for inclusion via lookup in the hash table or B-tree.
-
-A proof of inclusion in a bulk set requires disclosure of *v<sub>k</sub>* which is only disclosed after the disclosee has accepted (agreed to) the terms of the rule section. Therefore, in the event the verifier declines to accept the terms of disclosure, then a presentation of the compact version of the ACDC does not provide any point of correlation to any other SAID of any other ACDC from the bulk set in the aggregate *B*. In addition, because the other SAIDs are hidden by each *b<sub>k</sub>* inside `B` even a presentation of *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]* does not provide any point of correlation to the actual bulk issued ACDC without *v<sub>k</sub>*. Indeed if the Discloser uses a metadata version of the ACDC in its offer then even its SAID is not disclosed until after acceptance of terms in the rule section.
-
-A discloser may make a basic provable non-repudiable selective disclosure of a given bulk issued ACDC, at index *k* by providing to the disclosee four items of information (proof of inclusion). These are:
-
-- The ACDC in compact form (at index *k*) with all its fields and having *d<sub>k</sub>* as the value of its top level SAID, *d*, field.
-- The blinding UUID, *v<sub>k</sub>* from which *b<sub>k</sub> = H(v<sub>k</sub> + d<sub>k</sub>)* may be computed.
-- The list of all blinded SAIDs, *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]* that includes *b<sub>k</sub>*.
-- The signature(s), *s<sub>k</sub>*, of the Issuee on the ACDC's top level SAID, *d<sub>k</sub>*, field.
-
-The disclosee may then verifiy the disclosure by:
-- computing *d<sub>j</sub>* on the disclosed compact ACDC.
-- computing *b<sub>k</sub> = H(v<sub>k</sub> + d<sub>k</sub>)*
-- confirming that the computed *b<sub>k</sub>* appears in the provided list *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*.
-- computing *b* from the provided list *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*..
-- confirming the presence of an issuance seal digest in the Issuer's KEL that makes a commitment to *B* either directly or indirectly through a TEL registry entry.
-- verifying the provided signature(s), *s<sub>k</sub>*, of the Issuee on the provided top level SAID, *d<sub>k</sub>*, field.
-
-The last 3 steps that culminate with verifying the signature(s) requires determining the key state of the Issuer at the time of issuance, this may require additional information and additional verification steps as per the KERI, PTEL, and CESR-Proof protocols.
-
-Recall that the goal is to generate an aggregated value that enables an Issuee to selectively disclose one ACDC in a bulk issued set without leaking the other members of the set to un-permissioned parties (second or third).
-
-To protect against later forgery given a later compromise of the signing keys of the Issuer , the issuer Must have anchored an issuance proof digest seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case an issuance/revocation registry is used. In the second case an issuance/revocation registry is not used. 
-
-When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the the issuance proof digest seal is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes *B* as its identifier value. This indirectly binds the aggregater *B* to the issuance proof seal in the Issuer's KEL through the TEL. Recall that the usual purpose of a TEL is to provide a verifiable data registry that enables enables dynamic revocation of an ACDC via a state of the TEL. A verifier checks the state at the time of use to see if the associated ACDC has been revoked. The Issuer is in control of changing the state of the TEL. The registry identifier, *ri*, field is used to indicate the public registry which usually has a TEL entry for each ACDC. Typically the identifier of each TEL entry is the SAID of the TEL's inception event which is a digest of the event contents which include the SAID of the ACDC. In the bulk issuance case however, the TEL's inception event contents include the aggregated value *B* instead of the SAID of a given ACDC. This allows all members of the bulk issued set to share the same TEL without any third party being able to discover which TEL in an un-permissioned provable way. In order to prove which TEL a specific bulk issued ACDC is using the full inclusion proof must be disclosed. 
-
-When the ACDC is not registered using an issuance/revocation TEL then the issuance proof is a digest seal of *B* itself. 
-
-In either case this issuance proof seal makes a verifiable binding between the issuance of all the ACDCs in the bulk issued set and the key state of the Issuer at the time of issuance. 
-
-The requirement of an anchored issuance proof seal means that forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a set of forged bulk issued ACDCs. This makes any forgery attempt detectable. Moreover the only way to successfully publish such a seal is in a KEL that has not changed its key state. This makes the forgery attempt detectable as duplicity in any KEL that has changed its key state and recoverble via rotation in any KEL that has not yet changed its key state. To clarify, the issuance proof seal makes any later attempt at forgery using compromised keys detectable. 
-
-
-#### Inclusion Proof via Merkle Tree
-
-The inclusion proof via aggregated list may be somewhat verbose when there are a very large number of builk issued ACDCs in a given set. A more efficient approach is to create a Merkle tree of the blinded SAID digests, *b<sub>k</sub>* and set the aggregate *B* to be the Merkle tree root [[48]].
-
-The Merkle tree needs to have appropriate second-pre-image attack protection of interior branch nodes [[49]][[50]]. The discloser then only needs to provide a subset of digests from the Merkle tree to prove that a given digest, *b<sub>k</sub>* contributed to the Merkle tree root digest. For a small numbered bulk issued set of ACDCs the added complexity of the Merkle tree approach may not be worth the savings in verbosity.
-
-
-#### Bulk Issuance of Private ACDCs with Unique Issuee AIDs
-
-One potential point of provable but unpermissioned correlation among any group of colluding malicious verifiers may arise when the same Issuee AID is used for presentation to all verifiers in that group. Recall that the contents of private ACDCs are not disclosed except to permissioned verifiers, thus a common Issuee AID would only be point of correlation for a group of colluding malicious verifiers.
-
-One solution to this problem is for the Issuee to use a unique AID for the copy of a bulk issued ACDC presented to each verifier in a given context. This requires that each ACDC copy in bulk issued set use a unique Issuee AID. This would enable the Issuee in a given context to minimize provable correlation by malicious verifiers against any given Issuee AID. In this case, the bulk issuance process may be augmented to include the derivation of a unique AID for each copy of the ACDC by including in the inception event that defines the Issuee's self-addressing AID, a digest seal derived from the shared salt and copy index. This can be re-generated at time of presentation by the Issuee. Each unique Issuee AID would need its own KEL. But generation and publication of the associated KEL can be delayed until the bulk issued ACDC is actually used. This approach completely isolates a given Issuee AID in a given context with respect to the use of a bulk issued private ACDC to even better protect against un-permissioned correlation by malicious verifiers. 
-
-The derivation path for the digest seal is *"k/0."* where *k* is the index of the ACDC. To clarify *"k/0.""* specifies the path to generate the UUID to be included in the inception event that generates the Issuee AID for the ACDC at index *k*.
-
-
-### Independent TEL Bulk-Issued ACDCs
-
-
-Recall that the purpose of using the aggregate *B* for a bulk issued set from which the TEL identifier is derived is to enable a set of bulk issued ACDCs to share a single public TEL that provides dynamic revocation but without enabling un-permissioned correlation to any other members of the bulk set by virtue of the shared TEL. This enables the issuance/revocation/transfer state of all copies of set of bulk issued ACDCs to be provided by a single TEL which minimizes the storage and compute requirements on the TELs registry while providing selective disclosure to prevent un-permissioned correlation via the public TEL.  
-
-However, in some applications where chain-link confidentiality does not sufficiently deter malicious provable correlation by verifiers, an Issuee may benefit from using ACDC with independent TELs but that are still issued in bulk manner. 
-
-In this case, the bulk issuance process must be augmented so that each uniquely identified copy of the ACDC gets its own TEL in the registry. Each verifier of a full presentation of a given copy of the ACDC only receives proof of one uniquely identified TEL and can NOT provably correlate the TEL state state of one presentation to any other presentation because the ACDC SAID, the TEL identifier, and the signature of the issuer on the SAID of a given copy will all be different for each copy. There is no point of provable correlation permissioned or otherwise.
-
-The obvious drawbacks of this approach (independent unique TELs for each private ACDC) is that the size of the registry database increases as a multiple of the number of copies of each ACDC and every time an Issuer must change TEL state of given set of copies it must change the state of multiple TELs in the registry. This imposes both a storage and computation burden on the registry. The primary advantage of this approach, however, is that each copy of a private ACDC has a uniquely identified TEL. This minimizes un-permissioned third party exploitation via provable correlation of TEL identifiers even with colluding verifiers. They are limited to statistical correlation techniques. 
-
-In this case the set of private ACDCs may or may not share the same Issuee AID because for all intents and purposes each copy appears to be a different ACDC even when issued to the same Issuee. Nonetheless, using unique Issuee AIDs may further reduce correlation by malicious verifiers beyond using independent TELs.
-
-To summarize the main benefit of this approach, in spite of its storage and compute burden is that in some applications chain-link confidentialty does not sufficiently deter unpermission malicious collusion and so completely independent ACDCs must be used.
-
-
-
-
-### Non-compact Selctive Disclosure Version
+#### Non-compact Selective Disclosure Informative Example
 
 
 ``` json
@@ -854,10 +738,6 @@ To summarize the main benefit of this approach, in spite of its storage and comp
       "d": "E9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PYgveY4-",
       "u": "0AghkDaG7OY1wjaDAE0qHcgN",
       "name": "Jane Doe"
-    },
-    {
-      "d": "ErzwLIr9Bf7V_NHwY1lkFrn9y2PYgveY4-9XgOcLxUde",
-      "u": "0AOY1wjaDAE0qHcgNghkDaG7"
     }
   ]
   "e": 
@@ -887,6 +767,128 @@ To summarize the main benefit of this approach, in spite of its storage and comp
 }
 
 ```
+
+
+
+
+## Bulk-Issued Private ACDCs
+
+The purpose of bulk issuance is to more efficiently enable the Issuee to use unique ACDC SAIDs to isolate and thereby minimize correlation across different usage contexts of essentially the same ACDC while allowing public commitments to the ACDC SAIDs. A private ACDC may be issued in bulk as a set. In its basic form, the only difference between each ACDC is the top-level SAID, *d*, and UUID, *u* field values. To elaborate bulk issuance enables the use of un-correlatable copies while minimizing the associated data transfer and the storage requirements. Essentially each copy of a bulk issued ACDC set shares a template that both the Issuer and Issuee use to generate a given ACDC in that set without requiring that the Issuer and Issuee exchange and store a unique copy of each member of the set independently. This minimizes the data transfer and storage requirements for both the Issuer and the Issuee.
+
+An ACDC provenance chain is connected via references to the SAIDs given by the top-level `d` fields, of the ACDCs in that chain.  A given ACDC thereby makes commitments to other ACDCs. Expressed another way, an ACDC may be a node in a directed graph of ACDCs. Each directed edge in that graph emanating from one ACDC includes a reference to the SAID of some other connected ACDC. These edges provide points of correlation to an ACDC via their SAID reference. Private bulk issued ACDCs enable the Issuee to better control the correlatability of presentations using different presentation strategies.  
+
+For example, the Issuee could use one copy of a bulk-issued private ACDC per presentation even to the same verifier. This strategy would consume the most copies. It is essentially a one-time-use ACDC strategy. Alternatively, the Issuee could use the same copy for all presentations to the same verifier and thereby only permit the verifier to correlate between presentations it received directly but not between other verifiers. This limits the consumption to one copy per verifier. In yet another alternative, the Issuee could use one copy for all presentations in a given context with a group of verifiers thereby only permitting correlation among that group. 
+
+In this context, we are talking about permissioned correlation. Any verifier that has received a full presentation of a private ACDC has access to all the fields disclosed by the presentation but the terms of the chain-link confidentiality agreement may forbid sharing those field values outside a given context. Thus an Issuee may use a combination of bulk issued ACDCs with chain-link confidentiality to control permissioned correlation of the contents of an ACDC while allowing the SAID of the ACDC to be more public. The SAID of a private ACDC does not expose the ACDC contents to an un-permissioned third party. Unique SAIDs belonging to bulk issued ACDCs prevent third parties from making a provable correlation between ACDCs via their SAIDs in spite of those SAIDs being public. This does not stop malicious verifiers (as second parties) from colluding and correlating against the disclosed fields but it does limit provable correlation to the information disclosed to a given group of malicious colluding verifiers. To restate unique SAIDs per copy of a set of private bulk issued ACDC prevent un-permissioned third parties from making provable correlations in spite of those SAIDs being public unless they collude with malicious verifiers (second parties).
+
+In some applications, chain-link-confidentiality is insufficient to deter un-permissioned correlation. Some verifiers may be malicious with sufficient malicious incentives to overcome whatever counter incentives the terms of the contractual chain-link confidentiality may impose. In these cases more aggressive technological anti-correlation mechanisms such as bulk issued ACDCs may be useful. To elaborate, in spite of the fact that chain-link confidentiality terms of use may forbid such malicious correlation, making such correlation more difficult technically may provide better protection than chain-link confidentiality alone [[41]].
+
+It is important to note that any group of colluding malicious verifiers may always make statistical correlation between presentations despite technical barriers to cryptographically provable correlation. In general, there is no cryptographic mechanism that precludes statistical correlation among a set of colluding verifiers because they may make cryptographically unverifiable or unprovable assertions about information presented to them that may be proven as likely true using merely statistical correlation techniques.
+
+
+### Basic Bulk Issuance
+
+The amount of data transferred between the Issuer and Issuee (or recipient of an untargeted ACDC) at issuance of a set of bulk issued ACDCs may be minimized by using a hierarchical deterministic derivation function to derive the value of the *u* fields from a shared secret salt [[27]]. 
+
+As described above, there are several ways that the Issuer may securely share that secret salt. Given that Ed25519 key pairs control the Issuer and Issuee  AIDs, (or recipient AID in the case of an untargeted ACDC) corresponding X15519 asymmetric encryption key pairs may be derived from the controlling Ed25519 key pairs. An X25519 public key may be derived from an Ed25519 public key. Likewise, an X25519 private key may be derived from an Ed25519 private key.
+
+In an interactive approach, the Issuer derives a public asymmetric X25519 encryption key from the Issuee's published Ed25519 public key and the Issuee derives a public asymmetric X25519 encryption key from the Issuer's published Ed25519 public key. The two then interact via a Diffie-Hellman (DH) key exchange to create a shared symmetric encryption key [43]][[44]]. The shared symmetric encryption key may be used to encrypt the secret salt or the shared symmetric encryption key itself may be used has high entropy cryptographic material from which the secret salt may be derived. 
+
+In a non-interactive approach, the Issuer derives an X25519 asymmetric public encryption key from the Issuee's (recipient's) public Ed25519 public key. The Issuer then encrypts the secret salt with that public asymmetric encryption key and signs the encryption with the Issuer's private Ed25519 signing key. This is transmitted to the Issuee, who verifies the signature and decrypts the secret salt using the private X25519 decryption key derived from the Issuee's private Ed25519 key. This non-interactive approach is more scalable for AIDs that are controlled with a multi-sig group of signing keys. The Issuer can broadcast to all members of the Issuee's (or recipient's) multi-sig signing group individually asymmetrically encrypted and signed copies of the secret salt.
+
+In addition to the secret salt, the Issuer also provides a template of the private ACDC but with empty UUID, `u`, and SAID, `d`, fields at the top-level of each nested block with such fields. Each UUID, `u`, field value is then derived from the shared salt with a deterministic path prefix that indexes both its membership in the bulk issued set and its location in the ACDC. Given the UUID, `u`, field value, the associated SAID, `d`, field value may then be derived. Likewise, both full and compact versions of the ACDC may then be generated. This generation is analogous to that described in the section for selective disclosure ACDCs but extended to a set of private ACDCs. 
+
+The initial element in each deterministic derivation path is the string of the copy index *k*, such as "0", "1", "2" etc.  Specifically, if *k* is the index of an ordered set of bulk issued private ACDCs of size *M*, the derivation path starts with the string *"k"* where *k* is replaced with the decimal or hexadecimal textual representation of the numeric index *k*. Furthermore, a bulk-issued private ACDC with a private attribute section uses *"k"* to derive its top-level UUID and *"k/0"* to derive its attribute section UUID. This hierarchical path is extended to any nested private attribute blocks. This approach is further extended to enable bulk issued selective disclosure ACDCs by using a similar hierarchical derivation path for the UUID field value in each of the selectively disclosable blocks in the array of attributes. For example, the path *"k/j"* is used to generate the UUID of attribute index *j* at ACDC index *k*.
+
+In addition to the shared salt and ACDC template, the Issuer also provides a list of signatures of SAIDs, one for each SAID of each copy of the associated compact ACDC.  The Issuee at the time of presentation can generate each full ACDC from the template, the salt, and its index *k*. The Issuee does not need to store a copy of each bulk issued ACDC, merely the template, the salt, and the list of signatures. 
+
+The Issuer must also anchor in its KEL an issuance proof digest seal of the set of bulk issued ACDCs. The issuance proof digest seal makes a cryptographic commitment to the set of top-level SAIDS belonging to the bulk issued ACDCs. This protects against later forgery of ACDCs in the event the Issuer's signing keys become compromised.  A later attempt at forgery requires a new event or new version of an event that includes a new anchoring issuance proof digest seal that makes a cryptographic commitment to the set of newly forged ACDC SAIDS. This new anchoring event of the forgery is therefore detectable.
+
+Similarly, to the process of generating a selective disclosure attribute ACDC, the issuance proof digest is aggregated from all members in the bulk issued set of ACDCs. The complication of this approach is that it must be done in such a way as to not enable provable correlation by a third party of the actual SAIDS of the bulk issued set of ACDCs. Therefore the actual SAIDs must not be part of the aggregation but blinded commitments to those SAIDs instead. With blinded commitments, knowledge of any or all members of such a set does not disclose the membership of any SAID unless and until it is unblinded. Recall that the purpose of bulk issuance is to allow the SAID of an ACDC in a bulk issued set to be used publicly without correlating it in an un-permissioned provable way to the SAIDs of the other members. 
+
+The basic approach is to compute the aggregation as the digest of the concatenation of a set of blinded digests of bulk issued ACDC SAIDS. Each ACDC SAID is first blinded via concatenation to a UUID (salty nonce) and then the digest of that concatenation is concatenated with the other blinded SAID digests. Finally, a digest of that concatenation provides the aggregate. 
+
+Suppose there are *M* ACDCs in a bulk issued set. Using zero-based indexing for each member of the bulk issued set of ACDCs, such that index *k* satisfies *k ∈ \{0, ..., M-1\}, let *d<sub>k</sub>* denote the top-level SAID of an ACDC in an ordered set of bulk issued ACDCs. Let *v<sub>k</sub>* denote the UUID (salty nonce) used to blind that said. This is not the top-level UUID, `u`, field of the ACDC itself but an entirely different UUID used to blind the ACDC's SAID for the purpose of aggregation. The derivation path for *v<sub>k</sub>* from the shared secret salt is *"k."* where *k* is the index of the ACDC. 
+
+Let *c<sub>k</sub> = v<sub>k</sub> + d<sub>k</sub>*, where *+* is the infix concatenation operator, denote the blinding concatenation.  
+Then the blinded digest, *b<sub>k</sub>*, is given by,  
+*b<sub>k</sub> = H(c<sub>k</sub>) = H(v<sub>k</sub> + d<sub>k</sub>)*,   
+where *H* is the digest operator. The aggregation of blinded digests, *B*, is given by,  
+*B = H(C(b<sub>k</sub> for k ∈ \{0, ..., M-1\}))*,   
+where *C* is the concatenation operator and *H* is the digest operator. This aggregation, *B*, provides the issuance proof digest. 
+
+The aggregate, *B*, makes a blinded cryptographic commitment to the ordered elements in the list
+*[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*. A commitment to *B* is a commitment to all the *b<sub>k</sub>* and hence all the d<sub>k</sub>.
+
+Given sufficient collision resistance of the digest operator, the digest of an ordered concatenation is not subject to a birthday attack on its concatenated elements [[30]][[31]][[32]][[42]].
+
+Disclosure of any given *b<sub>k</sub>* element does not expose or disclose any discoverable information detail about either the SAID of its associated ACDC or any other ACDC's SAID. Therefore one may safely disclose the full list of *b<sub>k</sub>* elements without exposing the blinded bulk issued SAID values, d<sub>k</sub>.
+
+Proof of inclusion in the list consists of checking the list for a matching value. A computationally efficient way to do this is to create a hash table or B-tree of the list and then check for inclusion via lookup in the hash table or B-tree.
+
+A proof of inclusion in a bulk set requires disclosure of *v<sub>k</sub>* which is only disclosed after the disclosee has accepted (agreed to) the terms of the rule section. Therefore, in the event the verifier declines to accept the terms of disclosure, then a presentation of the compact version of the ACDC does not provide any point of correlation to any other SAID of any other ACDC from the bulk set in the aggregate *B*. In addition, because the other SAIDs are hidden by each *b<sub>k</sub>* inside *B* even a presentation of *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]* does not provide any point of correlation to the actual bulk issued ACDC without *v<sub>k</sub>*. Indeed if the Discloser uses a metadata version of the ACDC in its offer then even its SAID is not disclosed until after acceptance of terms in the rule section.
+
+A discloser may make a basic provable non-repudiable selective disclosure of a given bulk issued ACDC, at index *k* by providing to the disclosee four items of information (proof of inclusion). These are as follows:
+
+- The ACDC in compact form (at index *k*) with all its fields and having *d<sub>k</sub>* as the value of its top level SAID, *d*, field.
+- The blinding UUID, *v<sub>k</sub>* from which *b<sub>k</sub> = H(v<sub>k</sub> + d<sub>k</sub>)* may be computed.
+- The list of all blinded SAIDs, *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]* that includes *b<sub>k</sub>*.
+- The signature(s), *s<sub>k</sub>*, of the Issuee on the ACDC's top level SAID, *d<sub>k</sub>*, field.
+
+The disclosee may then verifiy the disclosure by:
+- computing *d<sub>j</sub>* on the disclosed compact ACDC.
+- computing *b<sub>k</sub> = H(v<sub>k</sub> + d<sub>k</sub>)*
+- confirming that the computed *b<sub>k</sub>* appears in the provided list *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*.
+- computing *b* from the provided list *[b<sub>0</sub>, b<sub>1</sub>, ...., b<sub>M-1</sub>]*..
+- confirming the presence of an issuance seal digest in the Issuer's KEL that makes a commitment to *B* either directly or indirectly through a TEL registry entry.
+- verifying the provided signature(s), *s<sub>k</sub>*, of the Issuee on the provided top level SAID, *d<sub>k</sub>*, field.
+
+The last 3 steps that culminate with verifying the signature(s) require determining the key state of the Issuer at the time of issuance, this may require additional verification steps as per the KERI, PTEL, and CESR-Proof protocols.
+
+Recall that the goal is to generate an aggregated value that enables an Issuee to selectively disclose one ACDC in a bulk issued set without leaking the other members of the set to un-permissioned parties (second or third).
+
+To protect against later forgery given a later compromise of the signing keys of the Issuer, the issuer MUST anchor an issuance proof seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case, an issuance/revocation registry is used. In the second case, an issuance/revocation registry is not used. 
+
+When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the issuance proof seal digest is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes *B* as its identifier value. This binds the aggregate, *B*, to the issuance proof seal in the Issuer's KEL through the TEL. Recall that the usual purpose of a TEL is to provide a verifiable data registry that enables dynamic revocation of an ACDC via a state of the TEL. A verifier checks the state at the time of use to see if the associated ACDC has been revoked. The Issuer controls the state of the TEL. The registry identifier, `ri`, field is used to identify the public registry which usually has a TEL entry for each ACDC. Typically the identifier of each TEL entry is the SAID of the TEL's inception event which is a digest of the event contents which include the SAID of the ACDC. In the bulk issuance case, however, the TEL's inception event contents include the aggregate, *B*, instead of the SAID of a given ACDC. This allows all members of the bulk issued set to share the same TEL without any third party being able to discover which TEL in an un-permissioned provable way. In order to prove which TEL a specific bulk issued ACDC belongs, the full inclusion proof must be disclosed. 
+
+When the ACDC is not registered using an issuance/revocation TEL then the issuance proof seal digest is the aggregate, *B*, itself. 
+
+In either case, this issuance proof seal makes a verifiable binding between the issuance of all the ACDCs in the bulk issued set and the key state of the Issuer at the time of issuance. 
+
+The requirement of an anchored issuance proof seal means that the forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a set of forged bulk issued ACDCs. This makes any forgery attempt detectable. To elaborate, the only way to successfully publish such a seal is in a subsequent interaction event in a KEL that has not yet changed its key state via a rotation event. Whereas any KEL that has changed its key state via a rotation must be forked before the rotation. This makes the forgery attempt either detectable as duplicity in any KEL that has changed its key state or both detectable and recoverable via rotation in any KEL that has not yet changed its key state. In any event, the issuance proof seal makes any later attempt at forgery using compromised keys detectable. 
+
+
+
+#### Inclusion Proof via Merkle Tree
+
+The inclusion proof via aggregated list may be somewhat verbose when there are a very large number of bulk issued ACDCs in a given set. A more efficient approach is to create a Merkle tree of the blinded SAID digests, *b<sub>k</sub>* and set the aggregate *B* to be the Merkle tree root [[48]].
+
+The Merkle tree needs to have appropriate second-pre-image attack protection of interior branch nodes [[49]][[50]]. The discloser then only needs to provide a subset of digests from the Merkle tree to prove that a given digest, *b<sub>k</sub>* contributed to the Merkle tree root digest. For a small numbered bulk issued set of ACDCs, the added complexity of the Merkle tree approach may not be worth the savings in verbosity.
+
+
+#### Bulk Issuance of Private ACDCs with Unique Issuee AIDs
+
+One potential point of provable but unpermissioned correlation among any group of colluding malicious verifiers may arise when the same Issuee AID is used for presentation to all verifiers in that group. Recall that the contents of private ACDCs are not disclosed except to permissioned verifiers, thus a common Issuee AID would only be a point of correlation for a group of colluding malicious verifiers.
+
+One solution to this problem is for the Issuee to use a unique AID for the copy of a bulk issued ACDC presented to each verifier in a given context. This requires that each ACDC copy in bulk issued set use a unique Issuee AID. This would enable the Issuee in a given context to minimize provable correlation by malicious verifiers against any given Issuee AID. In this case, the bulk issuance process may be augmented to include the derivation of a unique AID for each copy of the ACDC by including in the inception event that defines the Issuee's self-addressing AID, a digest seal derived from the shared salt and copy index. This can be re-generated at time of presentation by the Issuee. Each unique Issuee AID would need its own KEL. But generation and publication of the associated KEL can be delayed until the bulk issued ACDC is actually used. This approach completely isolates a given Issuee AID in a given context with respect to the use of a bulk-issued private ACDC to even better protect against un-permissioned correlation by malicious verifiers. 
+
+The derivation path for the digest seal is *"k/0."* where *k* is the index of the ACDC. To clarify *"k/0.""* specifies the path to generate the UUID to be included in the inception event that generates the Issuee AID for the ACDC at index *k*.
+
+
+### Independent TEL Bulk-Issued ACDCs
+
+
+Recall that the purpose of using the aggregate *B* for a bulk issued set from which the TEL identifier is derived is to enable a set of bulk issued ACDCs to share a single public TEL that provides dynamic revocation but without enabling un-permissioned correlation to any other members of the bulk set by virtue of the shared TEL. This enables the issuance/revocation/transfer state of all copies of set of bulk issued ACDCs to be provided by a single TEL which minimizes the storage and compute requirements on the TELs registry while providing selective disclosure to prevent un-permissioned correlation via the public TEL.  
+
+However, in some applications where chain-link confidentiality does not sufficiently deter malicious provable correlation by verifiers, an Issuee may benefit from using ACDC with independent TELs but that are still bulk-issued. 
+
+In this case, the bulk issuance process must be augmented so that each uniquely identified copy of the ACDC gets its own TEL in the registry. Each verifier of a full presentation of a given copy of the ACDC only receives proof of one uniquely identified TEL and can NOT provably correlate the TEL state of one presentation to any other presentation because the ACDC SAID, the TEL identifier, and the signature of the issuer on the SAID of a given copy will all be different for each copy. There is no point of provable correlation permissioned or otherwise.
+
+The obvious drawbacks of this approach (independent unique TELs for each private ACDC) are that the size of the registry database increases as a multiple of the number of copies of each ACDC and every time an Issuer must change the TEL state of a given set of copies it must change the state of multiple TELs in the registry. This imposes both a storage and computation burden on the registry. The primary advantage of this approach, however, is that each copy of a private ACDC has a uniquely identified TEL. This minimizes un-permissioned third-party exploitation via provable correlation of TEL identifiers even with colluding verifiers. They are limited to statistical correlation techniques. 
+
+In this case the set of private ACDCs may or may not share the same Issuee AID because for all intents and purposes each copy appears to be a different ACDC even when issued to the same Issuee. Nonetheless, using unique Issuee AIDs may further reduce correlation by malicious verifiers beyond using independent TELs.
+
+To summarize the main benefit of this approach, in spite of its storage and compute burden, is that in some applications chain-link confidentiality does not sufficiently deter unpermissioned malicious collusion. Therefore completely independent bulk-issued ACDCs must be used.
 
 
 
