@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.0
+version: 0.2.1
 notes: non-hackmd version
 
 ---
@@ -100,12 +100,13 @@ To prevent both forms of attack, all schema must be static, i.e. schema MUST be 
 
 To elaborate, the serialization of a static schema may be self-contained. A compact commitment to the detailed static schema may be provided by its SAID. In other words, the SAID of a static schema is a verifiable cryptographic identifier for its SAD. Therefore all ACDC compliant schema must be SADs. In other words, they MUST therefore be *SAIDified*. The associated detailed static schema (uncompacted SAD) is cryptographically bound and verifiable to its SAID. 
 
+The JSON Schema specification allows complex schema references that may include non-local URI references [[46]]. These references may use the `$id` or `$ref` keywords. A relative URI reference provided by a `$ref` keyword is resolved against the *Base URI* provided by the top-level `$id` field. When this top-level *Base URI* is non-local then all relative `$ref` references are therefore also non-local. A non-local URI reference provided by a `$ref` keyword may be resolved without reference to the *Base URI*. 
 
-The JSON Schema specification allows complex schema references that may include non-relative URI references [[46]]. In general, schema indicated by non-relative URI references MUST NOT be used because they are not cryptographically end-verifiable. The value of the underlying schema may change (mutate). To restate, a bare non-relative URI schema resource is not end-verifiable to its URI reference because there is no cryptographic binding between URI and resource. 
+In general, schema indicated by non-local URI references (`$id` or `$ref`) MUST NOT be used because they are not cryptographically end-verifiable. The value of the underlying schema resource so referenced may change (mutate). To restate, a non-local URI schema resource is not end-verifiable to its URI reference because there is no cryptographic binding between URI and resource. 
 
-This does not preclude the use of remotely cached SAIDified schema resources because those resources are end-verifiable to their embedded SAID references. Said another way, a SAIDified schema resource is itself a SAD (Self-Address Data) referenced by its SAID. A URI that includes a SAID may be used to securely reference a remote or distributed SAIDified schema resource because that resource is fixed (immutable, nonmalleable) and verifiable to both the SAID in the reference and the embedded SAID in the resource so referenced. To elaborate, a URI reference that includes a cryptographic commitment such as a SAID is verifiable to the underlying resource when that resource is a SAD. This applies to JSON Schema as a whole as well as bundled sub-schema resources.
+This does not preclude the use of remotely cached SAIDified schema resources because those resources are end-verifiable to their embedded SAID references. Said another way, a SAIDified schema resource is itself a SAD (Self-Address Data) referenced by its SAID. A URI that includes a SAID may be used to securely reference a remote or distributed SAIDified schema resource because that resource is fixed (immutable, nonmalleable) and verifiable to both the SAID in the reference and the embedded SAID in the resource so referenced. To elaborate, a non-local URI reference that includes an embedded cryptographic commitment such as a SAID is verifiable to the underlying resource when that resource is a SAD. This applies to JSON Schema as a whole as well as bundled sub-schema resources.
 
-The `did:` URI scheme may be used safely to prefix non-local URI references that act to namespace SAIDs expressed as DID URLs. For example, `did:keri` may be used in a non-local reference that may be dereferenced safely as ACDC JSON Schema determined by the JSON Schema mime-type of `schema+json`. Likewise the `sad:` URI scheme may be used to directly indicate a URI resource that safely returns a verifiable SAD. For example `sad:SAID` where *SAID* is replaced with the actual SAID of SAD would provide a verifiable non-local reference to JSON Schema as indicated by the mime-type of `schema+json`. Furthermore, bare SAIDs may be used to refer to some other SAIDified schema as long as the JSON schema validator is augmented to support bare SAID references. Finally, the IETF KERI OOBI internet draft specification provides a URL syntax that references a SAD resource by its SAID at the service endpoint indicated by that URL[56]. Such remote OOBI URLs are also safe because the provided SAD resource is verifiable against the SAID in the OOBI URL. Therefore OOBI URLs are also acceptable non-local URI references for JSON Schema.
+The `did:` URI scheme may be used safely to prefix non-local URI references that act to namespace SAIDs expressed as DID URLs. For example, `did:keri` may be used in a non-local reference that may be dereferenced safely as ACDC JSON Schema determined by the JSON Schema mime-type of `schema+json`. Likewise the `sad:` URI scheme may be used to directly indicate a URI resource that safely returns a verifiable SAD. For example `sad:SAID` where *SAID* is replaced with the actual SAID of SAD would provide a verifiable non-local reference to JSON Schema as indicated by the mime-type of `schema+json`. Furthermore, bare SAIDs may be used to refer to some other SAIDified schema as long as the JSON schema validator supports bare SAID references. By default, many JSON schema validators support bare strings (non-URIs) for the *Base URI* provided by the top-level `$id` field value. Finally, the IETF KERI OOBI internet draft specification provides a URL syntax that references a SAD resource by its SAID at the service endpoint indicated by that URL[56]. Such remote OOBI URLs are also safe because the provided SAD resource is verifiable against the SAID in the OOBI URL. Therefore OOBI URLs are also acceptable non-local URI references for JSON Schema.
 
 To clarify, ACDCs MUST NOT use complex JSON Schema references which allow *dynamically generated *schema resources to be obtained from online JSON Schema Libraries [[60]]. The latter approach may be difficult or impossible to secure because a cryptographic commitment to the base schema that includes complex schema (non-relative URI-based) references only commits to the non-relative URI reference and not to the actual schema resource which may change (is dynamic, mutable, malleable). To restate, this approach is insecure because a cryptographic commitment to a complex (non-relative URI-based) reference is NOT equivalent to a commitment to the detailed associated schema resource so referenced if it may change.
 
@@ -131,36 +132,43 @@ At the top level, the presence (absence), of the UUID, `u`, field produces two v
 
 ### Public ACDC
 
-Given that there is no `u` field at the top level of an ACDC, then knowledge of both the SAID, `d`, field at the top level of an ACDC and the schema of the ACDC may enable discovery of the remaining contents of the ACDC via a rainbow table attack [[28]][[29]]. Therefore the `d` field at the top level, although, a cryptographic digest, does not securely blind the contents of the ACDC given knowledge of the schema.  Therefore any cryptographic commitments to that `d` field provide a fixed point of correlation potentially to the ACDC field values themselves in spite of non-disclosure of those field values. Thus an ACDC without a `u` field must be considered a public (non-confidential) ACDC.
+Given that there is no top-level UUID, `u`, field in an ACDC, then knowledge of both the schema of the ACDC and the top-level SAID, `d`, field  may enable the discovery of the remaining contents of the ACDC via a rainbow table attack [[28]][[29]]. Therefore, although the top-level, `d`, field is a cryptographic digest, it may not securely blind the contents of the ACDC when knowledge of the schema is available.  The field values may be discoverable. Consequently, any cryptographic commitment to the top-level SAID, `d`, field may provide a fixed point of correlation potentially to the ACDC field values themselves in spite of non-disclosure of those field values. Thus an ACDC without a top-level UUID, `u`, field must be considered a ***public*** (non-confidential) ACDC.
 
 ### Private ACDC
 
-Given that there is `u` field at the top level of an ACDC whose value has sufficient cryptographic entropy, then the SAID, `d`, field at the top level of an ACDC  may provide a secure cryptographic digest of the contents of the ACDC [[47]]. An adversary when given both the schema of the ACDC and the  SAID, `d` field, is not able to discover the remaining contents of the ACDC in a computationally feasible manner such as a rainbow table attack[[28]][[29]]. Therefore the `u` field (UUID) may be used to securely blind the contents of the ACDC notwithstanding knowledge of the schema and `d` field (SAID).  Moreover, a cryptographic commitment to that SAID, `d`, field (SAID) does not provide a fixed point of correlation to the other ACDC field values themselves unless and until there has been a disclosure of those field values. Thus an ACDC with a sufficiently high entropy top-level UUID, `u`, field may be considered a private or (confidential) ACDC. This allows a commitment to the SAID of a private ACDC to be made prior to the disclosure of the ACDC itself. It allows a set of multiple copies of essentially the same ACDC that differ only in their SAIDs to be used publicly in different contexts but without provable public correlation of their contents including their use of a shared registry. These are described in more detail in the section on bulk-issued selective disclosure.
+Given a top-level UUID, `u`, field, whose value has sufficient cryptographic entropy, then the top-level SAID, `d`, field of an ACDC  may provide a secure cryptographic digest that blinds the contents of the ACDC [[47]]. An adversary when given both the schema of the ACDC and the top-level SAID, `d`, field, is not able to discover the remaining contents of the ACDC in a computationally feasible manner such as through a rainbow table attack [[28]][[29]]. Therefore the top-level, UUID, `u`, field may be used to securely blind the contents of the ACDC notwithstanding knowledge of the schema and top-level, SAID, `d`, field.  Moreover, a cryptographic commitment to that that top-level SAID, `d`, field does not provide a fixed point of correlation to the other ACDC field values themselves unless and until there has been a disclosure of those field values. Thus an ACDC with a sufficiently high entropy top-level UUID, `u`, field may be considered a ***private*** (confidential) ACDC. enables a verifiable commitment to the top-level SAID of a private ACDC to be made prior to the disclosure of the details of the ACDC itself without leaking those contents. 
+
+This provides the basis for the bulk-issued selective disclosure mechanism described later in the section on selective disclosure.  For example, private ACDCs enable a set of multiple copies of essentially the same ACDC that differ only in their SAIDs to be used publicly in different contexts but without provable public correlation of their contents including their use of a shared registry. 
 
 ### Metadata ACDC
 
-An empty, UUID, `u`, field appearing at the top level of an ACDC indicates that the ACDC is a metadata ACDC. The purpose of the ACDC is to provide a mechanism for a presenter to make cryptographic commitments to the metadata of a yet to be disclosed private ACDC without providing any point of correlation to the actual SAID, `d`, field of that yet to be disclosed ACDC. The SAID, `d`, field, of the metadata ACDC, is cryptographically derived from an ACDC with an empty UUID, `u`, field so its value will necessarily be different from that of an ACDC with a high entropy UUID, `u`, field value. Nonetheless, the presenter may make a non-repudiable cryptographic commitment to the metadata SAID in order to initiate a chain-link confidentiality exchange without leaking correlation to the actual ACDC to be disclosed [[41]]. A verifier may validate the other metadata information in the metadata ACDC before agreeing to any restrictions imposed by the future disclosure. The metadata includes the issuer, the schema, the provenance edges, and the rules (terms-of-use). The attribute section, `a`, field value of a metadata ACDC may be empty so that its value is not correlatable across presentations. Should the verifier refuse to agree to the rules then the presenter has not leaked the SAID of the actual ACDC or the SAID of the attribute block that would have been presented. The verifier is able to verify the issuer, the schema, the provenanced edges, and rules prior to agreeing to the rules.  Similarly, an Issuer may use a metadata ACDC to initiate a contractual waiver expressed in the rule section with an Issuee prior to issuance. Should the Issuee refuse the waiver then the Issuer has not leaked the SAID of the actual ACDC that would have been issued nor the SAID of its attributes block.
+An empty, top-lever UUID, `u`, field appearing in an ACDC indicates that the ACDC is a ***metadata*** ACDC. The purpose of a *metadata* ACDC is to provide a mechanism for a *Discloser* to make cryptographic commitments to the metadata of a yet to be disclosed private ACDC without providing any point of correlation to the actual top-level SAID, `d`, field of that yet to be disclosed ACDC. The top-level SAID, `d`, field, of the metadata ACDC, is cryptographically derived from an ACDC with an empty top-level UUID, `u`, field so its value will necessarily be different from that of an ACDC with a high entropy top-level UUID, `u`, field value. Nonetheless, the *Discloser* may make a non-repudiable cryptographic commitment to the metadata SAID in order to initiate a chain-link confidentiality exchange without leaking correlation to the actual ACDC to be disclosed [[41]]. A *Disclosee* (verifier) may validate the other metadata information in the metadata ACDC before agreeing to any restrictions imposed by the future disclosure. The metadata includes the *Issuer*, the *schema*, the provenancing *edges*, and the *rules* (terms-of-use). The top-level attribute section, `a`, field value of a *metadata* ACDC may be empty so that its value is not correlatable across disclosures (presentations). Should the potential *Disclosee* refuse to agree to the rules then the *Discloser* has not leaked the SAID of the actual ACDC or the SAID of the attribute block that would have been disclosed. 
 
-When a metadata ACDC is presented only the presenter's signature(s) is attached not the Issuer's signature(s). This precludes the Issuer's signature(s) from being used as a point of correlation until after agreeing to the rule section. The issuer's signatures are only disclosed to the verifier after the verifier has agreed to keep them confidential. The verifier is still protected because ultimately its validation will fail if the presenter does not eventually provide verifiable Issuer signatures. Nonetheless, should the verifier not agree to the terms of the disclosure expressed in the rule section the Issuer signature(s) is not leaked by the presenter.
+Given the *metadata* ACDC, the potential *Disclosee* is able to verify the *Issuer*, the schema, the provenanced edges, and rules prior to agreeing to the rules.  Similarly, an *Issuer* may use a *metadata* ACDC to get agreement to a contractual waiver expressed in the rule section with a potential *Issuee* prior to issuance. Should the *Issuee* refuse to accept the terms of the waiver then the *Issuer* has not leaked the SAID of the actual ACDC that would have been issued nor the SAID of its attributes block nor the attribute values themselves.
+
+When a *metadata* ACDC is disclosed (presented) only the *Discloser's* signature(s) is attached not the *Issuer's* signature(s). This precludes the *Issuer's* signature(s) from being used as a point of correlation until after the *Disclosee* has agreed to the terms in the rule section. When chain-link confidentiality is used, the *Issuer's* signatures are not disclosed to the *Disclosee* until after the *Disclosee* has agreed to keep them confidential. The *Disclosee* is protected from forged *Discloser* because ultimately verification of the disclosed ACDC will fail if the *Discloser* does not eventually provide verifiable *Issuer's* signatures. Nonetheless, should the potential *Disclosee* not agree to the terms of the disclosure expressed in the rule section then the *Issuer's* signature(s) is not leaked.
 
 ## Unpermissioned Exploitation
 
-The primary goal is to protect against unpermissioned exploitation of data. The primary goal is not privacy per se but privacy may be a mechanism to protect against unpermissioned exploitation of data.
-There are two primary mechanisms we may use to protect against unpermissioned exploitation. These are
-- Chain-link Confidentiality [[41]]
-- Selective Disclosure
+The primary goal is to protect against unpermissioned exploitation of data. The primary goal is not privacy per se but privacy may be a mechanism to protect against unpermissioned exploitation of data. There are two primary mechanisms we may use to protect against unpermissioned exploitation. These are:  
+
+* Chain-link Confidentiality [[41]]  
+* Selective Disclosure  
 
 
 ### Principle of Least Disclosure
+
+ACDCs are designed to satisfy the principle of least disclosure.
 
 > The system should disclose only the minimum amount of information about a given party needed to facilitate a transaction and no more. [[45]]
 
 
 ### Three Party Exploitation Model
+Unpermission exploitation is characterized using a three-party model. The three parties are as follows:
 
-First-Party = *Discloser* of data.  
-Second-Party = *Disclosee* of data received from First Party (*Discloser*).  
-Third-Party = *Observer* of data disclosed by First Party (*Discloser*)  to Second Party (*Disclosee*).  
+* First-Party = *Discloser* of data.  
+* Second-Party = *Disclosee* of data received from First Party (*Discloser*).  
+* Third-Party = *Observer* of data disclosed by First Party (*Discloser*) to Second Party (*Disclosee*).  
 
 #### Second-Party (Disclosee) Exploitation
 * implicit permissioned correlation.
@@ -177,11 +185,14 @@ Third-Party = *Observer* of data disclosed by First Party (*Discloser*)  to Seco
     * malicious use in violation of second party contract
 
 ### Chain-link Confidentiality Exchange
-- *Discloser* provides non-repudiable *Offer* with verifiable metadata (sufficient partial disclosure) which include any terms or restrictions on use. 
-- *Disclosee* verifies *Offer* against composed schema and metadata adherence to desired data.
-- *Disclosee* provides non-repudiable *Accept* of terms subject compliant disclosure.
-- *Discloser* provides non-repudiable *Disclosure* with sufficient compliant detail.
-- *Disclosee* verifies *Disclosure* using decomposed schema and adherence to offered data.
+
+Chain-link confidentiality imposes contractual restrictions and liability on any Disclosee (Second-Party). The exchange provides a fair contract consummation mechanism. The steps in a chain-link confidentiality exchange are as follows:
+
+* *Discloser* provides a non-repudiable *Offer* with verifiable metadata (sufficient partial disclosure) which includes any terms or restrictions on use. 
+* *Disclosee* verifies *Offer* against composed schema and metadata adherence to desired data.
+* *Disclosee* provides non-repudiable *Accept* of terms that are contingent on compliant disclosure.
+* *Discloser* provides non-repudiable *Disclosure* with sufficient compliant detail.
+* *Disclosee* verifies *Disclosure* using decomposed schema and adherence of disclosed data to *Offer*.
 
 *Disclosee* may now engage in permissioned use and carries liability as a deterrent against unpermissioned use.
 
@@ -229,18 +240,18 @@ A fully compact private ACDC is shown below.
 
 ## Attribute Section
 
-In the examples above the attribute section has been compacted into merely the SAID of that section. 
+The attribute section in the examples above has been compacted into the SAID of that section. 
 
-Suppose that the un-compacted value of the attribute section as denoted by the `a` field is as follows:
+Suppose that the un-compacted value of the attribute section as denoted by the attribute sectio, `a`, field is as follows:
 
 ``` json
 "a":
-  {
-    "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
-    "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
-    "score": 96,
-    "name": "Jane Doe"
-  }
+{
+  "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
+  "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
+  "score": 96,
+  "name": "Jane Doe"
+}
 
 ```
 
