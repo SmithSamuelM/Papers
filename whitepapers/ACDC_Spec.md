@@ -18,6 +18,8 @@ The dictionary definition of ***credential*** is *evidence of authority, status,
 
 Chains of ACDCs that merely provide proof-of-authorship (authenticity) of data may be appended to chains of ACDCs that provide proof-of-authority (delegation) to enable verifiable delegated authorized authorship of data. This is a vital facility for authentic data supply chains. Furthermore, any physical supply chain may be measured, monitored, regulated, audited, and/or archived by a data supply chain acting as a digital twin [57]. Therefore ACDCs provide the critical enabling facility for an authentic data economy and by association an authentic real (twinned) economy.
 
+ACDCs act as securely attributed (authentic) fragments of a distributed *property graph* (PG) [62][63]. Thus they may be used to construct knowledge graphs expressed as property graphs [64]. ACDCs enable securely-attributed and privacy-protecting knowledge graphs.
+
 The ACDC specification (including its selective disclosure mechanisms) leverages two primary cryptographic operations namely digests and digital signatures [[47]][51]]. These operations when used in an ACDC MUST have a security level, cryptographic strength, or entropy of approximately 128 bits [[52]]. (See the appendix for a discussion of cryptographic strength and security)
 
 An important property of high-strength cryptographic digests is that a verifiable cryptographic commitment (such as a digital signature) to the digest of some data is equivalent to a commitment to the data itself. ACDCs leverage this property to enable compact chains of ACDCs that anchor data via digests. The data *contained* in an ACDC may therefore be merely its equivalent anchoring digest. The anchored data is thereby equivalently authenticated or authorized by the chain of ACDCs. 
@@ -37,9 +39,11 @@ An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid con
 |`ri`| Registry Identifier (AID) | Issuance and/or revocation, transfer, or retraction registry for ACDC. | 
 |`s`| Schema| May be a block or SAID of schema block expressed as JSON schema. | 
 |`a`| Attribute| May be a block or SAID of a block that provides the data being disclosed or presented as either an attestation or authorization. | 
-|`e`| Edge| May be a block or SAID of a block that provides chained provenance by connecting this ACDC node to other ACDC nodes via directed edges as a fragment of a distributed labeled property graph.| 
-|`n`| Node| SAID of another ACDC as terminating point of a directed edge that connects the encapsulating ACDC to the specified ACDC node as a fragment of a distributed labeled property graph.| 
+|`e`| Edge| May be a block or SAID of a block that provides chained provenance by connecting this ACDC node to other ACDC nodes via directed edges as a fragment of a distributed property graph (PG).| 
+|`n`| Node| SAID of another ACDC as terminating point of a directed edge that connects the encapsulating ACDC to the specified ACDC node as a fragment of a distributed property graph (PG).| 
 |`r`| Rule | May be a block or SAID of a block that provides contractual restrictions, terms-of-use, consent, waivers, or a chain-link confidentiality agreement under which disclosure is made. | 
+
+
 
 ### Compact Labels
 
@@ -555,41 +559,37 @@ Consider the following uncompacted attributes block:
 
 ~~~json
 "a":
-  {
-    "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
-    "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
-    "score": 96,
-    "name": "Jane Doe"
-  }
+{
+  "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
+  "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
+  "score": 96,
+  "name": "Jane Doe"
+}
 ~~~
 
 Given the absence of a `u` field at the top level of the attributes block, then knowledge of both SAID, `d`, field at the top level of an attributes block and the schema of the attributes block may enable the discovery of the remaining contents of the attributes block via a rainbow table attack [[28]][[29]]. Therefore the `d` field of the attributes block, although, a cryptographic digest, does not securely blind the contents of the attributes block given knowledge of the schema. It only provides compactness, not privacy. Moreover, any cryptographic commitment to that SAID, `d`, field provides a fixed point of correlation potentially to the attribute block field values themselves in spite of non-disclosure of those field values via a compact ACDC. Thus an ACDC without a UUID, `u`, field in its attributes block must be considered a ***public-attribute*** ACDC even when expressed in compact form.
 
 
-
-
 ## Edge Section
 
-In the compact ACDC examples above the edge section has been compacted into merely the SAID of that section. 
-
-Suppose that the un-compacted value of the edge section denoted by the `e` field is as follows:
+In the compact ACDC examples above, the edge section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the edge section denoted by the top-level edge, `e`, field is as follows:
 
 ~~~json
 "e": 
-    {
-      "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
-      "qvi":
-      {
-        "n": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA"
-      }
-    }
+{
+  "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLx,UdY",
+  "boss":
+  {
+    "n": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA"
+  }
+}
 ~~~
 
-The `d` field at the top level of the edge block is the SAID of that block and is the same SAID used as the compacted value of the `e` field that appears at the top level of the ACDC. Each edge in the edge section gets is own field. Each edge also has a local label. Note that each edge does not include a type field. The type of each edge is provided by the schema vis-a-vis the label of that edge. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "the schema is the type". This approach varies somewhat from common practice for labeled property graphs which often do not have a schema. Because ACDCs have a schema for other reasons, however, they leverage that schema to provide edge types with a cleaner separation of concerns.
+The edge section's top-level SAID, `d`, field is the SAID of the edge block and is the same SAID used as the compacted value of the ACDC's top-level edge, `e`, field. Each edge in the edge section gets its own field with its own local label. Note that each edge does not include a type field. The type of each edge is provided by the schema vis-a-vis the label of that edge. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "schema is type". This approach varies somewhat from many property graphs which often do not have a schema [[62]][[63]]. Because ACDCs have a schema for other reasons, however, they leverage that schema to provide edge types with a cleaner separation of concerns.
 
 Each edge sub-block has one required node field labeled `n`. The value of the node, `n`, field is the SAID of the ACDC to which the edge connects. 
 
-A labeled property graph allows each edge to have its own set of properties in its own sub-block. These might include modifiers that influence how the connected node is to be used such as a weight. Weighted directed edges the represent degrees of confidence or liklihood are commonly used for machine learning or reasoning under uncertainty. The following example adds a weight property to the edge sub-block as indicated by the weight, `w`, field .
+A *property graph* (PG) allows not only each node but each edge to have its own set of properties in its own sub-block [[62]][[63]][[64]]. These might include modifiers that influence how the connected node is to be used such as a weight. Weighted directed edges the represent degrees of confidence or likelihood are commonly used for machine learning or reasoning under uncertainty. The following example adds a weight property to the edge sub-block as indicated by the weight, `w`, field.
 
 ~~~json
 "e": 
@@ -604,7 +604,7 @@ A labeled property graph allows each edge to have its own set of properties in i
     }
 ~~~
 
-Abstractly, an ACDC with one or more edges may be a fragment of a distributed labeled property graph. However, the local label does not enable the unique global resolution of a given edge with properties other than the node, `n` field, property. To make an edge with additional properties also globally uniquely resolvable we add a `d` field that is the SAID of the edge's sub-block. Because the SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed labeled property graph. This combines the beneficial features of property graphs and global knowledge graphs in a secure manner that crosses trust domains. This is shown below.
+Abstractly, an ACDC with one or more edges may be a fragment of a distributed property graph. However, the local label does not enable the unique global resolution of a given edge with properties other than the node, `n` field, property. To make an edge with additional properties also globally uniquely resolvable we add a `d` field that is the SAID of the edge's sub-block. Because the SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed property graph (PG). This enables a property graph to serve as a global knowledge graph in a secure manner that crosses trust domains [[62]][[63]][[64]]. This is shown below.
 
 
 ~~~json
@@ -662,7 +662,7 @@ When an edge sub-block has only one field, its `n` field then the edge block may
 
 When an edge points to a private ACDC, an Issuer may choose to use a metadata version of that private ACDC when presenting the, `n`, field of and edge prior to acceptance of the terms of disclosure. The verifier can verify the metadata of the private node without the Issuer exposing the actual node contents via the actual node (ADCD) SAID or other attributes.
 
-Private ACDCs (nodes) and private edges may be used in combination to prevent an un-permissioned correlation of the distributed labeled property graph.
+Private ACDCs (nodes) and private edges may be used in combination to prevent an un-permissioned correlation of the distributed property graph.
 
 In general lookup of the details of an ACDC reference as a node, `n` field value, in an edge begins with its provided SAID or the SAID of its associated edge sub-block. Because a SAID is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC. The Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC. Alternatively, the issuer may provide as an attachment at issuance a copy of the referenced ACDC. In either case, after a successful issuance exchange, the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essence of percolated discovery.
 
@@ -766,7 +766,7 @@ An alternate simplified compact form uses the value of the `l` field as the valu
 ~~~
 
 
-### Non-compact Version
+### Non-Compact Version
 
 
 ~~~json
@@ -1398,3 +1398,14 @@ The highest level of crypto-graphic security with respect to a cryptographic sec
 
 [61]: https://en.wikipedia.org/wiki/Transaction_malleability_problem  
 
+[62]. Renzo Angles, The Property Graph Database Model.  
+
+[62]: http://ceur-ws.org/Vol-2100/paper26.pdf  
+
+[63]. Marko A. Rodriguez and Peter Neubauer, Constructions from Dots and Lines.
+
+[63]: https://arxiv.org/pdf/1006.2361.pdf  
+
+[64]. Knowledge Graphs.
+
+[64]: https://arxiv.org/pdf/2003.02320.pdf  
