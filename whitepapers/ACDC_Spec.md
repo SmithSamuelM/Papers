@@ -211,7 +211,7 @@ are `s`, `a`, `e`, and `r`.
 A fully compact public ACDC is shown below. 
 
 
-~~~ json
+~~~json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
@@ -229,7 +229,7 @@ A fully compact public ACDC is shown below.
 A fully compact private ACDC is shown below. 
 
 
-~~~ json
+~~~json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
@@ -247,7 +247,7 @@ A fully compact private ACDC is shown below.
 
 The schema for this compact private ACDC example is provided below:
 
-~~~ json
+~~~json
 {
   "$id": "EN8i2i5ye0-xGS95pm5cg1j0GmFkarJe0zzsSrrf4XJY",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -322,7 +322,7 @@ The attribute section in the examples above has been compacted into its SAID.
 
 Suppose that the un-compacted value of the attribute section as denoted by the attribute section, `a`, field is as follows:
 
-~~~ json
+~~~json
 "a":
 {
   "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -336,7 +336,7 @@ The SAID, `d`, field at the top level of the uncompated attribute block is the s
 
 The subschema for the un-compacted attribute section is shown below:
 
-~~~ json
+~~~json
 "a": 
 {
   "description": "attribute section",
@@ -378,7 +378,7 @@ The subschema for the un-compacted attribute section is shown below:
 Through the use of the JSON Schema `oneOf` composition operator the following composed schema will validate against both the compact and un-compacted value of the attribute section field.
 
 
-~~~ json
+~~~json
 "a": 
 {
   "description": "attribute section",
@@ -452,7 +452,7 @@ Likewise, the presence of an issuee, `i`, field, enables the *Issuer* to use the
 
 Consider the case where the issuee, `i`, field is absent at the top level of the attribute block as shown below:
 
-~~~ json
+~~~json
 "a":
 {
   "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -473,7 +473,7 @@ A hybrid chain of one or more targeted ACDCs ending in a chain of one or more un
 
 Consider the following form of an uncompacted attributes block:
 
-~~~ json
+~~~json
 "a":
 {
   "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -493,7 +493,7 @@ Because the *Issuee* AID is nested in the attribute block as that block's top-le
 Through the use of the JSON Schema `oneOf` composition operator the following composed schema will validate against both the compact and un-compacted value of the private attribute section, `a`, field.
 
 
-~~~ json
+~~~json
 "a": 
 {
   "description": "attribute section",
@@ -553,7 +553,7 @@ Through the use of the JSON Schema `oneOf` composition operator the following co
 
 Consider the following uncompacted attributes block:
 
-~~~ json
+~~~json
 "a":
   {
     "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -561,7 +561,6 @@ Consider the following uncompacted attributes block:
     "score": 96,
     "name": "Jane Doe"
   }
-
 ~~~
 
 Given the absence of a `u` field at the top level of the attributes block, then knowledge of both SAID, `d`, field at the top level of an attributes block and the schema of the attributes block may enable the discovery of the remaining contents of the attributes block via a rainbow table attack [[28]][[29]]. Therefore the `d` field of the attributes block, although, a cryptographic digest, does not securely blind the contents of the attributes block given knowledge of the schema. It only provides compactness, not privacy. Moreover, any cryptographic commitment to that SAID, `d`, field provides a fixed point of correlation potentially to the attribute block field values themselves in spite of non-disclosure of those field values via a compact ACDC. Thus an ACDC without a UUID, `u`, field in its attributes block must be considered a ***public-attribute*** ACDC even when expressed in compact form.
@@ -575,7 +574,7 @@ In the compact ACDC examples above the edge section has been compacted into mere
 
 Suppose that the un-compacted value of the edge section denoted by the `e` field is as follows:
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
@@ -584,8 +583,7 @@ Suppose that the un-compacted value of the edge section denoted by the `e` field
         "n": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA"
       }
     }
-
-```
+~~~
 
 The `d` field at the top level of the edge block is the SAID of that block and is the same SAID used as the compacted value of the `e` field that appears at the top level of the ACDC. Each edge in the edge section gets is own field. Each edge also has a local label. Note that each edge does not include a type field. The type of each edge is provided by the schema vis-a-vis the label of that edge. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "the schema is the type". This approach varies somewhat from common practice for labeled property graphs which often do not have a schema. Because ACDCs have a schema for other reasons, however, they leverage that schema to provide edge types with a cleaner separation of concerns.
 
@@ -593,7 +591,7 @@ Each edge sub-block has one required node field labeled `n`. The value of the no
 
 A labeled property graph allows each edge to have its own set of properties in its own sub-block. These might include modifiers that influence how the connected node is to be used such as a weight. Weighted directed edges the represent degrees of confidence or liklihood are commonly used for machine learning or reasoning under uncertainty. The following example adds a weight property to the edge sub-block as indicated by the weight, `w`, field .
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
@@ -604,13 +602,12 @@ A labeled property graph allows each edge to have its own set of properties in i
         
       }
     }
-
-```
+~~~
 
 Abstractly, an ACDC with one or more edges may be a fragment of a distributed labeled property graph. However, the local label does not enable the unique global resolution of a given edge with properties other than the node, `n` field, property. To make an edge with additional properties also globally uniquely resolvable we add a `d` field that is the SAID of the edge's sub-block. Because the SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed labeled property graph. This combines the beneficial features of property graphs and global knowledge graphs in a secure manner that crosses trust domains. This is shown below.
 
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
@@ -621,12 +618,11 @@ Abstractly, an ACDC with one or more edges may be a fragment of a distributed la
         "w": "high"
       }
     }
-
-```
+~~~
 
 If we want that edge properties to also be blinded by its SAID, i.e. be private then we add a UUID, `u` field. As with the ACDC `u` field, if the field has sufficient entropy then the values of the properties are not discoverable in a computationally feasible manner merely given the SAID, `d` field and schema for the edge. These may be called private edges. This is shown below.
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
@@ -638,32 +634,29 @@ If we want that edge properties to also be blinded by its SAID, i.e. be private 
         "w": "high"
       }
     }
-
-```
+~~~
 
 Given that an individual edge sub-block  has a  `d` field (SAID) then a compact representation of the sub-block is to replace it with its SAID. This may be useful for complex edges with many properties. This is shown as follows:
 
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
       "qvi": "E9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn",
     }
-
-```
+~~~
 
 
 When an edge sub-block has only one field, its `n` field then the edge block may use an alternate simplified compact form where the field value is the `n` field. The schema for that particular edge label, in this case, `qvi`,  will indicate that the edge value is a node SAID and not the edge sub-block SAID as would be the case for the normal compact form shown above. This alternate compact form is shown below.
 
-```
+~~~json
 "e": 
     {
       "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
       "qvi": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA"
     }
-
-```
+~~~
 
 
 
@@ -710,7 +703,7 @@ The clause may also have a clause SAID, in its `d` field. Clause specific SAIDs 
 An example rule section with SAIDS  for each clause is provided below:
 
 
-```json
+~~~json
 "r": 
   {
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
@@ -725,31 +718,32 @@ An example rule section with SAIDS  for each clause is provided below:
         "l": " In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
       }
   }
-```
+~~~
 
 The used of SAIDS in each clause enables a compact form of a set of clauses where each clause value is the SAID of the corresponding clause. For example:
 
-```json
+~~~json
 "r": 
   {
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
     "warrantyDisclaimer":  "EXgOcLxUdYerzwLIr9Bf7V_NAwY1lkFrn9y2PgveY4-9",
     "liabilityDisclaimer": "EY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NAw",
   }
-```
+~~~
+
 When in compact form either for the rule section as a whole or for each clause,
 the lookup of the details of associated clause begins with its provided SAID. Because the SAID is cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced clause details. Discovery of a service endpoint URL that provides database access to a copy of the rule section as contract or any of its clauses may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the contract of clause. Alternatively the issuer may provide as an attachment at issuance a copy of the referenced contract of clause. In either case after a successful issuance exchange the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced contracts or clauses of all ACDCs involved in the presentation. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essense of percolated discovery.
 
 An alternate simplified compact form uses the value of the `l` field as the value of the of the clause field label. The schema for a specific clause label will indicate that field value, for a given clause label is the legal language itself and not the clause block SAID as is the normal compact form shown above. This alternate compact form is shown below.
 
-```json
+~~~json
 "r": 
   {
     "d": EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
     "warrantyDisclaimer": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
     "liabilityDisclaimer": " In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
 }
-```
+~~~
 
 
 
@@ -757,8 +751,7 @@ An alternate simplified compact form uses the value of the `l` field as the valu
 
 ### Compact Version
 
-``` jsone
-{
+~~~json
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
   "u":  "0ANghkDaG7OY1wjaDAE0qHcg",
@@ -769,13 +762,13 @@ An alternate simplified compact form uses the value of the `l` field as the valu
   "e":  "ERH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZIl3MOA",
   "r":  "Ee71iheqcywJcnjtJtQIYPvAu6DZIl3MORH3dCdoFOLB",
 }
+~~~
 
-```
 
 ### Non-compact Version
 
 
-``` json
+~~~json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
@@ -816,8 +809,7 @@ An alternate simplified compact form uses the value of the `l` field as the valu
     }
   }
 }
-
-```
+~~~
 
 ## Selective Disclosure
 
@@ -834,7 +826,7 @@ Selective disclosure in combination with chain-link confidentiality provides com
 
 Consider the following uncompacted targeted attribute block:
 
-``` json
+~~~json
 "a":
 [
   {
@@ -853,12 +845,12 @@ Consider the following uncompacted targeted attribute block:
     "name": "Jane Doe"
   }
 ]
-```
+~~~
 
 The set of attributes are provided as an array of blocks. Each attribute in the set has its own dedicated block. Each block has its own SAID, `d`, field and `u` field in addition to its attribute field or fields. When an attribute block has more than one attribute field then the set of fields in that block are not independently selectively discloseable but MUST be disclosed together as a set. Note the presence of an Issuer attribute block in the example above, thus making that example a targeted selective disclosure ACDC. An untargeted uncompacted selective disclosure ACDC would be missing the *Issuer* attribute block as follows:
 
 
-``` json
+~~~json
 "a":
 [
   {
@@ -872,7 +864,7 @@ The set of attributes are provided as an array of blocks. Each attribute in the 
     "name": "Jane Doe"
   }
 ]
-```
+~~~
 
 Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of the contents of its attribute block that effectively blinds the attribute value from discovery given only its SAID and schema. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
 
@@ -969,7 +961,7 @@ In addition to the shared salt and ACDC template, the Issuer also provides its s
 #### Non-compact Selective Disclosure Informative Example
 
 
-``` json
+~~~json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
@@ -1020,8 +1012,7 @@ In addition to the shared salt and ACDC template, the Issuer also provides its s
     }
   }
 }
-
-```
+~~~
 
 
 
