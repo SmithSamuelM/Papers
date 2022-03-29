@@ -684,7 +684,7 @@ In the compact ACDC examples above, the rule section has been compacted into mer
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
     "warrantyDisclaimer": 
       {
-        "l": "Issuer provides this credential on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
+        "l": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
       },
     "liabilityDisclaimer": 
       {
@@ -710,14 +710,14 @@ The clause may also have a clause SAID, in its `d` field. Clause specific SAIDs 
 An example rule section with SAIDS  for each clause is provided below:
 
 
-```
+```json
 "r": 
   {
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
     "warrantyDisclaimer": 
       {
         "d": "EXgOcLxUdYerzwLIr9Bf7V_NAwY1lkFrn9y2PgveY4-9",
-        "l": "Issuer provides this credential on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
+        "l": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
       },
     "liabilityDisclaimer": 
       {
@@ -729,7 +729,7 @@ An example rule section with SAIDS  for each clause is provided below:
 
 The used of SAIDS in each clause enables a compact form of a set of clauses where each clause value is the SAID of the corresponding clause. For example:
 
-```
+```json
 "r": 
   {
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
@@ -742,11 +742,11 @@ the lookup of the details of associated clause begins with its provided SAID. Be
 
 An alternate simplified compact form uses the value of the `l` field as the value of the of the clause field label. The schema for a specific clause label will indicate that field value, for a given clause label is the legal language itself and not the clause block SAID as is the normal compact form shown above. This alternate compact form is shown below.
 
-```
+```json
 "r": 
   {
     "d": EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
-    "warrantyDisclaimer": "Issuer provides this credential on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
+    "warrantyDisclaimer": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
     "liabilityDisclaimer": " In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
 }
 ```
