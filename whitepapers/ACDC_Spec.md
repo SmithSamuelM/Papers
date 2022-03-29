@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.2
+version: 0.2.3
 notes: non-hackmd version
 
 ---
