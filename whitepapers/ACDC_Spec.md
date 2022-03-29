@@ -382,7 +382,7 @@ Through the use of the JSON Schema `oneOf` composition operator the following co
 "a": 
 {
   "description": "attribute section",
-  oneOf:
+  "oneOf":
   [
     {
       "description": "attribute SAID",
