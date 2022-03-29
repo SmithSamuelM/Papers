@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.1
+version: 0.2.2
 notes: non-hackmd version
 
 ---
@@ -79,7 +79,7 @@ A UUID, `u` field may optionally appear in any block (field map) at any level of
 
 ### Schema is Type
 
-Notable is the fact that there are no top-level type fields in an ACDC. This is because the schema, `s`, field itself is the type field. ACDCs follow the design principle of separation of concerns between a data container's actual payload information and the type information of that container's payload. In this sense, type information is metadata, not data. The schema standard is JSON Schema 2020-12 [[38]][[58]]. JSON Schema support for composable schema (sub-schema), conditional schema (sub-schema), and regular expressions in schema enable a validator to ask and answer complex questions about the type of even optional payload elements while maintaining isolation between payload information and type (structure) information about the payload [[39]][[59]]. ACDC's use of JSON Schema MUST be in accordance with the ACDC defined profile as defined herein. The exceptions are defined below.
+Notable is the fact that there are no top-level type fields in an ACDC. This is because the schema, `s`, field itself is the type field. ACDCs follow the design principle of separation of concerns between a data container's actual payload information and the type information of that container's payload. In this sense, type information is metadata, not data. The schema dialect is JSON Schema 2020-12 [[38]][[58]]. JSON Schema support for composable schema (sub-schema), conditional schema (sub-schema), and regular expressions in schema enable a validator to ask and answer complex questions about the type of even optional payload elements while maintaining isolation between payload information and type (structure) information about the payload [[39]][[59]]. ACDC's use of JSON Schema MUST be in accordance with the ACDC defined profile as defined herein. The exceptions are defined below.
 
 ### Schema ID Field Label
 
@@ -92,7 +92,7 @@ When an id, '$id', field appears in a sub-schema it indicates a bundled sub-sche
 
 For security reasons, the full schema of an ACDC must be completely self-contained and statically fixed (immutable) for that ACDC. By this, we mean that no dynamic schema references or dynamic schema generation mechanisms are allowed. 
 
-Should an adversary successfully attack the source that provides the dynamic schema resource and change the result provided by that reference, any ACDC that uses that dynamic schema reference may fail its schema validation. Such an attack effectively revokes all the ACDCs that use that dynamic schema reference. We call this a ***schema revocation*** attack. 
+Should an adversary successfully attack the source that provides the dynamic schema resource and change the result provided by that reference, then the schema validation on any ACDC that uses that dynamic schema reference may fail. Such an attack effectively revokes all the ACDCs that use that dynamic schema reference. We call this a ***schema revocation*** attack. 
 
 More insidiously, an attacker could shift the semantics of the dynamic schema in such a way that although the ACDC still passes its schema validation, the behavior of the downstream processing of that ACDC is changed by the semantic shift. This we call a ***semantic malleability*** attack. It may be considered a new type of *transaction malleability* attack [[61]]. 
 
@@ -111,6 +111,11 @@ The `did:` URI scheme may be used safely to prefix non-local URI references that
 To clarify, ACDCs MUST NOT use complex JSON Schema references which allow *dynamically generated *schema resources to be obtained from online JSON Schema Libraries [[60]]. The latter approach may be difficult or impossible to secure because a cryptographic commitment to the base schema that includes complex schema (non-relative URI-based) references only commits to the non-relative URI reference and not to the actual schema resource which may change (is dynamic, mutable, malleable). To restate, this approach is insecure because a cryptographic commitment to a complex (non-relative URI-based) reference is NOT equivalent to a commitment to the detailed associated schema resource so referenced if it may change.
 
 ACDCs MUST use static JSON Schema (i.e. *SAIDifiable* schema). These may include internal relative references to other parts of a fully self-contained static (*SAIDified*) schema or references to static (*SAIDified*) external schema parts. These references may be DID URLs (`did:` scheme) or SAD URLs (`sad:` scheme) or bare SAIDs or OOBI URLs. Recall that a commitment to a SAID with sufficient collision resistance makes an equivalent secure commitment to its encapsulating block SAD. Thus static schema may be either fully self-contained or distributed in parts but the value of any reference to a part must be verifiably static (immutable, nonmalleable) by virtue of either being relative to the self-contained whole or being referenced by its SAID. The static schema in whole or in parts may be attached to the ACDC itself or provided via a highly available cache or data store. To restate, this approach is securely end-verifiable (zero-trust) because a cryptographic commitment to the SAID of a SAIDified schema is equivalent to a commitment to the detailed associated schema itself (SAD).
+
+### Schema Dialect
+
+The schema dialect for ACDC 1.0 is JSON Schema 2020-12 and is indicated by the identifier "https://json-schema.org/draft/2020-12/schema"
+ [[38]][[58]]. This is indicated in a JSON Schema via the value of the top-level `$schema` field. Although the value of `$schema` is expressed as a URI, de-referencing does not provide dynamically downloadable schema dialect validation code. This would be an attack vector. The validator MUST control the tooling code dialect used for schema validation and hence the tooling dialect version actually used. A mismatch between the supported tooling code dialect version and the `$schema` string value should cause the validation to fail. The string is simply an identifier that communicates the intended dialect to be processed by the schema validation tool. When provided, the top-level `$schema` field value for ACDC version 1.0 must be "https://json-schema.org/draft/2020-12/schema".
 
 ### Schema Availablity
 
@@ -148,9 +153,9 @@ Given the *metadata* ACDC, the potential *Disclosee* is able to verify the *Issu
 
 When a *metadata* ACDC is disclosed (presented) only the *Discloser's* signature(s) is attached not the *Issuer's* signature(s). This precludes the *Issuer's* signature(s) from being used as a point of correlation until after the *Disclosee* has agreed to the terms in the rule section. When chain-link confidentiality is used, the *Issuer's* signatures are not disclosed to the *Disclosee* until after the *Disclosee* has agreed to keep them confidential. The *Disclosee* is protected from forged *Discloser* because ultimately verification of the disclosed ACDC will fail if the *Discloser* does not eventually provide verifiable *Issuer's* signatures. Nonetheless, should the potential *Disclosee* not agree to the terms of the disclosure expressed in the rule section then the *Issuer's* signature(s) is not leaked.
 
-## Unpermissioned Exploitation
+## Unpermissioned Exploitation of Data
 
-The primary goal is to protect against unpermissioned exploitation of data. The primary goal is not privacy per se but privacy may be a mechanism to protect against unpermissioned exploitation of data. There are two primary mechanisms we may use to protect against unpermissioned exploitation. These are:  
+An important design goal of ACDCs is they support the sharing of provably authentic data while also protecting against the un-permissioned exploitation of that data. Often the term *privacy protection* is used to describe similar properties. But a narrow focus on "privacy protection" may lead to problematic design trade-offs. With ACDCs, the primary design goal is not *data privacy protection* per se but the more general goal of protection from the ***un-permissioned exploitation of data***. In this light, a *given privacy protection* mechanism may be employed to help protect against *unpermissioned exploitation of data* but only when it serves that more general-purpose and not as an end in and of itself. There are two primary mechanisms ACDCs use to protect against *unpermissioned exploitation of data*. These are:  
 
 * Chain-link Confidentiality [[41]]  
 * Selective Disclosure  
@@ -199,7 +204,8 @@ Chain-link confidentiality imposes contractual restrictions and liability on any
 
 
 ## Compact ACDC
-A compact ACDC includes only the SAIDs of each top-level section.
+The top-level section field values of a compact ACDC are the SAIDs of each un-compacted top-level section. The section field labels
+are `s`, `a`, `e`, and `r`.
 
 ### Compact Public ACDC
 A fully compact public ACDC is shown below. 
@@ -218,11 +224,76 @@ A fully compact public ACDC is shown below.
 }
 ~~~
 
+
+The schema for this compact public ACDC example is provided below:
+
+~~~ json
+{
+  "$id": "EN8i2i5ye0-xGS95pm5cg1j0GmFkarJe0zzsSrrf4XJY",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compact Public ACDC",
+  "description": "Example JSON Schema for a Compact Public ACDC.",
+  "credentialType": "CompactPublicACDCExample",
+  "type": "object",
+   "required": 
+  [
+    "v",
+    "d",
+    "i",
+    "ri",
+    "s",
+    "a",
+    "e",
+    "r"
+  ],
+  "properties": 
+  {
+    "v": 
+    {
+      "description": "ACDC version string",
+      "type": "string"
+    },
+    "d": 
+    {
+     "description": "ACDC SAID",
+      "type": "string"
+    },
+    "i": 
+    {
+      "description": "Issuer AID",
+      "type": "string"
+    },
+    "ri": 
+    {
+      "description": "credential status registry AID",
+      "type": "string"
+    },
+    "s": {
+      "description": "schema SAID",
+      "type": "string"
+    },
+    "a": {
+      "description": "attribute SAID",
+      "type": "string"
+    },
+    "e": {
+      "description": "edge SAID",
+      "type": "string"
+    },
+    "r": {
+      "description": "rule SAID",
+      "type": "string"
+    },
+  },
+  "additionalProperties": false
+}
+~~~
+
 ### Compact Private ACDC
 A fully compact private ACDC is shown below. 
 
 
-``` json
+~~~ json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
@@ -235,16 +306,87 @@ A fully compact private ACDC is shown below.
   "r":  "Ee71iheqcywJcnjtJtQIYPvAu6DZIl3MORH3dCdoFOLB",
 }
 
-```
+~~~
+
+
+The schema for this compact private ACDC example is provided below:
+
+~~~ json
+{
+  "$id": "EN8i2i5ye0-xGS95pm5cg1j0GmFkarJe0zzsSrrf4XJY",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Compact Public ACDC",
+  "description": "Example JSON Schema for a Compact Public ACDC.",
+  "credentialType": "CompactPublicACDCExample",
+  "type": "object",
+   "required": 
+  [
+    "v",
+    "d",
+    "u",
+    "i",
+    "ri",
+    "s",
+    "a",
+    "e",
+    "r"
+  ],
+  "properties": 
+  {
+    "v": 
+    {
+      "description": "ACDC version string",
+      "type": "string"
+    },
+    "d": 
+    {
+     "description": "ACDC SAID",
+      "type": "string"
+    },
+    "u": 
+    {
+     "description": "ACDC UUID",
+      "type": "string"
+    },
+    "i": 
+    {
+      "description": "Issuer AID",
+      "type": "string"
+    },
+    "ri": 
+    {
+      "description": "credential status registry AID",
+      "type": "string"
+    },
+    "s": {
+      "description": "schema SAID",
+      "type": "string"
+    },
+    "a": {
+      "description": "attribute SAID",
+      "type": "string"
+    },
+    "e": {
+      "description": "edge SAID",
+      "type": "string"
+    },
+    "r": {
+      "description": "rule SAID",
+      "type": "string"
+    },
+  },
+  "additionalProperties": false
+}
+~~~
 
 
 ## Attribute Section
 
-The attribute section in the examples above has been compacted into the SAID of that section. 
+The attribute section in the examples above has been compacted into its SAID. 
 
-Suppose that the un-compacted value of the attribute section as denoted by the attribute sectio, `a`, field is as follows:
+Suppose that the un-compacted value of the attribute section as denoted by the attribute section, `a`, field is as follows:
 
-``` json
+~~~ json
 "a":
 {
   "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -252,49 +394,89 @@ Suppose that the un-compacted value of the attribute section as denoted by the a
   "score": 96,
   "name": "Jane Doe"
 }
+~~~
 
-```
+The SAID, `d`, field at the top level of the uncompated attribute block is the same SAID used as the compacted value of the attribute section, `a`, field. 
 
-The `d` field at the top level of the attribute block is the SAID of that block and is the same SAID used as the compacted value of the attribute section, `a`, field. 
+The subschema for the un-compacted attribute section is shown below:
 
-The combinations of the presence (absence) of an *Issuee*, `i`, field in the attribute section produce two more variants of ACDCs.
+~~~ json
+"a": 
+{
+  "description": "attribute section",
+  "type": "object",
+  "required": 
+  [
+    "d",
+    "i",
+    "score",
+    "name"
+  ],
+  "properties": 
+  {
+    "d": 
+    {
+      "description": "attribute SAID",
+      "type": "string"
+    },
+    "i": 
+    {
+      "description": "Issuee AID",
+      "type": "string"
+    },
+    "score": 
+    {
+      "description": "test score",
+      "type": "integer"
+    },
+    "name": 
+    {
+      "description": "test taker full name",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+}
+~~~
+
+Two more variants of an ACDC, namely, *targeted* (*untargeted*) are defined respectively by the presence (absence) of an *Issuee*, `i`, field in the uncompacted attribute section block.
 
 
 ### Targeted ACDC
 
-When present, the value of the `i` field at the top level of an attribute block is the AID of the *Issuee* of the ACDC. This *Issuee* is provably controllable identifier that is the *Target*. This enables such targeted ACDCs to be used for many different purposes such as authorization or delegation directed at the *Target* AID, i.e. the *Issuee*. In other words this form of an ACDC, by virtue of the attribute block top level `i` field  provides a container for authentic data that may also be used as some form of credential that is verifiably bound to the *Issuee* as *Target* by the *Issuer* and that by virtue of provable control over the *Issuee* AID may also be verifiably presented by the controller of the *Issuee*.
+When present at the top-level of the attribute section, the issuee, `i`, field value provides the AID of the *Issuee* of the ACDC. This *Issuee* AID is a provably controllable identifier that serves as the *Target* AID. This makes the ACDC a *targeted ACDC*. Targeted ACDCs may be used for many different purposes such as an authorization or a delegation directed at the *Issuee* AID, i.e. the *Target*. In other words, a *targeted ACDC* provides a container for authentic data that may also be used as some form of authorization such as a credential that is verifiably bound to the *Issuee* as targeted by the *Issuer*. Furthermore, by virtue of the targeted *Issuee's* provable control over its AID, the *targeted ACDC* may be verifiably presented (disclosed) by the controller of the *Issuee* AID.
 
-The definition of the term *credential*: *is evidence of authority, status, rights, entitlement to privileges, or the like*. To elaborate, the presence of an `i` field at the top level of the attributes block enables the ACDC to be used as a verifiable credential given by the *Issuer* to the *Issuee*. 
+For example, the definition of the term ***credential*** is *evidence of authority, status, rights, entitlement to privileges, or the like*. To elaborate, the presence of an attribute section top-level issuee, `i`, field enables the ACDC to be used as a verifiable credential given by the *Issuer* to the *Issuee*. 
 
-One reason the *Issuee* is nested into the `a` block is to enable the *Issuee* to be private. The *Issuee* may also be called the *Holder* of the ACDC. In other verifiable credential parlance the *Issuee* is called the *Subject*. But here we use the more semantically precise albeit less common terms of *Issuer* and *Issuee*. The ACDC is issued from or by an *Issuer* and is issued to an *Issuee*. This terminology does not bias or color the role (function) an *Issuee* plays in the use of an ACDC. But what an *Issuee* does provide is a mechanism for control of the subsequent use of the ACDC once it has been issued. To elaborate, because the `i` field is an AID, there is a provable controller of that AID and therefore that controller may make non-repudiable commitments via digital signatures on behalf of that AID.  The subsequent use of the ACDC may be securely attributed to the Issuee.
+One reason the issuee, `i`, field is nested into the attribute section, `a`, block is to enable the *Issuee* AID to be private or otherwise selectively disclosable. The *Issuee* may also be called the *Holder* or *Subject* of the ACDC.  But here we use the more semantically precise albeit less common terms of *Issuer* and *Issuee*. The ACDC is issued from or by an *Issuer* and is issued to or for an *Issuee*. This precise terminology does not bias or color the role (function) that an *Issuee* plays in the use of an ACDC. What the presence of *Issuee* AID does provide is a mechanism for control of the subsequent use of the ACDC once it has been issued. To elaborate, because the issuee, `i`, field value is an AID, by definition, there is a provable controller of that AID. Therefore that *Issuee* controller may make non-repudiable commitments via digital signatures on behalf of its AID.  Therefore subsequent use of the ACDC by the *Issuee* may be securely attributed to the *Issuee*.
 
-Importantly the presence of an `i` field enables the associated *Issuee* to make authoritative verifiable presentations of the ACDC. A designated *Issuee*  also better enables initiation of presentation exchanges of the ACDC between that Issuee and a verifier.
+Importantly the presence of an issuee, `i`, field enables the associated *Issuee* to make authoritative verifiable presentations or disclosures of the ACDC. A designated *Issuee*also better enables the initiation of presentation exchanges of the ACDC between that *Issuee* as *Discloser* and a *Disclosee* (verifier).
 
-In addition, because the *Issuee* is a specified counter-party the *Issuer* may engage in a contract with the *Issuee* as a pre-condition to issuance and impose liability waivers or other terms of use on that *Issuee* that the *Issuee* agrees too by virtue of a non-repudiable signature on the ACDC at the time of issuance. 
+In addition, because the *Issuee* is a specified counter-party the *Issuer* may engage in a contract with the *Issuee* that the *Issuee* agrees to by virtue of its non-repudiable signature on an offer of the ACDC prior to its issuance. This agreement may be a pre-condition to the issuance and thereby impose liability waivers or other terms of use on that *Issuee*. 
 
-Likewise, the presence of an *Issuee*, `i` field, enables the *Issuer* to use the ACDC as a contractual vehicle for conveying an authorization to the *Issuee*.  This enables verifiable delegation chains of authority because an *Issuee* in one ACDC may be the *Issuer* of some other ACDC. Thereby an *Issuer* may delegate authority to an *Issuee* who may then become a verifiably authorized *Issuer* that then delegates that authority (or an attenuation of that authority) to some other *Issuee* and so forth.  
+Likewise, the presence of an issuee, `i`, field, enables the *Issuer* to use the ACDC as a contractual vehicle for conveying an authorization to the *Issuee*.  This enables verifiable delegation chains of authority because the *Issuee* in one ACDC may become the *Issuer* in some other ACDC. Thereby an *Issuer* may delegate authority to an *Issuee* who may then become a verifiably authorized *Issuer* that then delegates that authority (or an attenuation of that authority) to some other verifiably authorized *Issuee* and so forth.  
 
 
 
 ### Untargeted ACDC
 
-Consider the case where the `i` field is absent at the top level of the attributes block as shown below:
+Consider the case where the issuee, `i`, field is absent at the top level of the attribute block as shown below:
 
 ~~~ json
 "a":
-  {
-    "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
-    "temp": 45,
-    "lat": "N40.3433", 
-    "lon": "W111.7208"
-  }
+{
+  "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
+  "temp": 45,
+  "lat": "N40.3433", 
+  "lon": "W111.7208"
+}
 ~~~
 
-This ACDC has an *Issuer* but no *Issuee*. There is no provably controllable *Target*. This may be though of as an undirected verifiable attestation or observation of the data in the attributes block by the *Issuer*. One could say that the attestation is addressed to "whom it may concern". An untargeted ACDC enables verifiable authorship by the Issuer of the data in the attributes block but there is no specified counter-party and no verifiable mechanism for delegation of authority.  Consequently the rules section may only provide contractual obligations with implied counter-parties
+This ACDC has an *Issuer* but no *Issuee*. Therefore, there is no provably controllable *Target* AID. This may be thought of as an undirected verifiable attestation or observation of the data in the attributes block by the *Issuer*. One could say that the attestation is addressed to "whom it may concern". An untargeted ACDC enables verifiable authorship by the Issuer of the data in the attributes block but there is no specified counter-party and no verifiable mechanism for delegation of authority.  Consequently, the rule section may only provide contractual obligations of implied counter-parties
 
-This form of an ACDC provides a container for authentic data only (not specified authorizations). But authentic data is still a very important use case. An untargeted ACDC enables verifiable authorship of data. An observer such as a sensor that controls an AID may make verifiable non-repudiable measurements and publish them as ACDCs. These may be chained together to provide provenance for or a chain-of-custody of any data.  These ACDCs could be used to provide a verifiable data supply chain for any compliance regulated application. This provides a way to protect participants in a supply chains from imposters. Such data supply chains are also useful as a verifiable digital twin of a physical supply chain.
+This form of an ACDC provides a container for authentic data only (not authentic data as authorization). But authentic data is still a very important use case. To clarify, an untargeted ACDC enables verifiable authorship of data. An observer such as a sensor that controls an AID may make verifiable non-repudiable measurements and publish them as ACDCs. These may be chained together to provide provenance for or a chain-of-custody of any data.  These ACDCs could be used to provide a verifiable data supply chain for any compliance-regulated application. This provides a way to protect participants in a supply chain from imposters. Such data supply chains are also useful as a verifiable digital twin of a physical supply chain [[57]].
 
-A hybrid chain of one or more targeted ACDCs ending in a chain of one or more untargeted ACDCs enables a delegated authorized attestations at the tail of that chain. This may be very useful in many regulated supply chain applications such as verifiable authorized authentic data sheets for a given pharmaceutical.
+A hybrid chain of one or more targeted ACDCs ending in a chain of one or more untargeted ACDCs enables delegated authorized attestations at the tail of that chain. This may be very useful in many regulated supply chain applications such as verifiable authorized authentic datasheets for a given pharmaceutical.
 
 
 ### Public-Attributes ACDC
