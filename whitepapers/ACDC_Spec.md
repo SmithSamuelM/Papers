@@ -497,7 +497,7 @@ Through the use of the JSON Schema `oneOf` composition operator the following co
 "a": 
 {
   "description": "attribute section",
-  oneOf:
+  "oneOf":
   [
     {
       "description": "attribute SAID",
@@ -667,18 +667,18 @@ When an edge sub-block has only one field, its `n` field then the edge block may
 
 
 
-When a edge points to a private ACDC, an Issuer may choose to use a metadata version of that private ACDC when presenting the, `n`, field of and edge prior to acceptance of the terms of disclosure. The verifier can verify the metadata of the private node without the Issuer exposing that actual node contents via the actual node (ADCD) SAID or other attributes.
+When an edge points to a private ACDC, an Issuer may choose to use a metadata version of that private ACDC when presenting the, `n`, field of and edge prior to acceptance of the terms of disclosure. The verifier can verify the metadata of the private node without the Issuer exposing the actual node contents via the actual node (ADCD) SAID or other attributes.
 
-Private ACDCs (nodes) and private edges may be used in combination to prevent unpermissioned correlation of the distributed labeled property graph.
+Private ACDCs (nodes) and private edges may be used in combination to prevent an un-permissioned correlation of the distributed labeled property graph.
 
-In general lookup of a the details of an ACDC reference as a node, `n` field value, in an edge begins with its provided SAID or the SAID of its associated edge sub-block. Because a SAID is cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC. Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC. Alternatively the issuer may provide as an attachment at issuance a copy of the referenced ACDC. In either case after a successful issuance exchange the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essence of percolated discovery.
+In general lookup of the details of an ACDC reference as a node, `n` field value, in an edge begins with its provided SAID or the SAID of its associated edge sub-block. Because a SAID is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC. The Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC. Alternatively, the issuer may provide as an attachment at issuance a copy of the referenced ACDC. In either case, after a successful issuance exchange, the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or holder will then have everything it needs to make a successful presentation to a verifier. This is the essence of percolated discovery.
 
 
 ## Rule Section
 
-In the compact ACDC examples above the rule section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the rule section denoted by the `r` field is as follows:
+In the compact ACDC examples above, the rule section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the rule section denoted by the `r` field is as follows:
 
-```
+~~~json
 "r": 
   {
     "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
@@ -691,7 +691,7 @@ In the compact ACDC examples above the rule section has been compacted into mere
         "l": " In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
       }
   }
-```
+~~~
 
 The `d` field at the top level of the rule block is the SAID of that block and is the same SAID used as the compacted value of the `r` field that appears at the top level of the ACDC. Each clause in the rule section gets is own field. Each clause also has its own local label.
 
