@@ -752,6 +752,7 @@ An alternate simplified compact form uses the value of the `l` field as the valu
 ### Compact Version
 
 ~~~json
+{
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
   "u":  "0ANghkDaG7OY1wjaDAE0qHcg",
