@@ -25,7 +25,7 @@ An important property of high-strength cryptographic digests is that a verifiabl
 
 ## ACDC Fields
 
-An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid confusion with cryptographic use of the term *key* we instead use the term *field* to refer to a mapping pair and the terms *field label* and *field value* for each member of a pair. These pairs can be represented by two-tuples e.g `(label, value)`. We qualify this terminology when necessary by using the term *field map* to reference such a mapping. *Field maps* may be nested where a given *field value* is itself a reference to another *field map*.  We call this nested set of fields a *nested field map* or simply *nested map* for short. A *field* may be represented by a framing code or block delimited serialization.  In a block delimited serialization, such as JSON, each *field map* is represented by an object block with block delimiters such as `{}` [[37]]. Given this equivalence, we may also use the term *block* or *nested block* as synonymous with *field map* or *nested field map*. In many programming languages, a field map is implemented as a dictionary or hash table in order to enable performant asynchronous lookup of a *field value* from its *field label*. Reproducible serialization of *field maps* requires a canonical ordering of those fields. One such canonical ordering is called insertion or field creation order. A list of `(field, value)` pairs provides an ordered representation of any field map. Most programming languages now support ordered dictionaries or hash tables that provide reproducible iteration over a list of ordered field `(label, value)` pairs where the ordering is the insertion or field creation order. This enables reproducible round trip serialization/deserialization of *field maps*.  ACDCs depend on insertion ordered field maps for canonical serialization/deserialization. ACDCs support multiple serialization types, namely JSON, CBOR, MGPK, and CESR but for the sake of simplicity, we will only use JSON herein for examples [[37]]. The basic set of normative field labels in ACDC field maps is defined in the following table.
+An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid confusion with the cryptographic use of the term *key* we instead use the term *field* to refer to a mapping pair and the terms *field label* and *field value* for each member of a pair. These pairs can be represented by two-tuples e.g `(label, value)`. We qualify this terminology when necessary by using the term *field map* to reference such a mapping. *Field maps* may be nested where a given *field value* is itself a reference to another *field map*.  We call this nested set of fields a *nested field map* or simply *nested map* for short. A *field* may be represented by a framing code or block delimited serialization.  In a block delimited serialization, such as JSON, each *field map* is represented by an object block with block delimiters such as `{}` [[37]]. Given this equivalence, we may also use the term *block* or *nested block* as synonymous with *field map* or *nested field map*. In many programming languages, a field map is implemented as a dictionary or hash table in order to enable performant asynchronous lookup of a *field value* from its *field label*. Reproducible serialization of *field maps* requires a canonical ordering of those fields. One such canonical ordering is called insertion or field creation order. A list of `(field, value)` pairs provides an ordered representation of any field map. Most programming languages now support ordered dictionaries or hash tables that provide reproducible iteration over a list of ordered field `(label, value)` pairs where the ordering is the insertion or field creation order. This enables reproducible round trip serialization/deserialization of *field maps*.  ACDCs depend on insertion ordered field maps for canonical serialization/deserialization. ACDCs support multiple serialization types, namely JSON, CBOR, MGPK, and CESR but for the sake of simplicity, we will only use JSON herein for examples [[37]]. The basic set of normative field labels in ACDC field maps is defined in the following table.
 
 
 | Label | Title | Description |
@@ -50,7 +50,7 @@ The primary field labels are compact in that they use only one or two characters
 
 The version string, `v`, field MUST be the first field in any top-level ACDC field map. It provides a regular expression target for determining the serialization format and size (character count) of a serialized ACDC. A stream-parser may use the version string to extract and deserialize (deterministically) any serialized ACDC in a stream of serialized ACDCs. Each ACDC in a stream may use a different serialization type. 
 
-The format of the version string is `ACDCvvSSSShhhhhh_`. The first four characters `ACDC` indicate the enclosing field map serialization. The next two characters, `vv` provide the lowercase hexadecimal notation for the major and minor version numbers of the version of the ACDC specification used for the serialization. The first `v` provides the major version number and the second `v` provides the minor version number. For example, `01` indicates major version 0 and minor version 1 or in dotted-decimal notation `0.1`. Likewise `1c` indicates major version 1 and minor version decimal 12 or in dotted-decimal notation `1.12`. The next four characters `SSSS` indicate the serialization type in uppercase. The four supported serialization types are `JSON`, `CBOR`, `MGPK`, and `CESR` for the JSON, CBOR, MessagePack, and CESR serialization standards respectively [[53]][[54]][[55]][[16]]. The next six characters provide in lowercase hexadecimal notation the total number of characters in the serialization of the ACDC. The maximum length of a given ACDC is thereby constrained to be *2<sup>24</sup> = 16,777,216* characters in length. The final character `-` is the version string terminator. This enables later versions of ACDC to change the total version string size and thereby enable versioned changes to the composition of the fields in the version string while preserving deterministic regular expression extractability of the version string. Although a given ACDC serialization type may have field map delimiter or framing code characters that appear before (i.e. prefix) the version string field value in a serialization, the set of possible prefixes is sufficiently constrained by the allowed serialization protocols to guarantee that a regular expression can determine unambiguously the start of any ordered field map serialization that includes the version string as the first field value. Given the version string, a parser may then determine the end of the serialization so that it can extract the full ACDC from the stream without first deserializing it. This enables performant stream parsing and off-loading of ACDC streams that include any or all of the supported serialization types.
+The format of the version string is `ACDCvvSSSShhhhhh_`. The first four characters `ACDC` indicate the enclosing field map serialization. The next two characters, `vv` provide the lowercase hexadecimal notation for the major and minor version numbers of the version of the ACDC specification used for the serialization. The first `v` provides the major version number and the second `v` provides the minor version number. For example, `01` indicates major version 0 and minor version 1 or in dotted-decimal notation `0.1`. Likewise `1c` indicates major version 1 and minor version decimal 12 or in dotted-decimal notation `1.12`. The next four characters `SSSS` indicate the serialization type in uppercase. The four supported serialization types are `JSON`, `CBOR`, `MGPK`, and `CESR` for the JSON, CBOR, MessagePack, and CESR serialization standards respectively [[53]][[54]][[55]][[16]]. The next six characters provide in lowercase hexadecimal notation the total number of characters in the serialization of the ACDC. The maximum length of a given ACDC is thereby constrained to be *2<sup>24</sup> = 16,777,216* characters in length. The final character `-` is the version string terminator. This enables later versions of ACDC to change the total version string size and thereby enable versioned changes to the composition of the fields in the version string while preserving deterministic regular expression extractability of the version string. Although a given ACDC serialization type may have a field map delimiter or framing code characters that appear before (i.e. prefix) the version string field in a serialization, the set of possible prefixes is sufficiently constrained by the allowed serialization protocols to guarantee that a regular expression can determine unambiguously the start of any ordered field map serialization that includes the version string as the first field value. Given the version string, a parser may then determine the end of the serialization so that it can extract the full ACDC from the stream without first deserializing it. This enables performant stream parsing and off-loading of ACDC streams that include any or all of the supported serialization types.
 
 
 ### AID (Autonomic IDentifier) Fields
@@ -225,70 +225,6 @@ A fully compact public ACDC is shown below.
 ~~~
 
 
-The schema for this compact public ACDC example is provided below:
-
-~~~ json
-{
-  "$id": "EN8i2i5ye0-xGS95pm5cg1j0GmFkarJe0zzsSrrf4XJY",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Compact Public ACDC",
-  "description": "Example JSON Schema for a Compact Public ACDC.",
-  "credentialType": "CompactPublicACDCExample",
-  "type": "object",
-   "required": 
-  [
-    "v",
-    "d",
-    "i",
-    "ri",
-    "s",
-    "a",
-    "e",
-    "r"
-  ],
-  "properties": 
-  {
-    "v": 
-    {
-      "description": "ACDC version string",
-      "type": "string"
-    },
-    "d": 
-    {
-     "description": "ACDC SAID",
-      "type": "string"
-    },
-    "i": 
-    {
-      "description": "Issuer AID",
-      "type": "string"
-    },
-    "ri": 
-    {
-      "description": "credential status registry AID",
-      "type": "string"
-    },
-    "s": {
-      "description": "schema SAID",
-      "type": "string"
-    },
-    "a": {
-      "description": "attribute SAID",
-      "type": "string"
-    },
-    "e": {
-      "description": "edge SAID",
-      "type": "string"
-    },
-    "r": {
-      "description": "rule SAID",
-      "type": "string"
-    },
-  },
-  "additionalProperties": false
-}
-~~~
-
 ### Compact Private ACDC
 A fully compact private ACDC is shown below. 
 
@@ -439,7 +375,61 @@ The subschema for the un-compacted attribute section is shown below:
 }
 ~~~
 
-Two more variants of an ACDC, namely, *targeted* (*untargeted*) are defined respectively by the presence (absence) of an *Issuee*, `i`, field in the uncompacted attribute section block.
+Through the use of the JSON Schema `oneOf` composition operator the following composed schema will validate against both the compact and un-compacted value of the attribute section field.
+
+
+~~~ json
+"a": 
+{
+  "description": "attribute section",
+  oneOf:
+  [
+    {
+      "description": "attribute SAID",
+      "type": "string"
+    },
+    {
+      "description": "uncompacted attribute section",
+      "type": "object",
+      "required": 
+      [
+        "d",
+        "i",
+        "score",
+        "name"
+      ],
+      "properties": 
+      {
+        "d": 
+        {
+          "description": "attribute SAID",
+          "type": "string"
+        },
+        "i": 
+        {
+          "description": "Issuee AID",
+          "type": "string"
+        },
+        "score": 
+        {
+          "description": "test score",
+          "type": "integer"
+        },
+        "name": 
+        {
+          "description": "test taker full name",
+          "type": "string"
+        }
+      }
+    }
+  ]
+  "additionalProperties": false,
+}
+~~~
+
+
+
+Two variants of an ACDC, namely, ***targeted (untargeted)*** are defined respectively by the presence (absence) of an issuee, `i`, field in the uncompacted attribute section block. Two other variants of an ACDC, namely, *private (public) attribute* are defined respectively by the presence (absence) of a UUID, `u`, field in the uncompacted attribute section block.
 
 
 ### Targeted ACDC
@@ -479,30 +469,11 @@ This form of an ACDC provides a container for authentic data only (not authentic
 A hybrid chain of one or more targeted ACDCs ending in a chain of one or more untargeted ACDCs enables delegated authorized attestations at the tail of that chain. This may be very useful in many regulated supply chain applications such as verifiable authorized authentic datasheets for a given pharmaceutical.
 
 
-### Public-Attributes ACDC
-
-Consider the following uncompacted attributes block:
-
-``` json
-"a":
-  {
-    "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
-    "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
-    "score": 96,
-    "name": "Jane Doe"
-  }
-
-```
-
-Given the absence of a `u` field at the top level of the attributes block, then knowledge of both SAID, `d`, field at the top level of an attributes block and the schema of the attributes block may enable discovery of the remaining contents of the attributes block via a rainbow table attack [[28]][[29]]. Therefore the `d` field of the attributes block, although, a cryptographic digest, does not securely blind the contents of the attributes block given knowledge of the schema. It only provides compactness not privacy. Moreover any cryptographic commitments to that `d` field provide a fixed point of correlation potentially to the attribute block field values themselves in spite of non-disclosure of those field values via a compact ACDC. Thus an ACDC without a `u` field in its attributes block must be considered a public-attribute ACDC even when expressed in compact form.
-
-
-
-### Private-Attributes ACDC
+### Private-Attribute ACDC
 
 Consider the following form of an uncompacted attributes block:
 
-``` json
+~~~ json
 "a":
 {
   "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
@@ -511,13 +482,91 @@ Consider the following form of an uncompacted attributes block:
   "score": 96,
   "name": "Jane Doe"
 }
-```
+~~~
 
-Given the presence of a `u` field at the top level of the attributes block and whose value has sufficient cryptographic entropy, then the SAID, `d`, field at the top level of the attributes block  may provide a secure cryptographic digest of the contents of the attributes block [47]. An adversary when given both the schema of the attributes block and its  SAID, `d` field, is not able to discover the remaining contents of the attributes block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the `u` field (UUID) of the attributes block in a compact ACDC enables the `d` field to securely blind the contents of the attributes block notwithstanding knowledge of the schema and the `d` field (SAID) of that attributes block.  Moreover, a cryptographic commitment to that `d` field does not provide a fixed point of correlation to the attribute field values themselves unless and until there has been a disclosure of those field values. 
+Given the presence of a top-level UUID, `u`, field of the attribute block whose value has sufficient cryptographic entropy, then the top-level SAID, `d`, field of the attribute block provides a secure cryptographic digest of the contents of the attribute block [47]. An adversary when given both the schema of the attribute block and its SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the attribute block's UUID, `u`, field in a compact ACDC enables its attribute block's SAID, `d`, field to securely blind the contents of the attribute block notwithstanding knowledge of the attribute block's schema and SAID, `d` field.  Moreover, a cryptographic commitment to that attribute block's, SAID, `d`, field does not provide a fixed point of correlation to the attribute field values themselves unless and until there has been a disclosure of those field values. 
 
-To elaborate, when an ACDC includes a sufficiently high entropy `u` field at the top level of its attributes block then the ACDC may be considered a private-attributes ACDC when expressed in compact form, that is, the attributes block is represented by its SAID or `d` field and the value of the `a` field is the value of the nested `d` field from the uncompacted attributes block. The compact form of the ACDC may be presented and committed too without leaking details of the attributes. Later disclosure of the uncompacted attributes block may be verified against the SAID of the attributes provided in the compact form.
+To elaborate, when an ACDC includes a sufficiently high entropy UUID, `u`, field at the top level of its attributes block then the ACDC may be considered a ***private-attributes*** ACDC when expressed in compact form, that is, the attribute block is represented by its SAID, `d`, field and the value of its top-level attribute section, `a`, field is the value of the nested SAID, `d`, field from the uncompacted version of the attribute block. A verifiable commitment may be made to the compact form of the ACDC without leaking details of the attributes. Later disclosure of the uncompacted attribute block may be verified against its SAID, `d`, field that was provided in the compact form as the value of the top-level attribute section, `a`, field.
 
-Because the *Issuee* AID is nested in the attributes as its top-level `i` field, a presentation exchange could be initiated on behalf of a different AID that has not yet been correlated to the *Issuee* AID and then only correlated to the Issuee AID after the verifier has agreed to the chain-link confidentiality provisions in the rules section of the private-attributes ACDC [[41]].
+Because the *Issuee* AID is nested in the attribute block as that block's top-level, issuee, `i`, field, a presentation exchange (disclosure) could be initiated on behalf of a different AID that has not yet been correlated to the *Issuee* AID and then only correlated to the Issuee AID after the *Disclosee* has agreed to the chain-link confidentiality provisions in the rules section of the private-attributes ACDC [[41]].
+
+Through the use of the JSON Schema `oneOf` composition operator the following composed schema will validate against both the compact and un-compacted value of the private attribute section, `a`, field.
+
+
+~~~ json
+"a": 
+{
+  "description": "attribute section",
+  oneOf:
+  [
+    {
+      "description": "attribute SAID",
+      "type": "string"
+    },
+    {
+      "description": "uncompacted attribute section",
+      "type": "object",
+      "required": 
+      [
+        "d",
+        "u",
+        "i",
+        "score",
+        "name"
+      ],
+      "properties": 
+      {
+        "d": 
+        {
+          "description": "attribute SAID",
+          "type": "string"
+        },
+        "u": 
+        {
+          "description": "attribute UUID",
+          "type": "string"
+        },
+        "i": 
+        {
+          "description": "Issuee AID",
+          "type": "string"
+        },
+        "score": 
+        {
+          "description": "test score",
+          "type": "integer"
+        },
+        "name": 
+        {
+          "description": "test taker full name",
+          "type": "string"
+        }
+      }
+    }
+  ]
+  "additionalProperties": false,
+}
+~~~
+
+
+### Public-Attribute ACDC
+
+Consider the following uncompacted attributes block:
+
+~~~ json
+"a":
+  {
+    "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
+    "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
+    "score": 96,
+    "name": "Jane Doe"
+  }
+
+~~~
+
+Given the absence of a `u` field at the top level of the attributes block, then knowledge of both SAID, `d`, field at the top level of an attributes block and the schema of the attributes block may enable the discovery of the remaining contents of the attributes block via a rainbow table attack [[28]][[29]]. Therefore the `d` field of the attributes block, although, a cryptographic digest, does not securely blind the contents of the attributes block given knowledge of the schema. It only provides compactness, not privacy. Moreover, any cryptographic commitment to that SAID, `d`, field provides a fixed point of correlation potentially to the attribute block field values themselves in spite of non-disclosure of those field values via a compact ACDC. Thus an ACDC without a UUID, `u`, field in its attributes block must be considered a ***public-attribute*** ACDC even when expressed in compact form.
+
+
 
 
 ## Edge Section
