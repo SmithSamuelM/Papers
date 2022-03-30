@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.5
+version: 0.2.6
 notes: non-hackmd version
 
 ---
@@ -590,7 +590,7 @@ In the compact ACDC examples above, the edge section has been compacted into mer
 }
 ~~~
 
-The edge section's top-level SAID, `d`, field is the SAID of the edge block and is the same SAID used as the compacted value of the ACDC's top-level edge, `e`, field. Each edge in the edge section gets its own field with its own local label. In the example above, the edge lable is `"boss"`. Note that each edge does NOT include a type field. The type of each edge is provided by the schema vis-a-vis the label of that edge. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "schema is type". This approach varies somewhat from many property graphs which often do not have a schema [[62]][[63]]. Because ACDCs have a schema for other reasons, however, they leverage that schema to provide edge types with a cleaner separation of concerns.
+The edge section's top-level SAID, `d`, field is the SAID of the edge block and is the same SAID used as the compacted value of the ACDC's top-level edge, `e`, field. Each edge in the edge section gets its field with its own local label. In the example above, the edge label is `"boss"`. Note that each edge does NOT include a type field. The type of each edge is provided by the schema vis-a-vis the label of that edge. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "schema is type". This approach varies somewhat from many property graphs which often do not have a schema [[62]][[63]]. Because ACDCs have a schema for other reasons, however, they leverage that schema to provide edge types with a cleaner separation of concerns.
 
 Each edge sub-block has one required node, `n`, field. The value of the node, `n`, field is the SAID of the ACDC to which the edge connects. 
 
@@ -609,6 +609,8 @@ A main distinguishing feature of a *property graph* (PG) is that both nodes but 
 }
 ~~~
 
+### Globally Distributed Secure Graph Fragments
+
 Abstractly, an ACDC with one or more edges may be a fragment of a distributed property graph. However, the local label does not enable the direct unique global resolution of a given edge including its properties other than a trivial edge with only one property, its node, `n` field. To enable an edge with additional properties to be globally uniquely resolvable, that edge's block may have a SAID, `d`, field. Because a SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed property graph (PG). This enables a property graph to serve as a global knowledge graph in a secure manner that crosses trust domains [[62]][[63]][[64]]. This is shown below.
 
 
@@ -625,7 +627,23 @@ Abstractly, an ACDC with one or more edges may be a fragment of a distributed pr
 }
 ~~~
 
-Each edge's properties may be blinded by its SAID, `d`, field i.e. be private if its properties block includes a UUID, `u` field. As with UUID, `u`, fields used elsewhere in ACDC, if the UUID, `u`, field value has sufficient entropy then the values of the properties are not discoverable in a computationally feasible manner merely given the schema for the edge and its SAID, `d` field. This may be called a *private edge*. This is shown below.
+### Compact Edge
+
+Given that an individual edge's property block includes a SAID, `d`, field then a compact representation of the edge's property block is provided by replacing it with its SAID. This may be useful for complex edges with many properties. This is called a ***compact edge***. This is shown as follows:
+
+
+~~~json
+"e": 
+{
+  "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
+  "boss": "E9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn",
+}
+~~~
+
+
+### Private Edges
+
+Each edge's properties may be blinded by its SAID, `d`, field (i.e. be private) if its properties block includes a UUID, `u` field. As with UUID, `u`, fields used elsewhere in ACDC, if the UUID, `u`, field value has sufficient entropy then the values of the properties of its enclosing block are not discoverable in a computationally feasible manner merely given the schema for the edge block and its SAID, `d` field. This is called a ***private edge***. When a private edge is provided in compact form then the edge detail is hidden and is selectively disclosable. An uncompacted private edge is shown below.
 
 ~~~json
 "e": 
@@ -641,17 +659,12 @@ Each edge's properties may be blinded by its SAID, `d`, field i.e. be private if
 }
 ~~~
 
-Given that an individual edge's property block includes a SAID, `d`, field then a compact representation of the edge's property block is provided by replacing it with its SAID. This may be useful for complex edges with many properties. This is shown as follows:
+When an edge points to a *private* ACDC, a *Discloser* may choose to use a metadata version of that private ACDC when presenting the node, `n`, field of that edge prior to acceptance of the terms of disclosure. The *Disclosee* can verify the metadata of the private node without the *Discloser* exposing the actual node contents via the actual node SAID or other attributes.
+
+Private ACDCs (nodes) and private edges may be used in combination to prevent an un-permissioned correlation of the distributed property graph.
 
 
-~~~json
-"e": 
-{
-  "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
-  "boss": "E9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn",
-}
-~~~
-
+### Simple Compact Edge
 
 When an edge sub-block has only one field that is its node, `n`, field then the edge block may use an alternate simplified compact form where the labeled edge field value is the value of its node, `n`, field. The schema for that particular edge label, in this case, `"boss"`,  will indicate that the edge value is a node SAID and not the edge sub-block SAID as would be the case for the normal compact form shown above. This alternate compact form is shown below.
 
@@ -663,16 +676,16 @@ When an edge sub-block has only one field that is its node, `n`, field then the 
 }
 ~~~
 
-When an edge points to a *private* ACDC, a *Discloser* may choose to use a metadata version of that private ACDC when presenting the, node, `n`, field of that edge prior to acceptance of the terms of disclosure. The *Disclosee* can verify the metadata of the private node without the *Discloser* exposing the actual node contents via the actual node SAID or other attributes.
 
-Private ACDCs (nodes) and private edges may be used in combination to prevent an un-permissioned correlation of the distributed property graph.
 
-In general lookup of the details of an ACDC reference as a node, `n` field value, in an edge begins with its provided SAID or the SAID of its associated edge sub-block. Because a SAID is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC. The Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC [[56]]. Alternatively, the *Issuer* may provide as an attachment at the time of issuance a copy of the referenced ACDC. In either case, after a successful exchange, the *Issuee* or recipient of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or recipient will then have everything it needs to make a successful disclosure to some other *Disclosee*. This is the essence of *percolated* discovery.
+### Node Discovery
+
+In general, the discovery of the details of an ACDC referenced as a node, `n` field value, in an edge sub-block begins with the node SAID or the SAID of the associated edge sub-block. Because a SAID is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced ACDC as a node. The Discovery of a service endpoint URL that provides database access to a copy of the ACDC may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the ACDC [[56]]. Alternatively, the *Issuer* may provide as an attachment at the time of issuance a copy of the referenced ACDC. In either case, after a successful exchange, the *Issuee* or recipient of any ACDC will have either a copy or a means of obtaining a copy of any referenced ACDCs as nodes in the edge sections of all ACDCs so chained. That Issuee or recipient will then have everything it needs to make a successful disclosure to some other *Disclosee*. This is the essence of *percolated* discovery.
 
 
 ## Rule Section
 
-In the compact ACDC examples above, the rule section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the rule section denoted by the top-level `r` field is as follows:
+In the compact ACDC examples above, the rule section has been compacted into merely the SAID of that section. Suppose that the un-compacted value of the rule section denoted by the top-level rule, `r`, field is as follows:
 
 ~~~json
 "r": 
@@ -689,17 +702,17 @@ In the compact ACDC examples above, the rule section has been compacted into mer
 }
 ~~~
 
-The rule section's top-level SAID, `d`, field is the SAID of that block and is the same SAID used as the compacted value of the rule section, `r`, field that appears at the top level of the ACDC. Each clause in the rule section gets its own field. Each clause also has its own local label.
+The purpose of the rule section is to provide a Ricardian Contract [[40]]. The important features of a Ricardian contract are that it be both human and machine-readable and referenceable by a cryptographic digest. A JSON encoded document or block such as the rule section block is a practical example of both a human and machine-readable document.  The rule section's top-level SAID, `d`, field provides the digest.  This provision supports the bow-tie model of Ricardian Contracts [[40]]. Ricardian legal contracts may be hierarchically structured into sections and subsections with named or numbered clauses in each section. The labels on the clauses may follow such a hierarchical structure using nested maps or blocks. These provisions enable the rule section to satisfy the features of a Ricardian contract.
+
+To elaborate, the rule section's top-level SAID, `d`, field is the SAID of that block and is the same SAID used as the compacted value of the rule section, `r`, field that appears at the top level of the ACDC. Each clause in the rule section gets its own field. Each clause also has its own local label.
 
 The legal, `l`, field in each block provides the associated legal language.  
 
-Note there are no type fields in the rule section. The type of a contract and the type of each clause is provided by the schema vis-a-vis the label of that clause. This is in accordance with the design principle of ACDCs that may be succinctly expressed as "schema is type". 
+Note there are no type fields in the rule section. The type of a contract and the type of each clause is provided by the schema vis-a-vis the label of that clause. This follows the ACDC design principle that may be succinctly expressed as "schema is type". 
 
-The purpose of the rule section is to provide a Ricardian Contract [[40]]. The important features of a Ricardian contract are that it be both human and machine-readable and referenceable by a cryptographic digest. A JSON encoded document is a practical example of both a human and machine-readable document.  The SAID, `d`, field at the top level of the rule section provides the digest. This provision supports the bow-tie model of Ricardian Contracts [[40]]. Ricardian legal contracts may be hierarchically structured into sections and subsections with named or numbered clauses in each section. The labels on the clauses may follow such a hierarchical structure using nested maps or blocks. 
+Each rule section clause may also have its own clause SAID, `d`, field. Clause SAIDs enable reference to individual clauses, not merely the whole contract as given by the rule section's top-level SAID, `d`, field.
 
-Each clause may also have a SAID, `d`, field. Clause SAIDs enable reference to individual clauses, not merely the whole contract as given by the rule section's top-level SAID, `d`, field.
-
-An example rule section with SAIDS  for each clause is provided below:
+An example rule section with clause SAIDs is provided below:
 
 ~~~json
 "r": 
@@ -718,7 +731,9 @@ An example rule section with SAIDS  for each clause is provided below:
 }
 ~~~
 
-The use of SAIDS in each clause enables a compact form of a set of clauses where each clause value is the SAID of the corresponding clause. For example:
+### Compact Clauses
+
+The use of clause SAIDS enables a compact form of a set of clauses where each clause value is the SAID of the corresponding clause. For example:
 
 ~~~json
 "r": 
@@ -729,9 +744,33 @@ The use of SAIDS in each clause enables a compact form of a set of clauses where
 }
 ~~~
 
-In compact form, either the rule section as a whole or a given clause, the lookup of the details of the associated clause begins with its provided SAID. Because the SAID, `d`, field of any clause is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced clause details. The discovery of a service endpoint URL that provides database access to a copy of the rule section or to any of its clauses may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the clause. Alternatively, the issuer may provide as an attachment at issuance a copy of the referenced contract associated with a clause. In either case, after a successful issuance exchange, the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced contracts or clauses of all ACDCs involved in the presentation. That Issuee or recipient will then have everything it needs to make a successful presentation or disclosure to a Disclosee. This is the essence of percolated discovery.
+### Private Clauses
 
-An alternate simplified compact form uses the value of the legal, `l`, field as the value of the clause field label. The schema for a specific clause label will indicate that the field value, for a given clause label is the legal language itself and not the clause block's SAID, `d`, field as is the normal compact form shown above. This alternate compact form is shown below.
+The disclosure of some clauses may be pre-conditioned on acceptance of chain-link confidentiality. In this case, some clauses may benefit from selective disclosure. This clauses may be blinded by thier SAID, `d`, field when the clause block include a sufficently high entropy UUID, `u`, field. The use of a clause UUID enables the compact form of a clause to NOT be discoverable merely from the schema for the clause and its SAID via rainbow table attack [[28]][[29]]. Therefore such a clause may be selectively disclosable. These are called ***private clauses***. A private clause example is shown below:
+
+~~~json
+"r": 
+{
+  "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
+  "warrantyDisclaimer": 
+  {
+    "d": "EXgOcLxUdYerzwLIr9Bf7V_NAwY1lkFrn9y2PgveY4-9",
+    "u": "0AG7OY1wjaDAE0qHcgNghkDa",
+    "l": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
+  },
+  "liabilityDisclaimer": 
+  {
+    "d": "EY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NAw",
+    "u": "0AHcgNghkDaG7OY1wjaDAE0q",
+    "l": "In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
+  }
+}
+~~~
+
+
+### Simple Compact Clause
+
+An alternate simplified compact form uses the value of the legal, `l`, field as the value of the clause field label. The schema for a specific clause label will indicate that the field value, for a given clause label is the legal language itself and not the clause block's SAID, `d`, field as is the normal compact form shown above. This alternate simple compact form is shown below. In this form individual clauses are not compactifiable and are fully self-contained.
 
 ~~~json
 "r": 
@@ -741,6 +780,13 @@ An alternate simplified compact form uses the value of the legal, `l`, field as 
     "liabilityDisclaimer": "In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
 }
 ~~~
+
+
+### Clause Discovery
+
+In compact form, the discovery of either the rule section as a whole or a given clause begins with the provided SAID. Because the SAID, `d`, field of any block is a cryptographic digest with high collision resistance it provides a universally unique identifier to the referenced block details (whole rule section or individual clause). The discovery of a service endpoint URL that provides database access to a copy of the rule section or to any of its clauses may be bootstrapped via an OOBI (Out-Of-Band-Introduction) that links the service endpoint URL to the SAID of the respective block. Alternatively, the issuer may provide as an attachment at issuance a copy of the referenced contract associated with the whole rule section or any clause. In either case, after a successful issuance exchange, the Issuee or holder of any ACDC will have either a copy or a means of obtaining a copy of any referenced contracts in whole or in part of all ACDCs so issued. That Issuee or recipient will then have everything it needs to subsequently make a successful presentation or disclosure to a Disclosee. This is the essence of percolated discovery.
+
+
 
 
 
@@ -763,21 +809,19 @@ An alternate simplified compact form uses the value of the legal, `l`, field as 
 ~~~
 
 
-### Non-Compact Version
+### Non-Compact Public Version
 
 
 ~~~json
 {
   "v":  "ACDC10JSON00011c_",
   "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
-  "u":  "0ANghkDaG7OY1wjaDAE0qHcg",
   "i":  "did:keri:EmkPreYpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPM",
   "ri": "did:keri:EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
   "s":  "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A",
   "a":  
   {
     "d": "EgveY4-9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PY",
-    "u": "0AwjaDAE0qHcgNghkDaG7OY1",
     "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA",
     "score": 96,
     "name": "Jane Doe"
@@ -785,11 +829,10 @@ An alternate simplified compact form uses the value of the legal, `l`, field as 
   "e": 
   {
     "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
-    "qvi":
+    "boss":
     {
       "d": "E9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn",
       "n": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA",
-      "w": "high"
     }
   },
   "r": 
@@ -808,6 +851,7 @@ An alternate simplified compact form uses the value of the legal, `l`, field as 
   }
 }
 ~~~
+
 
 ## Selective Disclosure
 
@@ -956,7 +1000,7 @@ In addition to the secret salt, the Issuer provides to the Issuee (recipient) a 
 In addition to the shared salt and ACDC template, the Issuer also provides its signature(s) on its own generated compact version ACDC. The Issuer may also provide references to the anchoring issuance proof seals. Everything else an Issuee (recipient) needs to make a verifiable presentation can be computed at the time of presentation by the Issuee. 
 
 
-#### Non-compact Selective Disclosure Informative Example
+#### Non-compact Selectively Disclosed Attribute Informative Example
 
 
 ~~~json
@@ -1279,6 +1323,7 @@ The highest level of crypto-graphic security with respect to a cryptographic sec
 [31]. Birthday Attacks, Collisions, And Password Strength.  
 
 [31]: https://auth0.com/blog/birthday-attacks-collisions-and-password-strength/  
+
 [32]. Cost analysis of hash collisions: Will quantum computers make SHARCS obsolete?  
 
 [32]: https://cr.yp.to/hash/collisioncost-20090823.pdf  
