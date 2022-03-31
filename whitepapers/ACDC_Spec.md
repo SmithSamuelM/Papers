@@ -1279,6 +1279,8 @@ In addition to the shared salt and ACDC template, the Issuer also provides its s
 
 #### Composed Schema for Selectively Disclosable Attribute Section
 
+Because the selectively disclosable attributes are provided by an array, the uncompacted variant in the schema uses an array of items and the `anyOf` composition operator to allow one or more of the items to be disclosed without requiring all to be disclosed. Thus both the `oneOf` and `anyOf` composition operators are used. The `oneOf` is used to provide partial disclosure of the aggregate, *A*, as the value of the attribute section, `a` field in its compact variant and the nested `anyOf` operator is used to enable selective disclosure in the selectively disclosable variant.
+
 ~~~json
 "a": 
 {
