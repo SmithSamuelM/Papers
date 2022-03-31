@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.9
+version: 0.3.0
 notes: non-hackmd version
 
 ---
@@ -1162,7 +1162,6 @@ The *Issuer* attribute block is absent from an uncompacted untargeted selectivel
 
 The *Issuer* attribute block is present in an uncompacted untargeted selectively disclosable ACDC as follows:
 
-
 ~~~json
 "a":
 [
@@ -1183,63 +1182,6 @@ The *Issuer* attribute block is present in an uncompacted untargeted selectively
   }
 ]
 ~~~
-
-
-~~~json
-"a": 
-{
-  "description": "attribute section",
-  "oneOf":
-  [
-    {
-      "description": "attribute SAID",
-      "type": "string"
-    },
-    {
-      "description": "uncompacted attribute section",
-      "type": "object",
-      "required": 
-      [
-        "d",
-        "u",
-        "i",
-        "score",
-        "name"
-      ],
-      "properties": 
-      {
-        "d": 
-        {
-          "description": "attribute SAID",
-          "type": "string"
-        },
-        "u": 
-        {
-          "description": "attribute UUID",
-          "type": "string"
-        },
-        "i": 
-        {
-          "description": "Issuee AID",
-          "type": "string"
-        },
-        "score": 
-        {
-          "description": "test score",
-          "type": "integer"
-        },
-        "name": 
-        {
-          "description": "test taker full name",
-          "type": "string"
-        }
-      }
-    }
-  ]
-  "additionalProperties": false,
-}
-~~~
-
 
  
 Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
@@ -1334,59 +1276,122 @@ In addition to the secret salt, the Issuer provides to the Issuee (recipient) a 
 In addition to the shared salt and ACDC template, the Issuer also provides its signature(s) on its own generated compact version ACDC. The Issuer may also provide references to the anchoring issuance proof seals. Everything else an Issuee (recipient) needs to make a verifiable presentation/disclosure can be computed at the time of presentation/disclosure by the Issuee. 
 
 
-#### Uncompacted Selectively Disclosable Attribute ACDC Informative Example
 
+#### Composed Schema for Selectively Disclosable Attribute Section
 
 ~~~json
+"a": 
 {
-  "v":  "ACDC10JSON00011c_",
-  "d":  "EBdXt3gIXOf2BBWNHdSXCJnFJL5OuQPyM5K0neuniccM",
-  "u":  "0ANghkDaG7OY1wjaDAE0qHcg",
-  "i":  "did:keri:EmkPreYpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPM",
-  "ri": "did:keri:EymRy7xMwsxUelUauaXtMxTfPAMPAI6FkekwlOjkggt",
-  "s":  "E46jrVPTzlSkUPqGGeIZ8a8FWS7a6s4reAXRZOkogZ2A",
-  "a":
+  "description": "attribute section",
+  "oneOf":
   [
     {
-      "d": "ErzwLIr9Bf7V_NHwY1lkFrn9y2PYgveY4-9XgOcLxUde",
-      "u": "0AqHcgNghkDaG7OY1wjaDAE0",
-      "i": "did:keri:EpZfFk66jpf3uFv7vklXKhzBrAqjsKAn2EDIPmkPreYA"
+      "description": "attribute section SAID",
+      "type": "string"
     },
     {
-      "d": "ELIr9Bf7V_NHwY1lkgveY4-Frn9y2PY9XgOcLxUderzw",
-      "u": "0AG7OY1wjaDAE0qHcgNghkDa",
-      "score": 96
-    },
-    {
-      "d": "E9XgOcLxUderzwLIr9Bf7V_NHwY1lkFrn9y2PYgveY4-",
-      "u": "0AghkDaG7OY1wjaDAE0qHcgN",
-      "name": "Jane Doe"
+      "description": "attribute details",
+      "type": "array",
+      "uniqueItems": true,
+      "items": 
+      {
+        "anyOf":
+        [
+          {
+            "description": "issuer attribute",
+            "type": "object",
+            "properties":
+            "required":
+            [
+              "d",
+              "u",
+              "i"
+            ],
+            "properties":
+            {
+              "d": 
+              {
+                "description": "attribute SAID",
+                "type": "string"
+              },
+              "u": 
+              {
+                "description": "attribute UUID",
+                "type": "string"
+              },
+              "i": 
+              {
+                "description": "issuer SAID",
+                "type": "string"
+              },
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "score attribute",
+            "type": "object",
+            "properties":
+            "required":
+            [
+              "d",
+              "u",
+              "score"
+            ],
+            "properties":
+            {
+              "d": 
+              {
+                "description": "attribute SAID",
+                "type": "string"
+              },
+              "u": 
+              {
+                "description": "attribute UUID",
+                "type": "string"
+              },
+              "i": 
+              {
+                "description": "score value",
+                "type": "integer"
+              },
+            },
+            "additionalProperties": false
+          },
+          {
+            "description": "name attribute",
+            "type": "object",
+            "properties":
+            "required":
+            [
+              "d",
+              "u",
+              "name"
+            ],
+            "properties":
+            {
+              "d": 
+              {
+                "description": "attribute SAID",
+                "type": "string"
+              },
+              "u": 
+              {
+                "description": "attribute UUID",
+                "type": "string"
+              },
+              "i": 
+              {
+                "description": "name value",
+                "type": "string"
+              },
+            },
+            "additionalProperties": false
+          }
+        ]      
+      }
     }
   ]
-  "e": 
-  {
-    "d": "EerzwLIr9Bf7V_NHwY1lkFrn9y2PgveY4-9XgOcLxUdY",
-    "boss":
-    {
-      "d": "E9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NHwY1lkFrn",
-      "n": "EIl3MORH3dCdoFOLe71iheqcywJcnjtJtQIYPvAu6DZA",
-      "w": "high"
-    }
-  },
-  "r": 
-  {
-    "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
-    "warrantyDisclaimer": 
-    {
-      "d": "EXgOcLxUdYerzwLIr9Bf7V_NAwY1lkFrn9y2PgveY4-9",
-      "l": "Issuer provides this credential on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
-    },
-    "liabilityDisclaimer": 
-    {
-      "d": "EY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NAw",
-      "l": " In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
-    }
-  }
+  "additionalProperties": false,
 }
 ~~~
 
