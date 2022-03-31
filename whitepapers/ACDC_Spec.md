@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.2.8
+version: 0.2.9
 notes: non-hackmd version
 
 ---
@@ -917,8 +917,18 @@ In compact form, the discovery of either the rule section as a whole or a given 
     },
     "s": 
     {
-      "description": "schema SAID",
-      "type": "string"
+      "description": "schema section",
+      "oneOf":
+      [
+        {
+          "description": "schema section SAID",
+          "type": "string"
+        },
+        {
+          "description": "schema detail",
+          "type": "object"
+        },
+      ]
     },
     "a": 
     {
@@ -926,11 +936,11 @@ In compact form, the discovery of either the rule section as a whole or a given 
       "oneOf":
       [
         {
-          "description": "attribute SAID",
+          "description": "attribute section SAID",
           "type": "string"
         },
         {
-          "description": "uncompacted attribute section",
+          "description": "attribute detail",
           "type": "object",
           "required": 
           [
@@ -943,7 +953,7 @@ In compact form, the discovery of either the rule section as a whole or a given 
           {
             "d": 
             {
-              "description": "attribute SAID",
+              "description": "attribute section SAID",
               "type": "string"
             },
             "i": 
@@ -968,15 +978,15 @@ In compact form, the discovery of either the rule section as a whole or a given 
     },
     "e":
     {
-      "description": "attribute section",
+      "description": "edge section",
       "oneOf":
       [ 
         {
-          "description": "edge SAID",
+          "description": "edge section SAID",
           "type": "string"
         },
         {
-          "description": "uncompacted edge section",
+          "description": "edge detail",
           "type": "object",
           "required": 
           [
@@ -1026,28 +1036,85 @@ In compact form, the discovery of either the rule section as a whole or a given 
     },
     "r": 
     {
-      "description": "rule SAID",
-      "type": "string"
-    },
+      "description": "rule section",
+      "oneOf":
+      [
+        {
+          "description": "rule section SAID",
+          "type": "string"
+        },
+        {
+          "description": "rule detail",
+          "type": "object",
+          "required": 
+          [
+            "d",
+            "warrantyDisclaimer",
+            "liabilityDisclaimer"
+          ],
+          "properties": 
+          {
+            "d": 
+            {
+              "description": "edge section SAID",
+              "type": "string"
+            },
+            "warrantyDisclaimer": 
+            {
+              "description": "warranty disclaimer clause",
+              "type": "object",
+              "required":
+              [
+                "d",
+                "l"
+              ],
+              "properties":
+              {
+                "d": 
+                {
+                  "description": "clause SAID",
+                  "type": "string"
+                },
+                "l": 
+                {
+                  "description": "legal language",
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "liabilityDisclaimer": 
+            {
+              "description": "liability disclaimer clause",
+              "type": "object",
+              "required":
+              [
+                "d",
+                "l"
+              ],
+              "properties":
+              {
+                "d": 
+                {
+                  "description": "clause SAID",
+                  "type": "string"
+                },
+                "l": 
+                {
+                  "description": "legal language",
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
   },
   "additionalProperties": false
 }
-
- "r": 
-  {
-    "d": "EwY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NA",
-    "warrantyDisclaimer": 
-    {
-      "d": "EXgOcLxUdYerzwLIr9Bf7V_NAwY1lkFrn9y2PgveY4-9",
-      "l": "Issuer provides this credential on an \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE",
-    },
-    "liabilityDisclaimer": 
-    {
-      "d": "EY1lkFrn9y2PgveY4-9XgOcLxUdYerzwLIr9Bf7V_NAw",
-      "l": "In no event and under no legal theory, whether in tort (including negligence), contract, or otherwise, unless required by applicable law (such as deliberate and grossly negligent acts) or agreed to in writing, shall the Issuer be liable for damages, including any direct, indirect, special, incidental, or consequential damages of any character arising as a result of this credential. "
-    }
-  }
-
 
 ~~~
 
