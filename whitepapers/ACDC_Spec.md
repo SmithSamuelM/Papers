@@ -1,7 +1,7 @@
 ---
 tags: ACDC, XORA, KERI, Selective Disclosure  
 email: sam@samuelsmith.org  
-version: 0.3.0
+version: 0.3.1
 notes: non-hackmd version
 
 ---
@@ -10,7 +10,7 @@ notes: non-hackmd version
 
 ## Introduction
 
-An authentic chained data container (ACDC) [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats (JSON, CBOR, MGPK, and CESR) [[53]][[54]][[55]][[16]], compact formats, support for Ricardian contracts [[40]], a well defined security model derived from KERI [[14]][[15]], support for chain-link confidentiality [[41]], and simple partial or selective disclosure mechanisms. 
+An authentic chained data container (ACDC)  [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats (JSON, CBOR, MGPK, and CESR) [[53]][[54]][[55]][[16]], compact formats, support for Ricardian contracts [[40]], a well defined security model derived from KERI [[14]][[15]], support for chain-link confidentiality [[41]], simple *partial disclosure* mechanisms and simple *selective disclosure* mechanisms. 
 
 The primary purpose of the ACDC protocol is to provide granular provenanced proof-of-authorship (authenticity) of their contained data via a tree or chain of linked ACDCs (technically a directed acyclic graph or DAG). Similar to the concept of a chain-of-custody, ACDCs provide a verifiable chain of proof-of-authorship of the contained data. With a little additional syntactic sugar, this primary facility of chained (treed) proof-of-authorship (authenticity) is extensible to a chained (treed) verifiable authentic proof-of-authority (proof-of-authorship-of-authority). A proof-of-authority may be used to provide verifiable authorizations or permissions or rights or credentials. A chained (treed) proof-of-authority enables delegation of authority and delegated authorizations. 
 
@@ -37,12 +37,12 @@ An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid con
 |`i`| Identifier (AID)| Semantics are determined by the context of its enclosing map. | 
 |`u`| UUID | Random Universally Unique IDentifier as fully qualified high entropy pseudo-random string, a salted nonce. |
 |`ri`| Registry Identifier (AID) | Issuance and/or revocation, transfer, or retraction registry for ACDC. | 
-|`s`| Schema| SAID of a JSON Schema block. | 
-|`a`| Attribute| Either a block of attributes or SAID of a block of attributes. | 
-|`e`| Edge| Either a block of edges or SAID of a block edges. The edge section connects the ACDC attributed block at node to other ACDC nodes which makes the ACDC a fragment of a distributed property graph (PG).| 
+|`s`| Schema| Either the SAID of a JSON Schema block or the block itself. | 
+|`a`| Attribute| Either the SAID of a block of attributes or the block itself. | 
+|`A`| Attribute Aggregate| Either the Aggregate of a selectively disclosable block of attributes or the block itself. | 
+|`e`| Edge| Either the SAID of a block or edges or the block itself.| 
+|`r`| Rule | Either the SAID a block of rules or the block itself | 
 |`n`| Node| SAID of another ACDC as the terminating point of a directed edge that connects the encapsulating ACDC node to the specified ACDC node as a fragment of a distributed property graph (PG).| 
-|`r`| Rule | Either a block of rules or SAID of a block of rules that provides contractual restrictions, terms-of-use, consent, waivers, or a chain-link confidentiality agreement under which disclosure is made. | 
-
 
 
 ### Compact Labels
@@ -62,7 +62,7 @@ The format of the version string is `ACDCvvSSSShhhhhh_`. The first four characte
 Some fields, such as the `i` and `ri` fields, MUST each have an AID (Autonomic IDentifier) as its value. An AID is a fully qualified Self-Certifying IDentifier (SCID) that follows the KERI protocol [[14]][[15]]. A SCID is derived from one or more `(public, private)` key pairs using asymmetric or public-key cryptography to create verifiable digital signatures [[51]]. Each AID has a set of one or more controllers who each control a private key. By virtue of their private key(s), the set of controllers may make statements on behalf of the associated AID that is backed by uniquely verifiable commitments via digital signatures on those statements. Any entity may then verify those signatures using the associated set of public keys. No shared or trusted relationship between the controllers and verifiers is required. The verifiable key state for AIDs is established with the KERI protocol [[14]][[15]]. The use of AIDS enables ACDCs to be used in a portable but securely attributable, fully decentralized manner in an ecosystem that spans trust domains. 
 
 #### Namespaced AIDs
-Because KERI is agnostic about the namespace for any particular AID, different namespace standards may be used to express KERI AIDs within AID fields in an ACDC. The examples below use the W3C DID namespace specification with the `did:keri` method [[21]]. But the examples would have the same validity from a KERI perspective if no namespace is used or if some other supported namespace were used instead. 
+Because KERI is agnostic about the namespace for any particular AID, different namespace standards may be used to express KERI AIDs within AID fields in an ACDC. The examples below use the W3C DID namespace specification with the `did:keri` method [[21]]. But the examples would have the same validity from a KERI perspective if some other supported namespace was used or no namespace was used at all. The latter case consists of a bare KERI AID (identifier prefix).
 
 ### SAID (Self-Addressing IDentifier) Fields
 
@@ -72,11 +72,15 @@ Several top-level ACDC fields may have for their value either a serialized *fiel
 
 Recall that a cryptographic commitment (such as a digital signature or cryptographic digest) on a given digest with sufficient cryptographic strength including collision resistance [[32]][[42]] is equivalent to a commitment to the block from which the given digest was derived.  Specifically, a digital signature on a SAID makes a verifiable cryptographic non-repudiable commitment that is equivalent to a commitment on the full serialization of the associated block from which the SAID was derived. This enables reasoning about ACDCs in whole or in part via their SAIDS in a fully interoperable, verifiable, compact, and secure manner. This also supports the well-known bow-tie model of Ricardian Contracts [[40]]. This includes reasoning about the whole ACDC given by its top-level SAID, `d`, field as well as reasoning about any nested sections using their SAIDS. 
 
+### Selectively Disclosable Attribute Aggregate Field
+
+The top-level selectively-disclosable attribute aggregate section, `A`, field value is an aggregate of cryptographic commitments used to make a commitment to a set (bundle) of selectively disclosable attributes. The value of the attribute aggregate, `A`, field depends on the type of selective disclosure mechanism employed. For example, the aggregate value could be the cryptographic digest of the concatenation of an ordered set of cryptographic digests, a Merkle tree root digest of an ordered set of cryptographic digests, or a cryptographic accumulator.
+
 ### UUID (Universally Unique IDentifier) Fields
 
 The purpose of the UUID, `u`, field in any block is to provide sufficient entropy to the SAID, `d`, field of the associated block to make computationally infeasible any brute force attacks on that block that attempt to discover the block contents from the schema and the SAID. The UUID, `u`, field may be considered a salty nonce [[27]]. Without the entropy provided the UUID, `u`, field, an adversary may be able to reconstruct the block contents merely from the SAID of the block and the schema of the block using a rainbow or dictionary attack on the set of field values allowed by the schema [[28]][[29]]. The effective security level, entropy, or cryptographic strength of the schema-compliant field values may be much less than the cryptographic strength of the SAID digest. Another way of saying this is that the cardinality of the power set of all combinations of allowed field values may be much less than the cryptographic strength of the SAID. Thus an adversary could successfully discover via brute force the exact block by creating digests of all the elements of the power set which may be small enough to be computationally feasible instead of inverting the SAID itself. Sufficient entropy in the `u` field ensures that the cardinality of the power set allowed by the schema is at least as great as the entropy of the SAID digest algorithm itself.
 
-A UUID, `u` field may optionally appear in any block (field map) at any level of an ACDC. Whenever a block in an ACDC includes a UUID, `u`, field then it's associated SAID, `d`, field makes a blinded commitment to the contents of that block. The UUID, `u`, field is the blinding factor. This makes that block potentially securely partially or even selectively disclosable notwithstanding disclosure of the associated schema of the block. The block contents can only be discovered given disclosure of the included UUID field. Likewise when a UUID, `u`, field appears at the top level of an ACDC then that top-level SAID, `d`, field makes a blinded commitment to the contents of the whole ACDC itself. Thus the whole ACDC, not merely some block within the ACDC, may be disclosed in a privacy-preserving (correlation minimizing) manner. 
+A UUID, `u` field may optionally appear in any block (field map) at any level of an ACDC. Whenever a block in an ACDC includes a UUID, `u`, field then it's associated SAID, `d`, field makes a blinded commitment to the contents of that block. The UUID, `u`, field is the blinding factor. This makes that block securely partially disclosable or even selectively disclosable notwithstanding disclosure of the associated schema of the block. The block contents can only be discovered given disclosure of the included UUID field. Likewise when a UUID, `u`, field appears at the top level of an ACDC then that top-level SAID, `d`, field makes a blinded commitment to the contents of the whole ACDC itself. Thus the whole ACDC, not merely some block within the ACDC, may be disclosed in a privacy-preserving (correlation minimizing) manner. 
 
 
 ## Schema Section
@@ -114,11 +118,12 @@ There ACDC supported formats for the value of the top-level id, `$id`, field are
 
 * Bare SAIDs may be used to refer to a SAIDified schema as long as the JSON schema validator supports bare SAID references. By default, many if not all JSON schema validators support bare strings (non-URIs) for the *Base URI* provided by the top-level `$id` field value. 
 
-* The `did:` URI scheme may be used safely to prefix non-local URI references that act to namespace SAIDs expressed as DID URIs or DID URLs. For example, `did:SAID` where *SAID* is replaced with the actual SAID of a schema as SAD that provides a verifiable non-local reference that dereferences safely as ACDC JSON Schema determined by the JSON Schema mime-type of `schema+json`. DID resolvers accept DID URLs for a given DID method such as `did:keri` and may return DID docs or DID doc metadata with SAIDified schema or service endpoints that return SAIDified schema.
-
 * The `sad:` URI scheme may be used to directly indicate a URI resource that safely returns a verifiable SAD. For example `sad:SAID` where *SAID* is replaced with the actual SAID of a SAD that provides a verifiable non-local reference to JSON Schema as indicated by the mime-type of `schema+json`. 
 
 * The IETF KERI OOBI internet draft specification provides a URL syntax that references a SAD resource by its SAID at the service endpoint indicated by that URL[56]. Such remote OOBI URLs are also safe because the provided SAD resource is verifiable against the SAID in the OOBI URL. Therefore OOBI URLs are also acceptable non-local URI references for JSON Schema.
+
+* The `did:` URI scheme may be used safely to prefix non-local URI references that act to namespace SAIDs expressed as DID URIs or DID URLs.  DID resolvers resolve DID URLs for a given DID method such as `did:keri` and may return DID docs or DID doc metadata with SAIDified schema or service endpoints that return SAIDified schema. A verifiable non-local reference in the form of DID URL that includes the schema SAID is resolved safely when it dereferences to the SAD of that SAID. For example, the resolution result returns an ACDC JSON Schema whose id, `$id`, field includes the SAID and returns a resource with JSON Schema mime-type of `schema+json`.
+
 
 To clarify, ACDCs MUST NOT use complex JSON Schema references which allow *dynamically generated *schema resources to be obtained from online JSON Schema Libraries [[60]]. The latter approach may be difficult or impossible to secure because a cryptographic commitment to the base schema that includes complex schema (non-relative URI-based) references only commits to the non-relative URI reference and not to the actual schema resource which may change (is dynamic, mutable, malleable). To restate, this approach is insecure because a cryptographic commitment to a complex (non-relative URI-based) reference is NOT equivalent to a commitment to the detailed associated schema resource so referenced if it may change.
 
@@ -632,7 +637,7 @@ A main distinguishing feature of a *property graph* (PG) is that both nodes but 
 
 ### Globally Distributed Secure Graph Fragments
 
-Abstractly, an ACDC with one or more edges may be a fragment of a distributed property graph. However, the local label does not enable the direct unique global resolution of a given edge including its properties other than a trivial edge with only one property, its node, `n` field. To enable an edge with additional properties to be globally uniquely resolvable, that edge's block may have a SAID, `d`, field. Because a SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed property graph (PG). This enables a property graph to serve as a global knowledge graph in a secure manner that crosses trust domains [[62]][[63]][[64]]. This is shown below.
+Abstractly, an ACDC with one or more edges may be a fragment of a distributed property graph. However, the local label does not enable the direct unique global resolution of a given edge including its properties other than a trivial edge with only one property, its node, `n` field. To enable an edge with additional properties to be globally uniquely resolvable, that edge's block may have a SAID, `d`, field. Because a SAID is a cryptographic digest it will universally and uniquely identify an edge with a given set of properties [[47]]. This allows ACDCs to be used as secure fragments of a globally distributed property graph (PG). This enables a property graph to serve as a global knowledge graph in a secure manner that crosses trust domains [[62]][[63]] [[64]]. This is shown below.
 
 
 ~~~json
@@ -1183,7 +1188,7 @@ The *Issuer* attribute block is present in an uncompacted untargeted selectively
 ]
 ~~~
 
- 
+
 Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
 
 Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as:
@@ -1544,7 +1549,7 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [1]. Information-Theoretic and Perfect Security.  
 
-[1]: https://en.wikipedia.org/wiki/Information-theoretic_security  
+[1]: https://en.wikipedia.org/wiki/Information-theoretic_security
 
 [2]. One-Time-Pad.
 
@@ -1560,19 +1565,19 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [5]. Secret Sharing.  
 
-[5]: https://en.wikipedia.org/wiki/Secret_sharing  
+[5]: https://en.wikipedia.org/wiki/Secret_sharing
 
 [6]. Cryptographically-secure pseudorandom number generator (CSPRNG).  
 
-[6]: https://en.wikipedia.org/wiki/Cryptographically-secure_pseudorandom_number_generator  
+[6]: https://en.wikipedia.org/wiki/Cryptographically-secure_pseudorandom_number_generator
 
 [7]. Information Theory.  
 
-[7]: https://en.wikipedia.org/wiki/Information_theory  
+[7]: https://en.wikipedia.org/wiki/Information_theory
 
 [8]. Cryptographic Accumulator.  
 
-[8]: https://en.wikipedia.org/wiki/Accumulator_(cryptography)  
+[8]: https://en.wikipedia.org/wiki/Accumulator_(cryptography)
 
 [9]. XORA (XORed Accumulator)
 
@@ -1588,27 +1593,27 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [12]. Trust Over IP (ToIP) Foundation.  
 
-[12]: https://trustoverip.org  
+[12]: https://trustoverip.org
 
 [13]. ACDC (Authentic Chained Data Container) Task Force.  
 
-[13]: https://wiki.trustoverip.org/display/HOME/ACDC+%28Authentic+Chained+Data+Container%29+Task+Force  
+[13]: https://wiki.trustoverip.org/display/HOME/ACDC+%28Authentic+Chained+Data+Container%29+Task+Force
 
 [14]. Smith, S. M., "Key Event Receipt Infrastructure (KERI) Design"  
 
-[14]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/KERI_WP_2.x.web.pdf  
+[14]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/KERI_WP_2.x.web.pdf
 
 [15]. IETF KERI (Key Event Receipt Infrastructure) Internet Draft.  
 
-[15]: https://github.com/WebOfTrust/ietf-keri  
+[15]: https://github.com/WebOfTrust/ietf-keri
 
 [16]. IETF CESR (Composable Event Streaming Representation) Internet Draft.  
 
-[16]: https://github.com/WebOfTrust/ietf-cesr  
+[16]: https://github.com/WebOfTrust/ietf-cesr
 
 [17]. IETF SAID (Self-Addressing IDentifier) Internet Draft.  
 
-[17]: https://github.com/WebOfTrust/ietf-said  
+[17]: https://github.com/WebOfTrust/ietf-said
 
 [18]. IETF PTEL (Public Transaction Event Log) Internet Draft.  
 
@@ -1616,7 +1621,7 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [19]. IETF CESR-Proof Internet Draft.  
 
-[19]: https://github.com/WebOfTrust/ietf-cesr-proof  
+[19]: https://github.com/WebOfTrust/ietf-cesr-proof
 
 [20]. IPEX (Issuance and Presentation EXchange) Draft.  
 
@@ -1624,11 +1629,11 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [21]. IETF DID-KERI Internet Draft.  
 
-[21]: https://github.com/WebOfTrust/ietf-did-keri  
+[21]: https://github.com/WebOfTrust/ietf-did-keri
 
 [22]. IETF (Internet Engineering Task Force).
 
-[22]: https://www.ietf.org  
+[22]: https://www.ietf.org
 
 [23]. GLEIF vLEI.
 
@@ -1636,7 +1641,7 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [24]. GLEIF with KERI Architecture.  
 
-[24]: https://github.com/SmithSamuelM/Papers/blob/master/presentations/GLEIF_with_KERI.web.pdf  
+[24]: https://github.com/SmithSamuelM/Papers/blob/master/presentations/GLEIF_with_KERI.web.pdf
 
 [25]. W3C Decentralized Identifiers (DIDs) v1.0.  
 
@@ -1644,59 +1649,59 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [26]. W3C Verifiable Credentials Data Model v1.1.  
 
-[26]: https://www.w3.org/TR/vc-data-model/  
+[26]: https://www.w3.org/TR/vc-data-model/
 
 [27]. Salts, Nonces, and Initial Values.  
 
-[27]: https://medium.com/@fridakahsas/salt-nonces-and-ivs-whats-the-difference-d7a44724a447  
+[27]: https://medium.com/@fridakahsas/salt-nonces-and-ivs-whats-the-difference-d7a44724a447
 
 [28]. Rainbow Table.  
 
-[28]: https://en.wikipedia.org/wiki/Rainbow_table  
+[28]: https://en.wikipedia.org/wiki/Rainbow_table
 
 [29]. Dictionary Attacks, Rainbow Table Attacks and how Password Salting defends against them.  
 
-[29]: https://www.commonlounge.com/discussion/2ee3f431a19e4deabe4aa30b43710aa7 
+[29]: https://www.commonlounge.com/discussion/2ee3f431a19e4deabe4aa30b43710aa7
 
 [30]. Birthday Attack.  
 
-[30]: https://en.wikipedia.org/wiki/Birthday_attack  
+[30]: https://en.wikipedia.org/wiki/Birthday_attack
 
 [31]. Birthday Attacks, Collisions, And Password Strength.  
 
-[31]: https://auth0.com/blog/birthday-attacks-collisions-and-password-strength/  
+[31]: https://auth0.com/blog/birthday-attacks-collisions-and-password-strength/
 
 [32]. Cost analysis of hash collisions: Will quantum computers make SHARCS obsolete?  
 
-[32]: https://cr.yp.to/hash/collisioncost-20090823.pdf  
+[32]: https://cr.yp.to/hash/collisioncost-20090823.pdf
 
 [33]. The Provable Security of Ed25519: Theory and Practice.  
 
-[33]: https://eprint.iacr.org/2020/823  
+[33]: https://eprint.iacr.org/2020/823
 
-[34]. J. Brendel, C. Cremers, D. Jackson, and M. Zhao, "The Provable Security of Ed25519: Theory and Practice," 2021 IEEE Symposium on Security and Privacy (SP), 2021, pp. 1659-1676, DOI: 10.1109/SP40001.2021.00042.  
+[34].  Brendel, C. Cremers, D. Jackson, and M. Zhao, "The Provable Security of Ed25519: Theory and Practice," 2021 IEEE Symposium on Security and Privacy (SP), 2021, pp. 1659-1676, DOI: 10.1109/SP40001.2021.00042.  
 
 [34]: https://ieeexplore.ieee.org/document/9519456?denied=
 
 [35].Taming the many EdDSAs.  
 
-[35]: https://eprint.iacr.org/2020/1244.pdf  
+[35]: https://eprint.iacr.org/2020/1244.pdf
 
 [37]. JavaScript Object Notation (JSON).  
 
-[37]: https://www.json.org/json-en.html  
+[37]: https://www.json.org/json-en.html
 
 [38]. JSON Schema.  
 
-[38]: https://json-schema.org  
+[38]: https://json-schema.org
 
 [39]. Schema Composition in JSON Schema.  
 
-[39]: https://json-schema.org/understanding-json-schema/reference/combining.html  
+[39]: https://json-schema.org/understanding-json-schema/reference/combining.html
 
 [40]. Ricardian Contract.  
 
-[40]: https://en.wikipedia.org/wiki/Ricardian_contract  
+[40]: https://en.wikipedia.org/wiki/Ricardian_contract
 
 [41]. Chain-Link Confidentiality.  
 
@@ -1704,51 +1709,51 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [42]. Hash Collision Resistance.  
 
-[42]: https://en.wikipedia.org/wiki/Collision_resistance  
+[42]: https://en.wikipedia.org/wiki/Collision_resistance
 
 [43]. Diffie-Hellman Key Exchange.  
 
-[43]: https://www.infoworld.com/article/3647751/understand-diffie-hellman-key-exchange.html  
+[43]: https://www.infoworld.com/article/3647751/understand-diffie-hellman-key-exchange.html
 
 [44]: Key Exchange.  
 
-[44]: https://libsodium.gitbook.io/doc/key_exchange  
+[44]: https://libsodium.gitbook.io/doc/key_exchange
 
 [45]. Identity System Essentials.  
 
-[45]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/Identity-System-Essentials.pdf  
+[45]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/Identity-System-Essentials.pdf
 
 [46]. Complex JSON Schema Identifiers.  
 
-[46]: https://json-schema.org/understanding-json-schema/structuring.html#base-uri  
+[46]: https://json-schema.org/understanding-json-schema/structuring.html#base-uri
 
 [47]: Cryptographic Hash Function.  
 
-[47]: https://en.wikipedia.org/wiki/Cryptographic_hash_function  
+[47]: https://en.wikipedia.org/wiki/Cryptographic_hash_function
 
 [48]. Merkle Tree.  
 
-[48]: https://en.wikipedia.org/wiki/Merkle_tree  
+[48]: https://en.wikipedia.org/wiki/Merkle_tree
 
 [49]. Second Pre-image Attack on Merkle Trees.  
 
-[49]: https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/  
+[49]: https://flawed.net.nz/2018/02/21/attacking-merkle-trees-with-a-second-preimage-attack/
 
 [50]. Merkle Tree Security.  
 
-[50]: https://blog.enuma.io/update/2019/06/10/merkle-trees-not-that-simple.html  
+[50]: https://blog.enuma.io/update/2019/06/10/merkle-trees-not-that-simple.html
 
 [51]. Digital Signature.
 
-[51]: https://en.wikipedia.org/wiki/Digital_signature  
+[51]: https://en.wikipedia.org/wiki/Digital_signature
 
 [52]. Security Level.
 
-[52]: https://en.wikipedia.org/wiki/Security_level  
+[52]: https://en.wikipedia.org/wiki/Security_level
 
 [53]. RFC-8259 JSON (JavaScript Object Notation).  
 
-[53]: https://datatracker.ietf.org/doc/html/rfc8259  
+[53]: https://datatracker.ietf.org/doc/html/rfc8259
 
 [54]. RFC-8949 CBOR (Concise Binary Object Representation).
 
@@ -1760,36 +1765,36 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [56]. IETF OOBI Internet Draft.
 
-[56]: https://github.com/WebOfTrust  
+[56]: https://github.com/WebOfTrust
 
 [57]. Digital Twin.  
 
-[57]: https://en.wikipedia.org/wiki/Digital_twin  
+[57]: https://en.wikipedia.org/wiki/Digital_twin
 
 [58]. JSON Schema 2020-12.  
 
-[58]: https://json-schema.org/draft/2020-12/release-notes.html  
+[58]: https://json-schema.org/draft/2020-12/release-notes.html
 
 [59]. Regular Expressions in JSON Schema.
 
-[59]: https://json-schema.org/understanding-json-schema/reference/regular_expressions.html  
+[59]: https://json-schema.org/understanding-json-schema/reference/regular_expressions.html
 
 [60]. JSON Schema Identification.  
 
-[60]: https://json-schema.org/understanding-json-schema/structuring.html#schema-identification  
+[60]: https://json-schema.org/understanding-json-schema/structuring.html#schema-identification
 
 [61]. Transaction Malleability.  
 
-[61]: https://en.wikipedia.org/wiki/Transaction_malleability_problem  
+[61]: https://en.wikipedia.org/wiki/Transaction_malleability_problem
 
 [62]. Renzo Angles, The Property Graph Database Model.  
 
-[62]: http://ceur-ws.org/Vol-2100/paper26.pdf  
+[62]: http://ceur-ws.org/Vol-2100/paper26.pdf
 
 [63]. Marko A. Rodriguez and Peter Neubauer, Constructions from Dots and Lines.
 
-[63]: https://arxiv.org/pdf/1006.2361.pdf  
+[63]: https://arxiv.org/pdf/1006.2361.pdf
 
 [64]. Knowledge Graphs.
 
-[64]: https://arxiv.org/pdf/2003.02320.pdf  
+[64]: https://arxiv.org/pdf/2003.02320.pdf
