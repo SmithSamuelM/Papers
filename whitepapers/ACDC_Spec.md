@@ -41,8 +41,9 @@ An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid con
 |`a`| Attribute| Either the SAID of a block of attributes or the block itself. | 
 |`A`| Attribute Aggregate| Either the Aggregate of a selectively disclosable block of attributes or the block itself. | 
 |`e`| Edge| Either the SAID of a block or edges or the block itself.| 
-|`r`| Rule | Either the SAID a block of rules or the block itself | 
+|`r`| Rule | Either the SAID a block of rules or the block itself. | 
 |`n`| Node| SAID of another ACDC as the terminating point of a directed edge that connects the encapsulating ACDC node to the specified ACDC node as a fragment of a distributed property graph (PG).| 
+|`l`| Legal Language| Text of Ricardian contract clause.| 
 
 
 ### Compact Labels
