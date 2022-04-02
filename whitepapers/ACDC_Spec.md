@@ -40,7 +40,7 @@ An ACDC may be abstractly modeled as a nested `key: value` mapping. To avoid con
 |`s`| Schema| Either the SAID of a JSON Schema block or the block itself. | 
 |`a`| Attribute| Either the SAID of a block of attributes or the block itself. | 
 |`A`| Attribute Aggregate| Either the Aggregate of a selectively disclosable block of attributes or the block itself. | 
-|`e`| Edge| Either the SAID of a block or edges or the block itself.| 
+|`e`| Edge| Either the SAID of a block of edges or the block itself.| 
 |`r`| Rule | Either the SAID a block of rules or the block itself. | 
 |`n`| Node| SAID of another ACDC as the terminating point of a directed edge that connects the encapsulating ACDC node to the specified ACDC node as a fragment of a distributed property graph (PG).| 
 |`l`| Legal Language| Text of Ricardian contract clause.| 
@@ -1203,99 +1203,6 @@ The *Issuer* attribute block is present in an uncompacted untargeted selectively
 ~~~
 
 
-Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
-
-Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as:
-
-\{*a<sub>i</sub> | i ∈ \{0, ..., N-1\}\}*. 
-
-The ordered set of *a<sub>i</sub>*  may be also expressd as a list, that is, 
-
-*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*,
-
-or equivalently 
-
-*[a<sub>i</sub> | i ∈ \{0, ..., N-1\}]*
-
-#### Inclusion Proof via Aggregated List
-
-All the *a<sub>i</sub>* in the list are aggregated into a single aggregate digest denoted *A* by computing the digest of their ordered concatenation. This is expressed as follows:
-
-*A = H(C(a<sub>i</sub> for all i ∈ \{0, ..., N-1\}))* where *H* is the digest (hash) operator and *C* is the concatentation operator.
-
-To be explicit, using the targeted example above, let *a<sub>0</sub>* denote the SAID of the *Issuee* attribute, *a<sub>1</sub>* denote the SAID of the *score* attribute, and *a<sub>2</sub>* denote the SAID of the *name* attribute then the aggregated digest *A* is computed as follows:
-
-*A = H(C(a<sub>0</sub>, a<sub>1</sub>, a<sub>2</sub>))*. 
-
-Equivalently using *+* as the infix concatenation operator, we have, 
-
-*A = H(a<sub>0</sub> + a<sub>1</sub> + a<sub>2</sub>)*
-
-Given sufficient collision resistance of the digest operator, the digest of an ordered concatenation is not subject to a birthday attack on its concatenated elements [[30]][[31]][[32]][[42]][[47]].
-
-In compact form, the value of the selectively-disclosable top-level attribute section, `A`, field is set to the aggregated value *A*. This aggregate *A* makes a blinded cryptographic commitment to the all the ordered elements in the list,
-
-*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*. 
-
-Moreover because each *a<sub>i</sub>* element also makes a blinded commitment to its block's (SAD) attribute value(s), disclosure of any given *a<sub>i</sub>* element does not expose or disclose any discoverable information detail about either its own or another block's attribute value(s). Therefore one may safely disclose the full list of *a<sub>i</sub>* elements without exposing the blinded block attribute values.
-
-Proof of inclusion in the list consists of checking the list for a matching value. A computationally efficient way to do this is to create a hash table or B-tree of the list and then check for inclusion via lookup in the hash table or B-tree.
-
-To protect against later forgery given a later compromise of the signing keys of the Issuer, the issuer MUST anchor an issuance proof digest seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case, an issuance/revocation registry is used. In the second case, an issuance/revocation registry is not used. 
-
-When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the issuance proof seal digest is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes the SAID of the ACDC. This binds the ACDC to the issuance proof seal in the Issuer's KEL through the TEL entry. 
-
-When the ACDC is not registered using an issuance/revocation TEL then the issuance proof seal digest is the SAID of the ACDC itself. 
-
-In either case, this issuance proof seal makes a verifiable binding between the issuance of the ACDC and the key state of the Issuer at the time of issuance. Because aggregated value *A* provided as the attribute section, `A`, field, value is bound to the SAID of the ACDC which is also bound to the key state via the issuance proof seal, the attribute details of each attribute block are also bound to the key state.
-
-The requirement of an anchored issuance proof seal means that the forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a forged ACDC. This makes any forgery attempt detectable. To elaborate, the only way to successfully publish such a seal is in a subsequent interaction event in a KEL that has not yet changed its key state via a rotation event. Whereas any KEL that has changed its key state via a rotation must be forked before the rotation. This makes the forgery attempt either both detectable and recoverable via rotation in any KEL that has not yet changed its key state or detectable as duplicity in any KEL that has changed its key state. In any event, the issuance proof seal ensures detectability of any later attempt at forgery using compromised keys. 
-
-Given that aggregate value *A* appears as the compact value of the top-level attribute section, `A`, field, the selective disclosure of the attribute at index *j* may be proven to the disclosee with four items of information. These are:
-
-* The actual detailed disclosed attribute block itself (at index *j*) with all its fields.
-* The list of all attribute block digests, *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]* that includes *a<sub>j</sub>*.
-* The ACDC in compact form with selectively-disclosable attribute section, `A`, field value set to aggregate *A*.
-* The signature(s), *s*, of the Issuee on the ACDC's top-level SAID, `d`, field.
-
-The actual detailed disclosed attribute block is only disclosed after the disclosee has agreed to the terms of the rules section. Therefore, in the event the potential disclosee declines to accept the terms of disclosure, then a presentation of the compact version of the ACDC and/or the list of attribute digests, *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*. does not provide any point of correlation to any of the attribute values themselves. The attributes of block *j* are hidden by *a<sub>j</sub>* and the list of attribute digests *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]* is hidden by the aggregate *A*. The partial disclosure needed to enable chain-link confidentiality does not leak any of the selectively disclosable details.
-
-The disclosee may then verify the disclosure by:
-* computing *a<sub>j</sub>* on the selectively disclosed attribute block details.
-* confirming that the computed *a<sub>j</sub>* appears in the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
-* computing *A* from the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
-* confirming that the computed *A* matches the value, *A*, of the selectively-disclosable attribute section, `A`, field value in the provided ACDC.
-* computing the top-level SAID, `d`, field of the provided ACDC.
-* confirming the presence of the issuance seal digest in the Issuer's KEL 
-* confirming that the issuance seal digest in the Issuer's KEL is bound to the ACDC top-level SAID, `d`, field either directly or indirectly through a TEL registry entry.
-* verifying the provided signature(s) of the Issuee on the provided top-level SAID, `d` field value.
-
-The last 3 steps that culminate with verifying the signature(s) require determining the key state of the Issuer at the time of issuance, this may require additional verification steps as per the KERI, PTEL, and CESR-Proof protocols. 
-
-A private selectively disclosable ACDC provides significant correlation minimization because a presenter may use a metadata ACDC prior to acceptance by the disclosee of the terms of the chain-link confidentiality expressed in the rule section [[41]]. Thus only malicious disclosees who violate chain-link confidentiality may correlate between presentations of a given private selectively disclosable ACDC. Nonetheless, they are not able to discover any undisclosed attributes.
-
-#### Inclusion Proof via Merkle Tree
-
-The inclusion proof via aggregated list may be somewhat verbose when there are a large number of attribute blocks in the selectively disclosable attribute section. A more efficient approach is to create a Merkle tree of the attribute block digests and let the aggregate, *A*, be the Merkle tree root digest [[48]]. Specifically, set the value of the top-level selectively-disclosable attribute section, `A`, field to the aggregate, *A* whose value is the Merkle tree root digest [[48]].
-
-The Merkle tree needs to have appropriate second-pre-image attack protection of interior branch nodes [[49]][[50]]. The discloser then only needs to provide a subset of digests from the Merkle tree to prove that a given digest, *a<sub>j</sub>* contributed to the Merkle tree root digest, *A*. For ACDCs with a small number of attributes the added complexity of the Merkle tree approach may not be worth the savings in verbosity.
-
-#### Hierarchical Derivation at Issuance of Selectively Disclosable Attribute ACDCs
-
-The amount of data transferred between the Issuer and Issuee (or recipient in the case of an untargeted ACDC) at issuance of a selectively disclosable attribute ACDC may be minimized by using a hierarchical deterministic derivation function to derive the value of the UUDI, `u`, fields from a shared secret salt [[27]]. 
-
-There are several ways that the Issuer may securely share that secret salt. Given that an Ed25519 key pair(s) controls each of the Issuer and Issuee  AIDs, (or recipient AID in the case of an untargeted ACDC) a corresponding X15519 asymmetric encryption key pair(s) may be derived from each controlling Ed25519 key pair(s). An X25519 public key may be derived from an Ed25519 public key. Likewise, an X25519 private key may be derived from an Ed25519 private key.
-
-In an interactive approach, the Issuer derives a public asymmetric X25519 encryption key from the Issuee's published Ed25519 public key and the Issuee derives a public asymmetric X25519 encryption key from the Issuer's published Ed25519 public key. The two then interact via a Diffie-Hellman (DH) key exchange to create a shared symmetric encryption key [43]][[44]]. The shared symmetric encryption key may be used to encrypt the secret salt or the shared symmetric encryption key itself may be used has high entropy cryptographic material from which the secret salt may be derived. 
-
-In a non-interactive approach, the Issuer derives an X25519 asymmetric public encryption key from the Issuee's (recipient's) public Ed25519 public key. The Issuer then encrypts the secret salt with that public asymmetric encryption key and signs the encryption with the Issuer's private Ed25519 signing key. This is transmitted to the Issuee, who verifies the signature and decrypts the secret salt using the private X25519 decryption key derived from the Issuee's private Ed25519 key. This non-interactive approach is more scalable for AIDs that are controlled with a multi-sig group of signing keys. The Issuer can broadcast to all members of the Issuee's (or recipient's) multi-sig signing group individually asymmetrically encrypted and signed copies of the secret salt.
-
-In addition to the secret salt, the Issuer provides to the Issuee (recipient) a template of the ACDC but with empty UUID, `u`, and SAID, `d`, fields in each block with such fields. Each UUID, `u`, field value is then derived from the shared salt with a path prefix that indexes a specific block. Given the UUID, `u`, field value, the SAID, `d`, field value may then be derived. Likewise, both compact and uncompacted versions of the ACDC may then be generated. The derivation path for the top-level UUID, `u`, field (for private ACDCS), is the string "0" and derivation path the the the zeroth indexed attribute in the attributes array is the string "0/0". Likewise next attribute's derivation path is the string "0/1" and so forth. 
-
-In addition to the shared salt and ACDC template, the Issuer also provides its signature(s) on its own generated compact version ACDC. The Issuer may also provide references to the anchoring issuance proof seals. Everything else an Issuee (recipient) needs to make a verifiable presentation/disclosure can be computed at the time of presentation/disclosure by the Issuee. 
-
-
-
 #### Composed Schema for Selectively Disclosable Attribute Section
 
 Because the selectively-disclosable attributes are provided by an array (list), the uncompacted variant in the schema uses an array of items and the `anyOf` composition operator to allow one or more of the items to be disclosed without requiring all to be disclosed. Thus both the `oneOf` and `anyOf` composition operators are used. The `oneOf` is used to provide compact partial disclosure of the aggregate, *A*, as the value of the top-level selectively-disclosable attribute section, `A`, field in its compact variant and the nested `anyOf` operator is used to enable selective disclosure in the uncompacted selectively-disclosable variant.
@@ -1370,7 +1277,7 @@ Because the selectively-disclosable attributes are provided by an array (list), 
                 "description": "attribute UUID",
                 "type": "string"
               },
-              "i": 
+              "score": 
               {
                 "description": "score value",
                 "type": "integer"
@@ -1400,7 +1307,7 @@ Because the selectively-disclosable attributes are provided by an array (list), 
                 "description": "attribute UUID",
                 "type": "string"
               },
-              "i": 
+              "name": 
               {
                 "description": "name value",
                 "type": "string"
@@ -1415,6 +1322,102 @@ Because the selectively-disclosable attributes are provided by an array (list), 
   "additionalProperties": false,
 }
 ~~~
+
+
+
+#### Blinded Attribute Array
+
+Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
+
+Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as:
+
+\{*a<sub>i</sub> | i ∈ \{0, ..., N-1\}\}*. 
+
+The ordered set of *a<sub>i</sub>*  may be also expressd as a list, that is, 
+
+*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*,
+
+or equivalently 
+
+*[a<sub>i</sub> | i ∈ \{0, ..., N-1\}]*
+
+#### Inclusion Proof via Aggregated List
+
+All the *a<sub>i</sub>* in the list are aggregated into a single aggregate digest denoted *A* by computing the digest of their ordered concatenation. This is expressed as follows:
+
+*A = H(C(a<sub>i</sub> for all i ∈ \{0, ..., N-1\}))* where *H* is the digest (hash) operator and *C* is the concatentation operator.
+
+To be explicit, using the targeted example above, let *a<sub>0</sub>* denote the SAID of the *Issuee* attribute, *a<sub>1</sub>* denote the SAID of the *score* attribute, and *a<sub>2</sub>* denote the SAID of the *name* attribute then the aggregated digest *A* is computed as follows:
+
+*A = H(C(a<sub>0</sub>, a<sub>1</sub>, a<sub>2</sub>))*. 
+
+Equivalently using *+* as the infix concatenation operator, we have, 
+
+*A = H(a<sub>0</sub> + a<sub>1</sub> + a<sub>2</sub>)*
+
+Given sufficient collision resistance of the digest operator, the digest of an ordered concatenation is not subject to a birthday attack on its concatenated elements [[30]][[31]][[32]][[42]][[47]].
+
+In compact form, the value of the selectively-disclosable top-level attribute section, `A`, field is set to the aggregated value *A*. This aggregate *A* makes a blinded cryptographic commitment to the all the ordered elements in the list,
+
+*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*. 
+
+Moreover because each *a<sub>i</sub>* element also makes a blinded commitment to its block's (SAD) attribute value(s), disclosure of any given *a<sub>i</sub>* element does not expose or disclose any discoverable information detail about either its own or another block's attribute value(s). Therefore one may safely disclose the full list of *a<sub>i</sub>* elements without exposing the blinded block attribute values.
+
+
+Proof of inclusion in the list consists of checking the list for a matching value. A computationally efficient way to do this is to create a hash table or B-tree of the list and then check for inclusion via lookup in the hash table or B-tree.
+
+To protect against later forgery given a later compromise of the signing keys of the Issuer, the issuer MUST anchor an issuance proof digest seal to the ACDC in its KEL. This seal binds the signing key state to the issuance. There are two cases. In the first case, an issuance/revocation registry is used. In the second case, an issuance/revocation registry is not used. 
+
+When the ACDC is registered using an issuance/revocation TEL (Transaction Event Log) then the issuance proof seal digest is the SAID of the issuance (inception) event in the ACDC's TEL entry. The issuance event in the TEL includes the SAID of the ACDC. This binds the ACDC to the issuance proof seal in the Issuer's KEL through the TEL entry. 
+
+When the ACDC is not registered using an issuance/revocation TEL then the issuance proof seal digest is the SAID of the ACDC itself. 
+
+In either case, this issuance proof seal makes a verifiable binding between the issuance of the ACDC and the key state of the Issuer at the time of issuance. Because aggregated value *A* provided as the attribute section, `A`, field, value is bound to the SAID of the ACDC which is also bound to the key state via the issuance proof seal, the attribute details of each attribute block are also bound to the key state.
+
+The requirement of an anchored issuance proof seal means that the forger Must first successfully publish in the KEL of the issuer an inclusion proof digest seal bound to a forged ACDC. This makes any forgery attempt detectable. To elaborate, the only way to successfully publish such a seal is in a subsequent interaction event in a KEL that has not yet changed its key state via a rotation event. Whereas any KEL that has changed its key state via a rotation must be forked before the rotation. This makes the forgery attempt either both detectable and recoverable via rotation in any KEL that has not yet changed its key state or detectable as duplicity in any KEL that has changed its key state. In any event, the issuance proof seal ensures detectability of any later attempt at forgery using compromised keys. 
+
+Given that aggregate value *A* appears as the compact value of the top-level attribute section, `A`, field, the selective disclosure of the attribute at index *j* may be proven to the disclosee with four items of information. These are:
+
+* The actual detailed disclosed attribute block itself (at index *j*) with all its fields.
+* The list of all attribute block digests, *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]* that includes *a<sub>j</sub>*.
+* The ACDC in compact form with selectively-disclosable attribute section, `A`, field value set to aggregate *A*.
+* The signature(s), *s*, of the Issuee on the ACDC's top-level SAID, `d`, field.
+
+The actual detailed disclosed attribute block is only disclosed after the disclosee has agreed to the terms of the rules section. Therefore, in the event the potential disclosee declines to accept the terms of disclosure, then a presentation of the compact version of the ACDC and/or the list of attribute digests, *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*. does not provide any point of correlation to any of the attribute values themselves. The attributes of block *j* are hidden by *a<sub>j</sub>* and the list of attribute digests *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]* is hidden by the aggregate *A*. The partial disclosure needed to enable chain-link confidentiality does not leak any of the selectively disclosable details.
+
+The disclosee may then verify the disclosure by:
+* computing *a<sub>j</sub>* on the selectively disclosed attribute block details.
+* confirming that the computed *a<sub>j</sub>* appears in the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
+* computing *A* from the provided list *[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*.
+* confirming that the computed *A* matches the value, *A*, of the selectively-disclosable attribute section, `A`, field value in the provided ACDC.
+* computing the top-level SAID, `d`, field of the provided ACDC.
+* confirming the presence of the issuance seal digest in the Issuer's KEL 
+* confirming that the issuance seal digest in the Issuer's KEL is bound to the ACDC top-level SAID, `d`, field either directly or indirectly through a TEL registry entry.
+* verifying the provided signature(s) of the Issuee on the provided top-level SAID, `d` field value.
+
+The last 3 steps that culminate with verifying the signature(s) require determining the key state of the Issuer at the time of issuance, this may require additional verification steps as per the KERI, PTEL, and CESR-Proof protocols. 
+
+A private selectively disclosable ACDC provides significant correlation minimization because a presenter may use a metadata ACDC prior to acceptance by the disclosee of the terms of the chain-link confidentiality expressed in the rule section [[41]]. Thus only malicious disclosees who violate chain-link confidentiality may correlate between presentations of a given private selectively disclosable ACDC. Nonetheless, they are not able to discover any undisclosed attributes.
+
+#### Inclusion Proof via Merkle Tree
+
+The inclusion proof via aggregated list may be somewhat verbose when there are a large number of attribute blocks in the selectively disclosable attribute section. A more efficient approach is to create a Merkle tree of the attribute block digests and let the aggregate, *A*, be the Merkle tree root digest [[48]]. Specifically, set the value of the top-level selectively-disclosable attribute section, `A`, field to the aggregate, *A* whose value is the Merkle tree root digest [[48]].
+
+The Merkle tree needs to have appropriate second-pre-image attack protection of interior branch nodes [[49]][[50]]. The discloser then only needs to provide a subset of digests from the Merkle tree to prove that a given digest, *a<sub>j</sub>* contributed to the Merkle tree root digest, *A*. For ACDCs with a small number of attributes the added complexity of the Merkle tree approach may not be worth the savings in verbosity.
+
+#### Hierarchical Derivation at Issuance of Selectively Disclosable Attribute ACDCs
+
+The amount of data transferred between the Issuer and Issuee (or recipient in the case of an untargeted ACDC) at issuance of a selectively disclosable attribute ACDC may be minimized by using a hierarchical deterministic derivation function to derive the value of the UUDI, `u`, fields from a shared secret salt [[27]]. 
+
+There are several ways that the Issuer may securely share that secret salt. Given that an Ed25519 key pair(s) controls each of the Issuer and Issuee  AIDs, (or recipient AID in the case of an untargeted ACDC) a corresponding X15519 asymmetric encryption key pair(s) may be derived from each controlling Ed25519 key pair(s). An X25519 public key may be derived from an Ed25519 public key. Likewise, an X25519 private key may be derived from an Ed25519 private key.
+
+In an interactive approach, the Issuer derives a public asymmetric X25519 encryption key from the Issuee's published Ed25519 public key and the Issuee derives a public asymmetric X25519 encryption key from the Issuer's published Ed25519 public key. The two then interact via a Diffie-Hellman (DH) key exchange to create a shared symmetric encryption key [43]][[44]]. The shared symmetric encryption key may be used to encrypt the secret salt or the shared symmetric encryption key itself may be used has high entropy cryptographic material from which the secret salt may be derived. 
+
+In a non-interactive approach, the Issuer derives an X25519 asymmetric public encryption key from the Issuee's (recipient's) public Ed25519 public key. The Issuer then encrypts the secret salt with that public asymmetric encryption key and signs the encryption with the Issuer's private Ed25519 signing key. This is transmitted to the Issuee, who verifies the signature and decrypts the secret salt using the private X25519 decryption key derived from the Issuee's private Ed25519 key. This non-interactive approach is more scalable for AIDs that are controlled with a multi-sig group of signing keys. The Issuer can broadcast to all members of the Issuee's (or recipient's) multi-sig signing group individually asymmetrically encrypted and signed copies of the secret salt.
+
+In addition to the secret salt, the Issuer provides to the Issuee (recipient) a template of the ACDC but with empty UUID, `u`, and SAID, `d`, fields in each block with such fields. Each UUID, `u`, field value is then derived from the shared salt with a path prefix that indexes a specific block. Given the UUID, `u`, field value, the SAID, `d`, field value may then be derived. Likewise, both compact and uncompacted versions of the ACDC may then be generated. The derivation path for the top-level UUID, `u`, field (for private ACDCS), is the string "0" and derivation path the the the zeroth indexed attribute in the attributes array is the string "0/0". Likewise next attribute's derivation path is the string "0/1" and so forth. 
+
+In addition to the shared salt and ACDC template, the Issuer also provides its signature(s) on its own generated compact version ACDC. The Issuer may also provide references to the anchoring issuance proof seals. Everything else an Issuee (recipient) needs to make a verifiable presentation/disclosure can be computed at the time of presentation/disclosure by the Issuee. 
 
 
 
