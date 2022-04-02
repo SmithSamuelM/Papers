@@ -1203,6 +1203,23 @@ The *Issuer* attribute block is present in an uncompacted untargeted selectively
 ~~~
 
 
+#### Blinded Attribute Array
+
+Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
+
+Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as:
+
+\{*a<sub>i</sub> | i ∈ \{0, ..., N-1\}\}*. 
+
+The ordered set of *a<sub>i</sub>*  may be also expressd as a list, that is, 
+
+*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*,
+
+or equivalently 
+
+*[a<sub>i</sub> | i ∈ \{0, ..., N-1\}]*
+
+
 #### Composed Schema for Selectively Disclosable Attribute Section
 
 Because the selectively-disclosable attributes are provided by an array (list), the uncompacted variant in the schema uses an array of items and the `anyOf` composition operator to allow one or more of the items to be disclosed without requiring all to be disclosed. Thus both the `oneOf` and `anyOf` composition operators are used. The `oneOf` is used to provide compact partial disclosure of the aggregate, *A*, as the value of the top-level selectively-disclosable attribute section, `A`, field in its compact variant and the nested `anyOf` operator is used to enable selective disclosure in the uncompacted selectively-disclosable variant.
@@ -1323,25 +1340,7 @@ Because the selectively-disclosable attributes are provided by an array (list), 
 }
 ~~~
 
-
-
-#### Blinded Attribute Array
-
-Given that each attribute block's UUID, `u`, field has sufficient cryptographic entropy, then each attribute block's SAID, `d`, field provides a secure cryptographic digest of its contents that effectively blinds the attribute value from discovery given only its Schema and SAID. To clarify, the adversary despite being given both the schema of the attribute block and its  SAID, `d`, field, is not able to discover the remaining contents of the attribute block in a computationally feasible manner such as a rainbow table attack [[28]][[29]].  Therefore the UUID, `u`, field of each attribute block enables the associated SAID, `d`, field to securely blind the block's contents notwithstanding knowledge of the block's schema and that SAID, `d`, field.  Moreover, a cryptographic commitment to that SAID, `d`, field does not provide a fixed point of correlation to the associated attribute (SAD) field values themselves unless and until there has been specific disclosure of those field values themselves. 
-
-Given a total of *N* elements in the attributes array, let *a<sub>i</sub>* represent the SAID, `d`, field of the attribute at zero-based index *i*. More precisely the set of attributes is expressed as:
-
-\{*a<sub>i</sub> | i ∈ \{0, ..., N-1\}\}*. 
-
-The ordered set of *a<sub>i</sub>*  may be also expressd as a list, that is, 
-
-*[a<sub>0</sub>, a<sub>1</sub>, ...., a<sub>N-1</sub>]*,
-
-or equivalently 
-
-*[a<sub>i</sub> | i ∈ \{0, ..., N-1\}]*
-
-#### Inclusion Proof via Aggregated List
+#### Inclusion Proof via Aggregated List Digest
 
 All the *a<sub>i</sub>* in the list are aggregated into a single aggregate digest denoted *A* by computing the digest of their ordered concatenation. This is expressed as follows:
 
@@ -1399,7 +1398,7 @@ The last 3 steps that culminate with verifying the signature(s) require determin
 
 A private selectively disclosable ACDC provides significant correlation minimization because a presenter may use a metadata ACDC prior to acceptance by the disclosee of the terms of the chain-link confidentiality expressed in the rule section [[41]]. Thus only malicious disclosees who violate chain-link confidentiality may correlate between presentations of a given private selectively disclosable ACDC. Nonetheless, they are not able to discover any undisclosed attributes.
 
-#### Inclusion Proof via Merkle Tree
+#### Inclusion Proof via Merkle Tree Root Digest
 
 The inclusion proof via aggregated list may be somewhat verbose when there are a large number of attribute blocks in the selectively disclosable attribute section. A more efficient approach is to create a Merkle tree of the attribute block digests and let the aggregate, *A*, be the Merkle tree root digest [[48]]. Specifically, set the value of the top-level selectively-disclosable attribute section, `A`, field to the aggregate, *A* whose value is the Merkle tree root digest [[48]].
 
