@@ -1,17 +1,17 @@
 ---
 tags: ACDC, KERI, JSON-LD, RDF
 email: sam@samuelsmith.org
-version: 1.2.7
+version: 1.2.8
 ---
 
-# VC Spec Enhancement Proposal
+# VC Spec Enhancement Strategy Proposal
 
 [![hackmd-github-sync-badge](https://hackmd.io/rnY5xiXESWqWBlyDPHDorA/badge)](https://hackmd.io/rnY5xiXESWqWBlyDPHDorA)
 
 
 Strategic Technology Choices vis-a-vis the Linked Data (JSON-LD/RDF) End State.
 
-2021/08/02 Version 1.2.7
+2022/04/04 Version 1.2.8
 
 ## Barriers to Adoption of Linked Data VCs
 
