@@ -10,7 +10,7 @@ notes: non-hackmd version
 
 ## Introduction
 
-An authentic chained data container (ACDC)  [[10]][[11]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats (JSON, CBOR, MGPK, and CESR) [[53]][[54]][[55]][[16]], compact formats, support for Ricardian contracts [[40]], a well defined security model derived from KERI [[14]][[15]], support for chain-link confidentiality [[41]], simple *partial disclosure* mechanisms and simple *selective disclosure* mechanisms. 
+An authentic chained data container (ACDC)  [[10]][[11]][[65]] is an IETF [[25]] internet draft focused specification being incubated at the ToIP (Trust over IP) foundation [[12]][[13]]. A major use case for the ACDC specification is to provide GLEIF vLEIs (verifiable Legal Entity Identifiers) [[23]]. GLEIF is the Global Legal Entity Identifier Foundation [[24]]. An ACDC is a variant of the W3C Verifiable Credential (VC) specification [[26]]. The VC specification depends on the W3C DID (Decentralized IDentifier) specification [[25]]. ACDCs are dependent on a suite of related IETF focused standards associated with the KERI (Key Event Receipt Infrastructure) [[14]][[15]] specification. These include CESR [[16]], SAID [[17]], PTEL [[18]], CESR-Proof [[19]], IPEX [[20]], and did:keri [[21]]. Some of the major distinguishing features of ACDCs include normative support for chaining, use of composable JSON Schema [[38]][[39]], multiple serialization formats (JSON, CBOR, MGPK, and CESR) [[53]][[54]][[55]][[16]], compact formats, support for Ricardian contracts [[40]], a well defined security model derived from KERI [[14]][[15]], support for chain-link confidentiality [[41]], simple *partial disclosure* mechanisms and simple *selective disclosure* mechanisms. 
 
 The primary purpose of the ACDC protocol is to provide granular provenanced proof-of-authorship (authenticity) of their contained data via a tree or chain of linked ACDCs (technically a directed acyclic graph or DAG). Similar to the concept of a chain-of-custody, ACDCs provide a verifiable chain of proof-of-authorship of the contained data. With a little additional syntactic sugar, this primary facility of chained (treed) proof-of-authorship (authenticity) is extensible to a chained (treed) verifiable authentic proof-of-authority (proof-of-authorship-of-authority). A proof-of-authority may be used to provide verifiable authorizations or permissions or rights or credentials. A chained (treed) proof-of-authority enables delegation of authority and delegated authorizations. 
 
@@ -1699,7 +1699,7 @@ The highest level of cryptographic security with respect to a cryptographic secr
 
 [34]: https://ieeexplore.ieee.org/document/9519456?denied=
 
-[35].Taming the many EdDSAs.  
+[35]. Taming the many EdDSAs.  
 
 [35]: https://eprint.iacr.org/2020/1244.pdf
 
@@ -1814,3 +1814,8 @@ The highest level of cryptographic security with respect to a cryptographic secr
 [64]. Knowledge Graphs.
 
 [64]: https://arxiv.org/pdf/2003.02320.pdf
+
+[65]. VC Spec Enhancement Proposal  
+
+[65]: https://github.com/SmithSamuelM/Papers/blob/master/whitepapers/VC_Enhancement_Strategy.md  
+
