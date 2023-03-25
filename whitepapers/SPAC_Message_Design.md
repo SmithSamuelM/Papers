@@ -6,7 +6,7 @@ version: 1.00
 
 # Privacy Given Strongest Authenticy and Confidentiality (part 1)
 
-[![hackmd-github-sync-badge](https://hackmd.io/2D6Ld2vISf2M8UE0XqbGng/badge)](https://hackmd.io/2D6Ld2vISf2M8UE0XqbGng)
+[HackMD](https://hackmd.io/2D6Ld2vISf2M8UE0XqbGng)
 
 
 ## PAC Trilemma
