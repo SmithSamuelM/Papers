@@ -1,5 +1,7 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
+Version 0.1.3 2023/03/25
+
 Copyright 2023 Samuel M. Smith
 
 ## PAC Trilemma
@@ -594,7 +596,7 @@ No 3rd party observer can view that there is a relationship *(A<sub>1</sub>, <>,
 
 ### Relationship Formation Protocol
 
-Instead of using another OOB setup to form *(A<sub>1</sub>, <>, B<sub>1</sub>)* we can leverage the OOB setup used to form the pre-existing communications context relationship *(A<sub>0</sub>, <>, B<sub>0</sub>)*. Essentially, *(A<sub>0</sub>, <>, B<sub>0</sub>)* acts as a third party reference to form *(A<sub>0</sub>, <>, B<sub>1</sub>)*. This suffices to protect against MITM attacks and cheap pseudonymity. We just need a new protocol type with message types for forming a new relationship. This new protocol could include a relationship formation initiation message that could have semantics something to the effect of:  
+Instead of using another OOB setup to form *(A<sub>1</sub>, <>, B<sub>1</sub>)* we can leverage the OOB setup used to form the pre-existing communications context relationship *(A<sub>0</sub>, <>, B<sub>0</sub>)*. Essentially, *(A<sub>0</sub>, <>, B<sub>0</sub>)* acts as a third party reference or reputable letter of introduction to form *(A<sub>0</sub>, <>, B<sub>1</sub>)*. This suffices to protect against MITM attacks and cheap pseudonymity. We just need a new protocol type with message types for forming a new relationship. This new protocol could include a relationship formation initiation message that could have semantics something to the effect of:  
 
 I the controller of *A<sub>0</sub>* wish to establish a new relationship using *A<sub>1</sub>* with the controller of *B<sub>0</sub>*. This would be signed by *A<sub>1</sub>* as well as the *A<sub>0</sub>* signature wrapping the message.
 
@@ -604,11 +606,11 @@ I the controller of *B<sub>0</sub>* accept a new relationship using *B<sub>1</su
 
 Such hash chaining of multi-message protocols where the messages are also signed makes the set of messages in the transaction a verifiable data structure. This is virtually impervious to attack. Moreover, because cryptographic digests are universally unique,  using a digest for the transaction ID or a chain of hash-chained digests as a transaction chain enables a given transaction to span different communication contexts and still be easy to lookup in a transaction database that is indexed by such digests. Finally, this approach makes it easy to detect replay attacks.
 
-The relationship formation protocol would allow any pre-existing relationship to bootstrap a new relationship without having to perform yet another OOB setup to exchange identifiers. This could also be used to establish new communications context relationships by adding the exchange of the service endpoint ip addresses in addition to the AIDs for the newly formed relationship. This is all accomplished using a no-compromise secure authentic, confidential, and private exchange between the two parties.
+The relationship formation protocol would allow any pre-existing relationship to bootstrap a new relationship without having to perform yet another OOB setup to exchange identifiers. This could also be used to establish new communications context relationships by adding the exchange of the service endpoint IP addresses in addition to the AIDs for the newly formed relationship. This is all accomplished using a no-compromise secure authentic, confidential, and private exchange between the two parties. Thus, one relationship that has been sufficiently authenticated and therefore is reputable can be used to issue the equivalent of a letter of introduction for a new relationship, thereby imbuing the new relationship with reputability. We call this an Out-Of-Band-Introduction (OOBI) because the reputable relationship authentication was established Out-Of-Band with respect to the new relationship.
 
-The reference relationship does not leak any correlatable information about the newly formed relationship. The only correlatable information is that each communications relationship AIDs are correlated the relationship's IP addresses. To reiterate, There is no correlation to any other relationship including other communication relationships unless they both use the same or related IP addresses.
+The original communication context relationship does not leak any correlatable information about the newly formed relationship. The only correlatable information is that each communication context relationship AIDs are correlated with the relationship's IP addresses. To reiterate, There is no correlation to any other relationship including other communication relationships unless they both use the same or related IP addresses.
 
-Therefore if we can solve ip address correlation we have solved 3rd party exploitablity of identifiers for advertising aggregation.
+Therefore if we can solve ip address correlation we have solved 3rd party exploitability of identifiers for advertising aggregation. This we do in the following section.
 
 
 
