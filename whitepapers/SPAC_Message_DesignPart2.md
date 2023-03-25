@@ -6,7 +6,7 @@ version: 1.00
 
 # Privacy Given Strongest Authenticy and Confidentiality (part 2)
 
-[![hackmd-github-sync-badge](https://hackmd.io/rVStgMc_T0GFyXV_e2e_aQ/badge)](https://hackmd.io/rVStgMc_T0GFyXV_e2e_aQ)
+[HackMD](https://hackmd.io/rVStgMc_T0GFyXV_e2e_aQ)
 
 
 ## Unbounded-Term AIDs instead of Long-Term Public Keys
