@@ -6,6 +6,9 @@ version: 1.00
 
 # Privacy Given Strongest Authenticy and Confidentiality (part 2)
 
+[![hackmd-github-sync-badge](https://hackmd.io/rVStgMc_T0GFyXV_e2e_aQ/badge)](https://hackmd.io/rVStgMc_T0GFyXV_e2e_aQ)
+
+
 ## Unbounded-Term AIDs instead of Long-Term Public Keys
 
 [KERI](https://keri.one) AIDs (autonomic identifiers) have a novel and unique feature called persistent controllability. With KERI the controlling key pairs of an AID may change via rotation or in other words the control is transferable to a new set of controlling key pairs. This enables the controller to maintain persistent control over the AID in spite of compromise of the controlling key pairs. Specifically, the KERI pre-rotation mechanism uses one-time pre-rotated rotation keys to recover control of the AID by transfering that control to a new un-compromised set of key pairs. Because the pre-rotated keys are not exposed they are much harder to attack. At inception a persistable (transferable) AID makes a forward commitment to the rotation key-pairs via cryptographic digests of the public keys. These keys are never used until and unless there is a rotation. Only the pre-rotated keys will verify against their digests. With each rotation, a forward commitment is made to a new set of one-time only pre-rotated keys thereby always staying one step ahead of an attacker. 
