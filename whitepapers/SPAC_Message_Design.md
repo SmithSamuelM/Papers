@@ -6,6 +6,9 @@ version: 1.00
 
 # Privacy Given Strongest Authenticy and Confidentiality (part 1)
 
+[![hackmd-github-sync-badge](https://hackmd.io/2D6Ld2vISf2M8UE0XqbGng/badge)](https://hackmd.io/2D6Ld2vISf2M8UE0XqbGng)
+
+
 ## PAC Trilemma
 
 In my opinion, the three properties, authenticity, confidentiality, and privacy inhabit a trade-space. I have posited the PAC Theorem or PAC Trilemma to qualify this trade-space. The PAC theorem/trilemma states:
