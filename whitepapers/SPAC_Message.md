@@ -1,6 +1,6 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
-Version 0.0.8 2023/03/25
+Version 0.0.9 2023/03/26
 
 Copyright 2023 Samuel M. Smith
 
@@ -380,22 +380,30 @@ This is shown in the following table: (see [ESSR](https://eprint.iacr.org/2001/0
 
 In summary, as a result of binding the sender's public key inside the ciphertext and binding the receiver's public key in the enclosing signed plain text an adversary is prevented from forging messages that compromise either authenticity or confidentiality. Thus ESSR provides both strong authenticity and strong confidentiality.
 
+#### Baseline KERI ESSR
+
 We apply ESSR to KERI by modifying the basic ESSR approach to support unbounded-term identifiers by replacing the sender's long-term public key with its AID and the receiver's long-term public key with its AID. The public keys are then securely looked up from the respective KELs of the sender and receiver. This is diagrammed below.
 
 ![ESSRMessage](assets/ESSRMessage.png)
 
 Diagram: ESSR Message
 
+#### Sourceless Variant
+
 As shown in the diagram above, the sender's AID appears both in the verifiable payload plaintext and the restricted payload ciphertext portion. The first appearance in the plaintext portion is so that the receiver or any party can validate the signature without first decrypting the ciphertext. This is essential for upstream DDOS protection using load balancers and firewalls which do not have access to the receiver's private decryption key and therefore can't make a drop decision based on the sender via a whitelist or blacklist. To reiterate sharing the private decryption key with a load balancer or firewall upstream of the recipient in order to discover the sender's public verification key would break confidentiality. 
 
 Another limitation of removing the plain-text Sender AID is that the message's ciphertext is not publically verifiable. This means the authenticity of the ciphertext is not verifiable merely using public information. In some cases, a 3rd party may need to verify the authenticity of the ciphertext without seeing the plaintext from which the ciphertext was generated.
 
-TThat said there may be some applications where upstream DDOS and/or firewall protection and/or public verifiability is not needed. Because the sender AID appears twice, once in plain text and once in ciphertext if DDOS protection or public verifiability is not needed then the plaintext appearance could be removed without harming authenticity. In that case, DDOS or firewall protection (security) could be traded for not exposing the sender's AID (privacy) without compromising the authenticity or confidentiality of the message. The following diagram shows the message without the sender's AID in plaintext only in the ciphertext.
+That said there may be some applications where upstream DDOS and/or firewall protection and/or public verifiability is not needed. Because the sender AID appears twice, once in plain text and once in ciphertext if DDOS protection or public verifiability is not needed then the plaintext appearance could be removed without harming authenticity. In that case, DDOS or firewall protection (security) could be traded for not exposing the sender's AID (privacy) without compromising the authenticity or confidentiality of the message. The following diagram shows the message without the sender's AID in plaintext only in the ciphertext.
 
 
 ![ESSRMessageDDOSable](assets/ESSRMessageDDOSable.png)
 
-Diagram: ESSR Non-Public Verifiable Message
+Diagram: Sourceless Variant ESSR Message
+
+In the case where the receiver follows the policy of only one relationship identifier (OORI). With this policy, a given receiver AID is only used for one given sender AID. The receiver can then store the sender AID for each of its OORI AIDS. This means that the receiver can assume that there is only one possible sender. As a result, the sender AID in the message plaintext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID that it looks up based on the receiver AID in the message plaintext.  If the signature does not verify against the looked-up sender AID then the message is dropped. This unique mapping between receiver AID and sender AID can be shared upstream with a load balancer or intermediary so that they can do public verification of incoming messages. With an OORI policy, the message diagrammed above would be publically verifiable in spite of not providing the src identifier in plaintext.
+  
+#### Destinationless Variant
 
 A subtle advantage of using AIDs instead of public keys is that it may make receiver key compromise impersonation more difficult. This allows us to make modifications to the baseline ESSR approach. This is because the only valid receiver's keys are those in the receiver's KEL. An attacker can't substitute a different key, not in the KEL, it must use a stale key. To elaborate, using AIDs, an attacker can't purport any plaintext to have been encrypted to a different key pair other than the one that appears in the receiver's KEL. So any ciphertext must decrypt using one of the receiver's keypairs either the current one or a stale one. A malicious receiver can't encrypt any plaintext with any keypair it chooses.  The malicious receiver must either find a combination of stale key pair and plaintext that generates the same signed ciphertext as its current keypair or confuse the sender into signing ciphertext generated by the receiver with its current encryption keypair for plain text not yet seen by the sender. 
 
@@ -403,17 +411,22 @@ Given that the only choices for key-pair are those in the receiver's KEL the abi
 
 ![ESSRMessageDstLimited](assets/ESSRMessageDstLimited.png)
 
-Diagram: ESSR Destination Limited Message
+Diagram: Destinationless Variant ESSR Message
 
-In the case where the receiver follows the policy of only one relationship identifiers (OORI) then the sender AID in the ciphertext may not be necessary. With an OORI policy the receiver only accepts messages to a given receiver AID from a given sender AID. This means that any other sender can not strip the signature for a given ciphertext to a given receiver AID and replace it with its own because the reciever will drop it if the sender AID does not correspond to that allowed for that receiver AID. This policy may remove the need to include the sender's AID in the ciphertext. This variant is diagrammed below.  
+#### Ciphertext Sourceless Variant
+
+In the case where the receiver follows the policy of only one relationship identifier (OORI) then the sender AID in the ciphertext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID. This means that any other sender can not strip the signature for a given ciphertext to a given receiver AID and replace it with its own because the receiver will drop it if the sender AID does not correspond to that allowed for that receiver AID. This policy may remove the need to include the sender's AID in the ciphertext. This variant is diagrammed below.  
 
 ![ESSROORIMessage](assets/ESSROORIMessage.png)
 
 
-Diagram: ESSR OORI Message
+Diagram: Ciphertext Sourceless Variant ESSR Message
+
+### Replay Attack Protection
 
 Furthermore, adding a replay attack prevention mechanism against the reuse of the stale keys would provide additional protection against receiver KCI by both the sender and any third parties. A simple replay attack protection mechanism would be to adopt a policy that once the key state has been updated no messages signed with stale keys may be accepted. A more complicated replay attack protection mechanism would be for the sender to anchor a digest (content address) of the message in the sender's KEL. In this case, the signature attached to the message is not needed only a reference to the anchor in the sender's KEL. 
 
+### KERI ESSR Summary
 
 In summary, the baseline for the best practices for message security follows the full ESSR message policy shown in the diagram above (labeled Authenticatible Confidential Message). Any variation from the full ESSR policy may make a security trade-off induced by removing one of its protections. This trade-off should be explicated in the protocol design so as to inform its proper use.
 
