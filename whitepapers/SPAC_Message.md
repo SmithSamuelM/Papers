@@ -1,6 +1,6 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
-Version 0.0.7 2023/03/25
+Version 0.0.8 2023/03/25
 
 Copyright 2023 Samuel M. Smith
 
@@ -390,7 +390,8 @@ As shown in the diagram above, the sender's AID appears both in the verifiable p
 
 Another limitation of removing the plain-text Sender AID is that the message's ciphertext is not publically verifiable. This means the authenticity of the ciphertext is not verifiable merely using public information. In some cases, a 3rd party may need to verify the authenticity of the ciphertext without seeing the plaintext from which the ciphertext was generated.
 
-That said there may be some applications where upstream DDOS and/or firewall protection and/or public verifiability is not needed. Because the sender AID appears twice, once in plain text and once In that caseDDOS or firewall protection (security) could be traded for not exposing the sender's AID (privacy) without compromising the authenticity or confidentiality of the message. The following diagram shows the message without the sender's AID in plaintext only in the ciphertext.
+TThat said there may be some applications where upstream DDOS and/or firewall protection and/or public verifiability is not needed. Because the sender AID appears twice, once in plain text and once in ciphertext if DDOS protection or public verifiability is not needed then the plaintext appearance could be removed without harming authenticity. In that case, DDOS or firewall protection (security) could be traded for not exposing the sender's AID (privacy) without compromising the authenticity or confidentiality of the message. The following diagram shows the message without the sender's AID in plaintext only in the ciphertext.
+
 
 ![ESSRMessageDDOSable](assets/ESSRMessageDDOSable.png)
 
