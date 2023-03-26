@@ -1,6 +1,6 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
-Version 0.0.9 2023/03/26
+Version 0.1.0 2023/03/26
 
 Copyright 2023 Samuel M. Smith
 
@@ -366,7 +366,7 @@ As developed above for combined strong authenticity and confidentiality we need 
 
 ### Modified ESSR
 
-An approach that protects against both KCI and sender impersonation of the ciphertext is called ESSR for Encrypt Sender's key then Sign Receiver's key. The ESSR approach is detailed here [ESSR](https://eprint.iacr.org/2001/079). For a more accessible explanation see the following [PKAE1](https://neilmadden.blog/2018/11/14/public-key-authenticated-encryption-and-why-you-want-it-part-i/), [PKAE2](https://neilmadden.blog/2018/11/26/public-key-authenticated-encryption-and-why-you-want-it-part-ii/), [PKAE3](https://neilmadden.blog/2018/12/14/public-key-authenticated-encryption-and-why-you-want-it-part-iii/)
+An approach that protects against both KCI and sender impersonation of the ciphertext is called ESSR for Encrypt Sender's key and then Sign Receiver's key. The ESSR approach is detailed here [ESSR](https://eprint.iacr.org/2001/079). For a more accessible explanation see the following [PKAE1](https://neilmadden.blog/2018/11/14/public-key-authenticated-encryption-and-why-you-want-it-part-i/), [PKAE2](https://neilmadden.blog/2018/11/26/public-key-authenticated-encryption-and-why-you-want-it-part-ii/), [PKAE3](https://neilmadden.blog/2018/12/14/public-key-authenticated-encryption-and-why-you-want-it-part-iii/)
 
 The properties that protect against key compromise impersonation attacks are called TUF-PTXT (Third-party UnForgeability of PlainText), TUF-CTXT (Third-party UnForgeability of CipherText), RUF-PTXT (Receiver UnForgeability of PlainText), RUF-CTXT (Receiver UnForgeability of CipherText). Simply using the encrypt then sign approach provides TUF-PTXT, TUF-CTXT, and RUF-CTXT but not RUF-PTXT. Signing the receiver's public key in plaintext outside the ciphertext portion of the message binds the receiver's public key making a key substitution attack on the underlying plaintext to the signed ciphertext detectable which gives RUF-PTXT. One weakness of encrypt then sign in the case of a malicious receiver is that if the receiver can substitute a new key pair it can encrypt any message using the sender's public key to the new keypair and purport that the sender intended to encrypt to that new key pair. Signing the ciphertext still leaves a malicious receiver free to find a combination of plaintext and receiver key pair that produces the same ciphertext. This is hard but not computationally infeasible. So we need a way to limit how malicious ciphertexts may be generated, and the ESSR way to do that is to bind the intended receiver's public encryption key to the sender's signature. This way the ciphertext must decrypt using the intended receiver's key pair, or it's invalid. The security of an encryption system ensures that it is computationally infeasible that given the same key two different plaintexts do not encrypt to or decrypt from the same ciphertext, i.e., a given plaintext must roundtrip through the cryptosystem given the same key. This is a property of a secure stream cipher such as xSalsa20 used for sealed-box (see [XSalsa20](https://cr.yp.to/snuffle/xsalsa-20110204.pdf)).   
 
@@ -415,7 +415,7 @@ Diagram: Destinationless Variant ESSR Message
 
 #### Ciphertext Sourceless Variant
 
-In the case where the receiver follows the policy of only one relationship identifier (OORI) then the sender AID in the ciphertext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID. This means that any other sender can not strip the signature for a given ciphertext to a given receiver AID and replace it with its own because the receiver will drop it if the sender AID does not correspond to that allowed for that receiver AID. This policy may remove the need to include the sender's AID in the ciphertext. This variant is diagrammed below.  
+In the case where the receiver follows the policy of only one relationship identifier (OORI) then the sender AID in the ciphertext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID. This means that any other sender can not strip the signature for a given ciphertext to a given receiver AID and replace it with its own because the receiver will drop it if the sender AID does not correspond to that allowed for that receiver AID. This policy may remove the need to include the sender's AID in the ciphertext. Notwithstanding the former, removing the ciphertext source AID still exposes the receiver to an attack from that one approved sender AID. In this attack the sender provides ciphertext for plaintext it has never seen but purports that it has seen it. This variant is diagrammed below.  
 
 ![ESSROORIMessage](assets/ESSROORIMessage.png)
 
