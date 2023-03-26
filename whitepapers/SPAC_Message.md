@@ -1,6 +1,6 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
-Version 0.1.0 2023/03/26
+Version 0.1.1 2023/03/26
 
 Copyright 2023 Samuel M. Smith
 
@@ -384,11 +384,12 @@ In summary, as a result of binding the sender's public key inside the ciphertext
 
 We apply ESSR to KERI by modifying the basic ESSR approach to support unbounded-term identifiers by replacing the sender's long-term public key with its AID and the receiver's long-term public key with its AID. The public keys are then securely looked up from the respective KELs of the sender and receiver. This is diagrammed below.
 
-![ESSRMessage](assets/ESSRMessage.png)
+![ESSRBaselineMessage](assets/ESSRBaselineMessage.png)
 
-Diagram: ESSR Message
 
-#### Sourceless Variant
+Diagram: Baseline ESSR Message
+
+#### Plaintext Sourceless Variant
 
 As shown in the diagram above, the sender's AID appears both in the verifiable payload plaintext and the restricted payload ciphertext portion. The first appearance in the plaintext portion is so that the receiver or any party can validate the signature without first decrypting the ciphertext. This is essential for upstream DDOS protection using load balancers and firewalls which do not have access to the receiver's private decryption key and therefore can't make a drop decision based on the sender via a whitelist or blacklist. To reiterate sharing the private decryption key with a load balancer or firewall upstream of the recipient in order to discover the sender's public verification key would break confidentiality. 
 
@@ -396,12 +397,22 @@ Another limitation of removing the plain-text Sender AID is that the message's c
 
 That said there may be some applications where upstream DDOS and/or firewall protection and/or public verifiability is not needed. Because the sender AID appears twice, once in plain text and once in ciphertext if DDOS protection or public verifiability is not needed then the plaintext appearance could be removed without harming authenticity. In that case, DDOS or firewall protection (security) could be traded for not exposing the sender's AID (privacy) without compromising the authenticity or confidentiality of the message. The following diagram shows the message without the sender's AID in plaintext only in the ciphertext.
 
+![ESSRPTSrclessMessage](assets/ESSRPTSrclessMessage.png)
 
-![ESSRMessageDDOSable](assets/ESSRMessageDDOSable.png)
+Diagram: Plaintext Sourceless Variant ESSR Message
+
+In the case where the receiver follows the policy of only one relationship identifier (OORI). With this policy, a given receiver AID is only used for one given sender AID. The receiver can then store the sender AID for each of its OORI AIDS. This means that the receiver can assume that there is only one possible sender. As a result, the sender AID in the message plaintext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID that it looks up based on the receiver AID in the message plaintext.  If the signature does not verify against the looked-up sender AID then the message is dropped. 
+This unique mapping between receiver AID and sender AID can be shared upstream with a load balancer or intermediary so that they can do public verification of incoming messages. With an OORI policy, the message diagrammed above would be publically verifiable in spite of not providing the src identifier in plaintext.
+
+#### Sourceless Variant
+
+As described above, with an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID. This policy may remove the need to include the sender's AID in the ciphertext as well. When a receiver follows the OORI policy, it means that any other sender besides the one associated with the receiver AID can not strip the signature for a given ciphertext to the given receiver AID and replace it with its own because the receiver will drop it if the signature does not correspond to the sender AID allowed for that receiver AID. Notwithstanding the former, removing the ciphertext source AID, even with an OORI policy, still exposes the receiver to an attack when the approved sender is malicious. In this attack the approved sender provides ciphertext for plaintext it has never seen but purports that it has seen it. Thus an OORI policy does not completely protect the receiver. But some applications may want to make this tradeoff. This variant is diagrammed below.  
+
+![ESSRSrclessMessage](assets/ESSRSrclessMessage.png)
 
 Diagram: Sourceless Variant ESSR Message
 
-In the case where the receiver follows the policy of only one relationship identifier (OORI). With this policy, a given receiver AID is only used for one given sender AID. The receiver can then store the sender AID for each of its OORI AIDS. This means that the receiver can assume that there is only one possible sender. As a result, the sender AID in the message plaintext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID that it looks up based on the receiver AID in the message plaintext.  If the signature does not verify against the looked-up sender AID then the message is dropped. This unique mapping between receiver AID and sender AID can be shared upstream with a load balancer or intermediary so that they can do public verification of incoming messages. With an OORI policy, the message diagrammed above would be publically verifiable in spite of not providing the src identifier in plaintext.
+
   
 #### Destinationless Variant
 
@@ -409,18 +420,9 @@ A subtle advantage of using AIDs instead of public keys is that it may make rece
 
 Given that the only choices for key-pair are those in the receiver's KEL the ability of a compromised receiver to generate any signed ciphertext using some combination of key-pair and plaintext is more limited. This looks like a type of birthday table attack [BDay Attack](https://en.wikipedia.org/wiki/Birthday_attack). Given that the key choice is so limited, a malicious receiver may not gain any appreciable advantage in being able to construct the same ciphertext using a stale keypair as the ciphertext constructed with the current key pair but already signed by the sender.  When that is the case, (i.e., not vulnerable to BDay attack) and there is also a way for an honest receiver to look up the intended long-term public decryption key without having its AID in the message, then the destination AID may be removed from the message. This variant is shown in the diagram below.
 
-![ESSRMessageDstLimited](assets/ESSRMessageDstLimited.png)
+![ESSRDstlessMessage](assets/ESSRDstlessMessage.png)
 
 Diagram: Destinationless Variant ESSR Message
-
-#### Ciphertext Sourceless Variant
-
-In the case where the receiver follows the policy of only one relationship identifier (OORI) then the sender AID in the ciphertext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID. This means that any other sender can not strip the signature for a given ciphertext to a given receiver AID and replace it with its own because the receiver will drop it if the sender AID does not correspond to that allowed for that receiver AID. This policy may remove the need to include the sender's AID in the ciphertext. Notwithstanding the former, removing the ciphertext source AID still exposes the receiver to an attack from that one approved sender AID. In this attack the sender provides ciphertext for plaintext it has never seen but purports that it has seen it. This variant is diagrammed below.  
-
-![ESSROORIMessage](assets/ESSROORIMessage.png)
-
-
-Diagram: Ciphertext Sourceless Variant ESSR Message
 
 ### Replay Attack Protection
 
