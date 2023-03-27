@@ -2,7 +2,7 @@
 
 SPAC, Secure Privacy, Authenticity, and Confidentiality
 
-Version 0.1.4 (Original draft 2023/03/25)
+Version 0.1.5 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -39,13 +39,13 @@ Diagram: Security Overlay Spiral
 From a practical perspective, I use the following elaborations to help refine how I think about the three properties.
 
 * Authentic and Authenticity:  
-The origin and content of any statement by a party to a conversation is provable to any other party. Authenticity is about control over the key state needed to prove who said what in the conversation via digital signatures. In other words, is about secure attribution.
+The origin and content of any statement by a party to a conversation is provable to any other party. Authenticity is primarily about control over the key state needed to prove who said what in the conversation via digital signatures. In other words, is about secure attribution.
 * Confidential and Confidentiality: 
 All statements in a conversation are only known by the parties to that conversation.
-Confidentiality is about control over the disclosure of what (content data) was said in the conversation and to whom it was said (partitioning). Confidentiality is about control over the key state needed to hide content via encryption vis-a-vis the intended parties.
+Confidentiality is primarily about control over the disclosure of what (content data) was said in the conversation and to whom it was said (partitioning). Confidentiality is about control over the key state needed to hide content via encryption vis-a-vis the intended parties.
 * Private  and Privacy:  
 The parties to a conversation are only known by the parties to that conversation.
-Privacy is about control over the disclosure of who participated in the conversation (non-content meta-data = identifiers). Privacy is about managing exploitably correlatable identifiers
+Privacy is primarily about control over the disclosure of who participated in the conversation (non-content meta-data = identifiers). More specifically, privacy is about managing exploitably correlatable identifiers not merely identifiers of who but also any other type of identifiers in non-content metadata including conversation (transaction) identifiers. 
 
 
 ## Privacy and Confidentiality
