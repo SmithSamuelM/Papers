@@ -1,12 +1,14 @@
 # Privacy Given Strongest Authenticity and Confidentiality
 
-Version 0.1.1 2023/03/26
+SPAC, Secure Privacy, Authenticity, and Confidentiality
+
+Version 0.1.2 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
 ## PAC Trilemma
 
-In my opinion, the three properties, authenticity, confidentiality, and privacy inhabit a trade-space. I have posited the PAC Theorem or PAC Trilemma to qualify this trade-space. The PAC theorem/trilemma states:
+In my opinion, the three properties, authenticity, confidentiality, and privacy inhabit a trade space. I have posited the PAC Theorem or PAC Trilemma to qualify this trade space. The PAC theorem/trilemma states:
 
 > One can have any two of the three (privacy, authenticity, confidentiality) at the highest level but not all three. 
 
@@ -18,7 +20,7 @@ The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.m
 > With regard to the first design goal, establishing trust between parties requires that each party develop confidence in the following properties of their relationship:
 > 
 > 1. Authenticity: is the receiver of a communication able to verify that it originated from the sender and has not been tampered with?
-> 2. Confidentiality: are the contents of a communication protected so only authorized parties have access?
+> 2. Confidentiality: are the contents of a communication protected so that only authorized parties have access?
 > 3. Privacy: will the expectations of each party with respect to the usage of shared information be honored by the other parties?
 > 
 > Note that, in some trust relationships, confidentiality and privacy may be optional. Thus our design goal with the ToIP stack is to achieve these three properties in the order listed.
@@ -250,7 +252,7 @@ For this analysis, we assume that content data is confidentially encrypted betwe
 
 ## Summary Threats and Mitigations
 
-As the analysis above shows the most fruitful application of TSP-based protocols with regards to exploitably correlatable identifiers may be in improving VPNs to limit aggregation for advertising by 3rd parties or in providing TSP-based protocols that enable VPN like trusted intermediaries for herd privacy against 3rd party aggregators. Whereas protection from 2nd party aggregators may be best provided by higher layer protocols that provide contractually protected disclosure of 1st party data to 2nd parties. Finally, protection from identity theft may be best provided with TSP-based protocols that provide strong authenticity and confidentiality independent of correlatable identifiers. Proper full zero-trust (verify everything) approaches with cryptographic roots-of-trust for authentication and authorization simplifies API design and may mitigate the most common vulnerabilities (including BOLA and BUA).
+As the analysis above shows the most fruitful application of TSP-based protocols with regards to exploitably correlatable identifiers may be in improving VPNs to limit aggregation for advertising by 3rd parties or in providing TSP-based protocols that enable VPN like trusted intermediaries for herd privacy against 3rd party aggregators. Whereas protection from 2nd party aggregators may be best provided by higher layer protocols that provide contractually protected disclosure of 1st party data to 2nd parties. Finally, protection from identity theft may be best provided with TSP-based protocols that provide strong authenticity and confidentiality independent of correlatable identifiers. Proper full zero-trust (verify everything) approaches with cryptographic roots-of-trust for authentication, and authorization simplifies API design and may mitigate the most common vulnerabilities (including BOLA and BUA).
 
 ## Unbounded-Term AIDs instead of Long-Term Public Keys
 
@@ -308,7 +310,7 @@ To analyze confidentiality we use a 3-party model where the 1st party is the sen
 A system with strong end-only viewable confidentiality may have the following properties: 
 
 * 3rd party non-viewability
-* 1st party non-viewability (this protects 1st party from liability wrt to 2nd party and protects 2nd party from exploit by 1st party)
+* 1st party non-viewability (this protects 1st party from liability wrt to 2nd party and protects 2nd party from exploit by 1st party) (see appendix for a more detailed description of this property)
 * 2nd party partition-ability by 1st party
 * Detectable leakage (2nd party to 3rd party)
 * Detectable collusion of 2nd party against 1st party (2nd party with 2nd party, 2nd party with 3rd party)
@@ -401,8 +403,7 @@ That said there may be some applications where upstream DDOS and/or firewall pro
 
 Diagram: Plaintext Sourceless Variant ESSR Message
 
-In the case where the receiver follows the policy of only one relationship identifier (OORI). With this policy, a given receiver AID is only used for one given sender AID. The receiver can then store the sender AID for each of its OORI AIDS. This means that the receiver can assume that there is only one possible sender. As a result, the sender AID in the message plaintext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID that it looks up based on the receiver AID in the message plaintext.  If the signature does not verify against the looked-up sender AID then the message is dropped. 
-This unique mapping between receiver AID and sender AID can be shared upstream with a load balancer or intermediary so that they can do public verification of incoming messages. With an OORI policy, the message diagrammed above would be publically verifiable in spite of not providing the src identifier in plaintext.
+In the case where the receiver follows the policy of only one relationship identifier (OORI). With this policy, a given receiver AID is only used for one given sender AID. The receiver can then store the sender AID for each of its OORI AIDS. This means that the receiver can assume that there is only one possible sender. As a result, the sender AID in the message plaintext may not be necessary. With an OORI policy, the receiver only accepts messages to a given receiver AID from a given sender AID that it looks up based on the receiver AID in the message plaintext.  If the signature does not verify against the looked-up sender AID then the message is dropped. This unique mapping between receiver AID and sender AID can be shared upstream with a load balancer or intermediary so that they can do public verification of incoming messages. With an OORI policy, the message diagrammed above would be publically verifiable in spite of not providing the src identifier in plaintext.
 
 #### Sourceless Variant
 
@@ -771,6 +772,22 @@ When any of the AIDS in the protocols above are thresholded multi-sig it means t
 
 For encryption, each key in a multi-sig provides a unique encryption destination. This means that for each of the message examples where there is an encryption destination with a decryption key, the ciphertext must appear as a list of ciphertexts each with a destination that corresponds to one of the multi-sig destination AIDs controlling keys. This may require two destinations, one that is the AID in order to look up the key state and the second an index into the key list in order to look up the specific key used to decrypt. Using the index is a much more compact approach and separately listing each destination key. 
 
+## Transaction Non-Content Metadata
+
+Other non-content metadata such as transaction identifiers that “glue” messages together into a “conversation” may also provide correlatability across messages. For example, as suggested above in both the Header section and the Relationship Formation Protocol section, the [SAID](https://github.com/WebOfTrust/ietf-said) of the first message in a transaction can be used as the transaction ID. A SAID is a Self-Addressing IDentifier generated from a cryptographic digest of the message. Therefore a SAID is also a UUID, and if the message includes a salty-nonce, then the content of the message is not discoverable merely from its SAID. The SAID can be employed as a transaction glue identifier that is cryptographically universally unique to a transaction. Then another message can insert that SAID as content in itself thereby gluing or chaining the two messages together without repeating any of the identifiers as non-content metadata from the first message (unless they are needed for the authenticity or confidentiality of the new message specifically but not in order to glue to the first message).  The following message in the conversation can use the SAID of the previous message to construct a chained (glued) together conversation, and so on. The set of messages so chained together form a transaction that is a verifiable data structure. Given that each message is signed by its source, then the whole transaction as a verifiable data structure is strongly authenticatable.
+
+The important insight here is that given the same information-theoretic-secure non-correlatability of SAIDs with salty-nonces, the same partitioning principle used for contextually isolating identifiers (AIDs) in a relationship to the context in which that relationship applies can be used for isolating transaction glue identifiers (SAIDs). The transaction context can be completely confidential with respect to any communication context that conveys all or part of the transaction messages. This includes a transaction split across multiple communication contexts. Properly constructed, there is no mutual correlatability of any of the messages in the transaction except at or by the endpoints, regardless of any intermediaries or any communication context identifiers used to convey the confidential transaction. The communication messages are un-connected and un-glued (except at the level of the communication context for reliability). The embedded transaction header is completely confidential and un-correlatable to any 3rd party viewing the identifiers in the communication context messages.
+
+Thus, the hard problem is not preventing the correlatability of transaction metadata, it's getting a confidential context in which to embed the transaction metadata. Which we established above. So given that, we can build confidential transactions ("conversations") with confidential transaction metadata.
+
+To elaborate, transaction context partitions can be a proper subset of any relationship context partition. A given relationship context partition may have multiple transaction contexts (i.e., multiple conversations). Therefore if the relationship context is private then any of its transactions contexts are also private.
+
+A complication is where one wants to have a transaction context span multiple relationship contexts. Typically for communications purposes when there are multiple communications media or intermediaries. But, given that one can form a private relationship by reference using the relationship formation protocol defined above, then one can avoid having any transaction spanning multiple relationships by first forming a relationship for such a transaction. And then leveraging those pre-existing communication contexts to confidentially (and privately) embed that relationship and its associated transaction (conversation) with its transaction metadata.
+
+One of the important principles is that we can leverage the information-theoretic secure properties of cryptographic primitives as identifiers for the purposes of privacy. The main reason for [CESR](https://github.com/WebOfTrust/ietf-cesr) was to make the use of cryptographic primitives sufficiently convenient that they could be used in protocols in ways that could not have been ever contemplated before given the much more verbose and inconvenient representations such as JWTs.
+
+An agile cryptographic primitive can't be minified like a JSON label or Javascript variable name, otherwise it loses its entropy and its agility. But we can represent it in the most compact possible form as a string that is composable to binary (which CESR does uniquely).
+
 
 ## Appendix DDOS
 
@@ -813,3 +830,14 @@ Higher-level communications tasks may require repeated application of the ESSR c
 
 
 
+## Appendix: 1st Party Non-Viewability
+
+One reason to use PKE is so that the encryptor (1st party) can delete the plaintext from their system and avoid any liability for continued storage of the plaintext. Thus the data is no longer viewable by the 1st party. This would be applicable for GDPR data processors, in order that they may retain the encrypted-to-the-destination ciphertext as non-viewable by them but held for the purposes of the end-destination. Or the only time the plaintext was viewable was in memory, never on disk. This makes for more zero-trust computing. Anyone auditing the 1st party code can verify that the first party is deleting the plaintext and never storing it after that.  Moreover,  any intermediary that had to transform and then re-encrypt can employ this property.
+
+But end-only-viewability is also reflexive. any party can decide that they themselves are the other end and encrypt it to themselves thereby enabling them to delete the plaintext. This is the zero-trust principle of encrypted-at-rest, not merely encrypted-in-motion. This is important when the 1st Party is distributed across multiple infrastructures. This means the private decryption key can be isolated to only one part of the 1st party's infrastructure, and the other parts can encrypt to that isolated part such that only the isolated part can decrypt. Using symmetric encryption, on the other hand, would require exposing the shared secret encryption key with all the parts thereby weakening it through increased exposure.
+
+To restate, given a distributed 1st party where that 1st party doesn't want any plaintext hanging around,  it can enforce on itself a policy of end-part-only viewability by using PKE.
+
+But yes, it's confidentiality via non-viewable ciphertext vs. viewable plaintext.  The confidentiality mechanism is that once a 1st party decides to make the plaintext end-only viewable, they can enforce that by deleting their plaintext copy. When the 1st party decides to encrypt the plaintext to themselves, they can then delete their copy of plaintext but be able to view it later. In this case, there are two different ends that have end-only viewability of the same plaintext.
+
+The point is that it gives any source the tools to enforce which ends have end-only viewability, including itself.
