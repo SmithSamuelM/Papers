@@ -2,7 +2,7 @@
 
 SPAC, Secure Privacy, Authenticity, and Confidentiality
 
-Version 0.1.5 (Original draft 2023/03/25)
+Version 0.1.6 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -45,7 +45,7 @@ All statements in a conversation are only known by the parties to that conversat
 Confidentiality is primarily about control over the disclosure of what (content data) was said in the conversation and to whom it was said (partitioning). Confidentiality is about control over the key state needed to hide content via encryption vis-a-vis the intended parties.
 * Private  and Privacy:  
 The parties to a conversation are only known by the parties to that conversation.
-Privacy is primarily about control over the disclosure of who participated in the conversation (non-content meta-data = identifiers). More specifically, privacy is about managing exploitably correlatable identifiers not merely identifiers of who but also any other type of identifiers in non-content metadata including conversation (transaction) identifiers. 
+Privacy is primarily about control over the disclosure of who participated in the conversation (non-content meta-data = identifiers). More specifically, privacy is about managing exploitably correlatable identifiers not merely identifiers of who but also any other type of identifier in non-content metadata including conversation (transaction) identifiers. 
 
 
 ## Privacy and Confidentiality
@@ -173,7 +173,7 @@ The three main classes of potential exploiters are as follows:
 ### Threats
 
 For this analysis, we assume that content data is confidentially encrypted between
-1st parties and 2nd parties when sent over the wire. The identity thief cannot view this data without first compromising 1st party or 2nd party credentials in order to either decrypt the data or view it in its unencrypted state on a storage device. The ultimate target is a treasure trove of sensitive data held by a 2nd party. This may be health or other data that may be captured as ransomware, or it may be credentialing information that enables first-party impersonation in order to either directly capture 1st party assets or may be sole to secondary thieves who then use it to capture 1st party assets. Another target is the asset access credentials of high-value 1st parties. Notable is that identity thieves do not monetize aggregated content data or metadata (anonymized or not) by selling it to advertisers. The return on investment for data aggregation is too low for identity thieves in general.
+1st parties and 2nd parties when sent over the wire. The identity thief cannot view this data without first compromising 1st party or 2nd party credentials in order to either decrypt the data or view it in its unencrypted state on a storage device. The ultimate target is a treasure trove of sensitive data held by a 2nd party. This may be health or other data that may be captured as ransomware, or it may be credentialing information that enables first-party impersonation in order to either directly capture 1st party assets or may be sold to secondary thieves who then use it to capture 1st party assets. Another target is the asset access credentials of high-value 1st parties. Notable is that identity thieves do not monetize aggregated content data or metadata (anonymized or not) by selling it to advertisers. The return on investment for data aggregation is too low for identity thieves in general.
 
 The primary attack mechanism is labeled differently in different venues but may be described as a multi-step recursive privilege elevation attack (authentication and authorization). The attacker compromises weak access credentials on low-value targets that allow it to elevate its privileges in order to compromise a higher-value target until it finally has the access credentials of a treasure trove. An example of this would be to compromise the VPN login of some customer or employee of some company that allows an attacker to compromise some other employee's VPN login to a connected company and so on until it captures access credentials to a connected company's treasure trove. It starts with what is called an edge attack on the weakest company. The elevation mechanism often leverages what is called a [BOLA](https://heimdalsecurity.com/blog/what-is-broken-object-level-authorization-bola/)  or  [BUA](https://github.com/OWASP/API-Security/blob/master/2019/en/src/0xa2-broken-user-authentication.md) vulnerability in the access API of a given company. These vulnerabilities singularly or in combination allow an adversary to elevate their access privileges (see [BOLA Explained](https://www.traceable.ai/blog-post/a-deep-dive-on-the-most-critical-api-vulnerability-bola-broken-object-level-authorization). The [OWASP](https://owasp.org/www-project-api-security/) project lists in order the primary API vulnerabilities that enable a recursive privilege elevation attack. These are not privacy weaknesses but authentication-based authorization weaknesses.
 
