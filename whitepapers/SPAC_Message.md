@@ -2,7 +2,7 @@
 
 SPAC, Secure Privacy, Authenticity, and Confidentiality
 
-Version 0.1.3 (Original draft 2023/03/25)
+Version 0.1.4 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -105,7 +105,7 @@ Let's return to our public road delivery analogy. We can achieve effective priva
 
 Let's extend the delivery driver analogy. Suppose that a malicious adversary replaced the driver with one of its own so that it could view all the addresses of all the boxes inside that delivery van and maybe even open the boxes to view their contents. Now any trust in the delivery van service is broken because of the malicious impersonation of the delivery van driver. We must be careful not to mistake this as a privacy problem but to see it as an authenticity and confidentiality problem. If the delivery van driver is not impersonatable because any entity at any pickup address can securely authenticate the driver then the adversary will not be able to pick up boxes much less view their addresses or contents. The exploitability of the public addresses on the boxes is derived from the exploitability of the delivery service's authenticity and confidentiality, not the inherent correlatability of the boxes' public addresses.
 
-At first blush, it seems that the solution to protecting address privacy is not a private road network but un-impersonatable delivery van drivers with really secure delivery vans and really secure boxes inside the delivery vans. We would be better off building more secure more trustworthy delivery services (VPNs) that use public roads than building something more complicated and harder to adopt like replacing public roads with private roads (distributed private communication networks). For example, the [WireGuard](https://www.wireguard.com) VPN protocol is a best practices VPN from a modern [security](https://eprint.iacr.org/2020/379.pdf) standpoint. It is [open source](https://www.wireguard.com/repositories/) and uses [libsodium](https://libsodium.gitbook.io/doc/) constructs. We should not reinvent that wheel.
+At first blush, it seems that the solution to protecting address privacy is not a private road network but un-impersonatable delivery van drivers with really secure delivery vans and really secure boxes inside the delivery vans. We would be better off building more secure more trustworthy delivery services (VPNs) that use public roads than building something more complicated and harder to adopt like replacing public roads with private roads (distributed private communication networks). For example, the [WireGuard](https://www.wireguard.com) VPN protocol is a best practices VPN from the standpoint of modern [pre-quantum security](https://www.wireguard.com/papers/dowling-paterson-computational-2018.pdf) with a path to [post-quantum security](https://eprint.iacr.org/2020/379.pdf). It is [open source](https://www.wireguard.com/repositories/) and uses [libsodium](https://libsodium.gitbook.io/doc/) constructs. We should not reinvent that wheel.
 
 
 ## Cold War versus Hot War
