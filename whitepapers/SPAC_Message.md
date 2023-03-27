@@ -2,7 +2,7 @@
 
 SPAC, Secure Privacy, Authenticity, and Confidentiality
 
-Version 0.1.2 (Original draft 2023/03/25)
+Version 0.1.3 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -99,13 +99,13 @@ So the analogy holds. We can have strong authenticity and strong confidentiality
 
 To better manage this difficult trade-off between the need to address the parties to a conversation and the need to restrict the disclosure of knowledge of those parties to the parties themselves (i.e., privacy) we focus our attention on managing exploitably correlatable non-content metadata, specifically ***exploitably correlatable identifiers***. Thus if we can protect against exploitation derived from the correlation of identifiers we may achieve effective privacy. 
 
-Protection against exploitation via correlation provides a more gentle trade-space than mere protection against correlation. The former is practical and amenable to cost-benefit analysis, but the latter is largely impractical.
+Protection against exploitation via correlation provides a more gentle trade space than mere protection against correlation. The former is practical and amenable to cost-benefit analysis, but the latter is largely impractical.
 
 Let's return to our public road delivery analogy. We can achieve effective privacy over public roads if we use a delivery service. The delivery service uses public roads, but the contents of the delivery vans are not viewable by bystanders (third-party observers). Although a bystander can see the van enter and leave our property they can't see the boxes the van delivered or picked up from our property. The van has a public address (its license plate). The boxes the van picks up or delivers all have public addresses. But the addresses on the boxes and the contents of the boxes are not viewable by the bystander. The van makes stops at many houses in the neighborhood which provides herd privacy with respect to correlating van deliveries and pickups to boxes. Analogously the contents of the van may be considered content whereas the van itself is non-content metadata. The van provides a virtual private delivery network over public roads. The closest analogy in the communication world is a Virtual Private Network, (VPN). The limitation is that we have to trust the delivery driver of the van not to tell our neighbors the address information on the boxes delivered or picked up from our address. The driver can't tell what's in the boxes, merely who they came from or who they are being sent to. 
 
 Let's extend the delivery driver analogy. Suppose that a malicious adversary replaced the driver with one of its own so that it could view all the addresses of all the boxes inside that delivery van and maybe even open the boxes to view their contents. Now any trust in the delivery van service is broken because of the malicious impersonation of the delivery van driver. We must be careful not to mistake this as a privacy problem but to see it as an authenticity and confidentiality problem. If the delivery van driver is not impersonatable because any entity at any pickup address can securely authenticate the driver then the adversary will not be able to pick up boxes much less view their addresses or contents. The exploitability of the public addresses on the boxes is derived from the exploitability of the delivery service's authenticity and confidentiality, not the inherent correlatability of the boxes' public addresses.
 
-At first blush, it seems that the solution to protecting address privacy is not a private road network but un-impersonatable delivery van drivers with really secure delivery vans and really secure boxes inside the delivery vans. We would be better off building more secure more trustworthy delivery services (VPNs) that use public roads than building something more complicated and harder to adopt like replacing public roads with private roads (distributed private communication networks).
+At first blush, it seems that the solution to protecting address privacy is not a private road network but un-impersonatable delivery van drivers with really secure delivery vans and really secure boxes inside the delivery vans. We would be better off building more secure more trustworthy delivery services (VPNs) that use public roads than building something more complicated and harder to adopt like replacing public roads with private roads (distributed private communication networks). For example, the [WireGuard](https://www.wireguard.com) VPN protocol is a best practices VPN from a modern [security](https://eprint.iacr.org/2020/379.pdf) standpoint. It is [open source](https://www.wireguard.com/repositories/) and uses [libsodium](https://libsodium.gitbook.io/doc/) constructs. We should not reinvent that wheel.
 
 
 ## Cold War versus Hot War
@@ -298,11 +298,11 @@ For confidentiality, the way to remove vulnerabilities in the middle is called o
 Together these properties mean we only have to secure key management at the ends (edges) not everywhere in between. Insisting on these principles greatly simplifies and strengthens any protocols we may choose to build.
 
 To reiterate, a confidentiality overlay is the dual of an authenticity overlay. 
-An end-verifiable authenticity overlay is based on one or more asymmetric key pairs for signing, where only the end the private key can sign, and any end with the public key can verify. To clarify, only the key pair controller can sign with the private key, any recipient can verify with the public key.
+An end-verifiable authenticity overlay is based on one or more asymmetric key pairs for signing, where only the end with the private key can sign, and any end with the public key can verify. To clarify, only the key pair controller can sign with the private key, any recipient can verify with the public key.
 An end-only-viewable confidentiality overlay is based on one asymmetric key pair for en-de-cryption, where any end with the public key can encrypt, and only the end with the private key can decrypt. To clarify, only the key pair controller can decrypt with the private key, any sender can encrypt with the public key. 
 Any identifier can have a key state that includes both an asymmetric signing key pair and an asymmetric decryption key pair. 
 Either the key pairs can be the same, or the decryption key pair can be derived from the signing key pair
-Thus an efficient approach is that only one key state, the signing key state, needs to be maintained (with caveats).
+Thus an efficient approach is one where only one key state, the signing key state, needs to be maintained (with caveats).
 Given the identifier and the security overlay’s mapping to look up key state, any other party, can either verify with the signing public key that a message was non-repudiably sourced by the controller of the identifier (authenticity) (non-repudiable any-end-verifiable ) or can encrypt a message using the encryption public key to ensure that only the controller of the identifier can view it (confidentiality) (restricted only-end-viewable)
 
 To analyze confidentiality we use a 3-party model where the 1st party is the sender, the 2nd party is the intended receiver, and the 3rd party is any unintended receiver.
@@ -313,8 +313,8 @@ A system with strong end-only viewable confidentiality may have the following pr
 * 1st party non-viewability (this protects 1st party from liability wrt to 2nd party and protects 2nd party from exploit by 1st party) (see appendix for a more detailed description of this property)
 * 2nd party partition-ability by 1st party
 * Detectable leakage (2nd party to 3rd party)
-* Detectable collusion of 2nd party against 1st party (2nd party with 2nd party, 2nd party with 3rd party)
-* Detectable collusion of 1st party against 2nd party (1st party with 1st party or 1st party with 3rd party)
+* Detectable collusion of 2nd party against 1st party (2nd party with 2nd party, or 2nd party with 3rd party)
+* Detectable collusion of 1st party against 2nd party (1st party with another 1st party relative to same 2nd party or 1st party with 3rd party)
 
 
 ## Adoptability via Dumb Crypto
@@ -324,8 +324,6 @@ There is an explosion of activity toward developing new cryptographic algorithms
 The best example, of best practices in highly adoptable crypto algorithms, is [NaCL](https://nacl.cr.yp.to). The most popular implementation of NaCL is the [libsodium](https://libsodium.gitbook.io/doc/) library which is supported almost universally across programming languages and operating systems. This does not mean that other equivalently adoptable libraries are ruled out but merely that we use libsodium as a starting baseline or departure point. Furthermore, the signing and encryption algorithms in NaCL (Ed25519 and X25519) have been accepted into NIST's roadmap for approved government use (see [Curve25519](https://en.wikipedia.org/wiki/Curve25519)).
 
 In this work, we only consider pre-quantum safe algorithms. We assume the encoding of any cryptographic primitive supports sufficient agility. If we can design a protocol that only needs the operations found in libsodium then we have a practically adoptable baseline for that protocol. 
-
-
 
 ## Best Authenticity (Public Key Signing)
 
