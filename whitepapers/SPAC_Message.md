@@ -540,13 +540,13 @@ which denotes a message signed by X<sub>0</sub> with embedded ciphertext encrypt
 
 ### Header
 
-Any practical protocol requires a header with one or more header fields in plaintext that provide metadata about the packet. This metadata typically includes version, protocol type, and packet type, and depending on the protocol, may include service type and transaction state support like transaction ID, sequence number, or hash references to other packets in a transaction. For security, this header should be protected by being placed in the signed portion of any packet. The protected header enables a parser to interpret the packet without exposing it to attack.  A practical version of the example above would include such a header as shown below:
+Any practical protocol requires a header with one or more header fields in plaintext that provide metadata about the packet. This metadata typically includes version, protocol type, and packet type, and depending on the protocol, may include service type and interaction state support like interaction ID, sequence number, or hash references to other packets in a transaction. For security, this header should be protected by being placed in the signed portion of any packet. The protected header enables a parser to interpret the packet without exposing it to attack.  A practical version of the example above would include such a header as shown below:
 
 *<[header, src X<sub>0</sub>, dst Y<sub>0</sub>, {src X<sub>0</sub>, data}Y<sub>0</sub>]>X<sub>0</sub>*
 
 However, for the purposes of understanding how to analyze the trade-offs of the fundamental properties of authenticity, confidentiality, and privacy, the header details are largely irrelevant. Without loss of generality, then, it is assumed that any practical packet will have a header with whatever additional metadata is required by the specific protocol. But for the purposes of this exposition, we will simplify the message descriptions by leaving out the header metadata unless it is relevant. We will return to the topic of how to manage transaction or interaction-specific correlatable meta-data in a later section.
 
-### IP Addresses and Header
+### Transport (IP) Addresses and Header
 
 In order to route a message over the internet, the packet must have an IP (UDP or TCP) header with a *src* (source) address and port and a *dst* (destination) address and port.  We assume that the IP header is not protected by the signature. This assumption is still valid for other transports besides IP. We assume that there will be a transport header with *src* and *dst* addresses or, more generally, *src* and *dst* service endpoints. Therefore without loss of generality, we simply label the transport endpoints with the modifier *ip*. We also assume that for each AID, there may be default corresponding transport endpoints for the source (*src*) and the destination (*dst*). Of course, a given AID may have multiple endpoints, and this may be distinguished with a *role* label, but this is a management detail that does not impact the primary issue of correlation.
 
@@ -588,14 +588,17 @@ An authenticatable message from *A* to *B* with confidential content data using 
 
 *|src ip A<sub>0</sub>, dst ip B<sub>0</sub>|<[src A<sub>0</sub>, dst B<sub>0</sub>, {src A<sub>0</sub>, data}B<sub>0</sub>]>A<sub>0</sub>*
 
+Similarly authenticatable message from *B* to *A* with confidential content data using ESSR is denoted as follows:  
+
+*|src ip B<sub>0</sub>, dst ip A<sub>0</sub>|<[src B<sub>0</sub>, dst A<sub>0</sub>, {src B<sub>0</sub>, data}A<sub>0</sub>]>B<sub>0</sub>*
+
 A variant where the plaintext is also signed when required by legal recourse is a follows:
 
 *|src ip A<sub>0</sub>, dst ip B<sub>0</sub>|<[src A<sub>0</sub>, dst B<sub>0</sub>, {<src A<sub>0</sub>, data>A<sub>0</sub>}B<sub>0</sub>]>A<sub>0</sub>*
 
 
-Similarly authenticatable message from *B* to *A* with confidential content data using ESSR is denoted as follows:  
+*|src ip B<sub>0</sub>, dst ip A<sub>0</sub>|<[src B<sub>0</sub>, dst A<sub>0</sub>, {<src B<sub>0</sub>, data>B<sub>0</sub>}A<sub>0</sub>]>B<sub>0</sub>*
 
-*|src ip B<sub>0</sub>, dst ip A<sub>0</sub>|<[src B<sub>0</sub>, dst A<sub>0</sub>, {src B<sub>0</sub>, data}A<sub>0</sub>]>B<sub>0</sub>*
 
 The IP addresses and AID are correlatable by any ISP or intermediary that watches the messages since they all appear in plaintext. But the confidential content data is not observable. The only correlatable information is that *A<sub>0</sub>* is talking to *B<sub>0</sub>* using IP endpoints *ip A<sub>0</sub>* and *ip B<sub>0</sub>*. This may be monetizable by an ISP for advertising aggregation. On the other hand, because it is strongly authentic and confidential, it, by itself, is not very exploitable by an identity thief. 
 
@@ -807,19 +810,19 @@ Indeed privacy comes from the fact that as far as any 3rd party is concerned, th
 
 To elaborate, interaction context partitions can be a proper subset of any relationship context partition. A given relationship context partition may have multiple interaction contexts (i.e., multiple conversations). Therefore if the relationship context is private then any of its interactions contexts are also private (QED).
 
-In order to show a practical example we define some new syntax. Let *iAB* denote aome pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *iAB<sub>0</sub>*, *iAB<sub>1</sub>*, *iAB<sub>2</sub>*. We assume that these identifiers are SAIDs or ISAIDs. An important nuance is that the actual interaction identifiers (ISAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the ISAID is the SAID of, and the next subsequent message where the ISAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes the ISAID of the interaction. For the sake of simplicity, we will use the former form in the examples below.
+In order to show a practical example we define some new syntax. Let *iAB* denote aome pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *i<sup>0</sup>AB*, *i<sup>1</sup>AB*, *i<sup>2</sup>AB*. We assume that these identifiers are SAIDs or ISAIDs. An important nuance is that the actual interaction identifiers (ISAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the ISAID is the SAID of, and the next subsequent message where the ISAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes the ISAID of the interaction. For the sake of simplicity, we will use the former form in the examples below.
 
 Suppose, for example, we start with the non-shared intermediary protocol above. We can make any given message a member of interaction by including the interaction's ISAID. In the example below, it's *iAB<sub>0</sub>*.
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, iAB<sub>0</sub>, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, i<sup>0</sup>AB, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
-In the example above, *iAB<sub>0</sub>* appears as plaintext at the same level as the AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. All three of these are confidential with respect to the hop-wise communication contexts. No 3rd party can correlate the messages in the interaction. 
+In the example above, *i<sup>0</sup>AB* appears as plaintext at the same level as the AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. All three of these are confidential with respect to the hop-wise communication contexts. No 3rd party can correlate the messages in the interaction. 
 
 Recall that the intermediaries are trusted 2nd parties. As trusted 2nd parties, the intermediaries can correlate the end-wise routing AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. But now, given the presence of ISAIDS, they can also correlate subsets of those end-wise routed messages at the AID level as belonging to distinct interactions. In some applications, *A* and *B* may wish to make the interactions private with respect to the intermediaries. They can do this by putting the ISAIDs inside the confidential content of the end-wise context messages as follows:
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, iAB<sub>0</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, i<sup>0</sup>AB, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
-Now only *A* and *B* can correlate messages that belong to the interaction identified by *iAB<sub>0</sub>*. This has effectively created a new partitioned interaction context for *iAB<sub>0</sub>* that is confidential with respect to the end-wise routing context given by the relationship, *(A<sub>1</sub>, <>, B<sub>1</sub>)*. As far as the intermediaries are concerned, all messages in the end-wise routing context, *(A<sub>1</sub>, <>, B<sub>1</sub>)* are undifferentiated from each other, thereby providing herd privacy to the interaction context *iAB<sub>0</sub>*.
+Now only *A* and *B* can correlate messages that belong to the interaction identified by *i<sup>0</sup>AB*. This has effectively created a new partitioned interaction context for *i<sup>0</sup>AB* that is confidential with respect to the end-wise routing context given by the relationship, *(A<sub>1</sub>, <>, B<sub>1</sub>)*. As far as the intermediaries are concerned, all messages in the end-wise routing context, *(A<sub>1</sub>, <>, B<sub>1</sub>)* are undifferentiated from each other, thereby providing herd privacy to the interaction context *isup>0</sup>AB<*.
 
 Privacy comes from the fact that messages in the end-wise routing context look like plain vanilla messages as far as any interactions are concerned.
 
@@ -830,17 +833,17 @@ A complication arises when one wants to have an end context span multiple relati
 
 Suppose *A* and *B* wish to use more than one end-wise routing context for a given interaction. This generalizes to any number of hop-wise communication contexts, but for the sake of simplicity, we will just use the one established above. Let *A* and *B* establish another end-wise relationship denoted by *(A<sub>3</sub>, <>, B<sub>3</sub>)*. This could have been formed using an OOB setup or using the relationship formation protocol leveraging the existing relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)*.
 
-Let the interaction be denoted *iAB<sub>0</sub>*. There are two different ways we can leverage the new end-wise relationship. 
+Let the interaction be denoted *i<sup>0</sup>AB*. There are two different ways we can leverage the new end-wise relationship. 
 
 The first way is to use it as yet another end-wise routing relationship at the AID level. A message using this approach is shown below:
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, iAB<sub>0</sub>, data}B<sub>3</sub>]>A<sub>3</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
 Any message in that same interaction can be conveyed with either of the end-wise routing relationships. This would be most useful if each of the end-wise routing relationships were one-way. In that case, messages from *A* to *B* would use a different end-wise relationship than messages from *B* to *A*. Any 3rd party, as well as any intermediary, could not correlate messages that went from *A* to *B* with messages in that same interaction that went from *B* to *A*.
 
 The second way to use this new end-wise relationship is to embed it in the pre-existing end-wise relationship. This makes the existence of this new end-wise relationship *(A<sub>3</sub>, <>, B<sub>3</sub>)* hidden from not just 3rd parties but also the 2nd party trusted intermediaries. A message using this approach is shown below.
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, iAB<sub>0</sub>, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
 This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.
 
