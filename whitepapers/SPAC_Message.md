@@ -2,7 +2,7 @@
 
 SPAC (Secure Privacy, Authenticity, and Confidentiality)
 
-Version 0.1.9 (Original draft 2023/03/25)
+Version 0.2.1 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -687,7 +687,7 @@ Last hop from *C* to *B*:
 
 Finally *C* forms a new message to *B* as follows:
 
-*|src ip C<sub>0</sub>, dst ip B<sub>2</sub>|<[src C<sub>0</sub>, dst B<sub>2</sub>, {src C<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub> }B<sub>2</sub>]>C<sub>0</sub>*
+*|src ip C<sub>1</sub>, dst ip B<sub>2</sub>|<[src C<sub>1</sub>, dst B<sub>2</sub>, {src C<sub>1</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub> }B<sub>2</sub>]>C<sub>1</sub>*
 
 Now *B* can verify that this came from *C<sub>1</sub>* and then decrypt the contents which it can then verify as coming from *A<sub>1</sub>*. No 3rd party every sees the identifiers from *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Therefore this relationship is private with respect to correlatable identifiers. 
 
@@ -810,15 +810,15 @@ Indeed privacy comes from the fact that as far as any 3rd party is concerned, th
 
 To elaborate, interaction context partitions can be a proper subset of any relationship context partition. A given relationship context partition may have multiple interaction contexts (i.e., multiple conversations). Therefore if the relationship context is private then any of its interactions contexts are also private (QED).
 
-In order to show a practical example we define some new syntax. Let *iAB* denote aome pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *i<sup>0</sup>AB*, *i<sup>1</sup>AB*, *i<sup>2</sup>AB*. We assume that these identifiers are SAIDs or ISAIDs. An important nuance is that the actual interaction identifiers (ISAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the ISAID is the SAID of, and the next subsequent message where the ISAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes the ISAID of the interaction. For the sake of simplicity, we will use the former form in the examples below.
+In order to show a practical example we define some new syntax. Let *iAB* denote some pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *i<sup>0</sup>AB*, *i<sup>1</sup>AB*, *i<sup>2</sup>AB*. We assume that these identifiers are SAIDs or iSAIDs. An important nuance is that the actual interaction identifiers (iSAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the iSAID is the SAID of, and the next subsequent message where the iSAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes the iSAID of the interaction. For the sake of simplicity, we will use the former form in the examples below.
 
-Suppose, for example, we start with the non-shared intermediary protocol above. We can make any given message a member of interaction by including the interaction's ISAID. In the example below, it's *iAB<sub>0</sub>*.
+Suppose, for example, we start with the non-shared intermediary protocol above. We can make any given message a member of an interaction by including the interaction's iSAID. In the example below, it's *iAB<sub>0</sub>*.
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, i<sup>0</sup>AB, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
 In the example above, *i<sup>0</sup>AB* appears as plaintext at the same level as the AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. All three of these are confidential with respect to the hop-wise communication contexts. No 3rd party can correlate the messages in the interaction. 
 
-Recall that the intermediaries are trusted 2nd parties. As trusted 2nd parties, the intermediaries can correlate the end-wise routing AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. But now, given the presence of ISAIDS, they can also correlate subsets of those end-wise routed messages at the AID level as belonging to distinct interactions. In some applications, *A* and *B* may wish to make the interactions private with respect to the intermediaries. They can do this by putting the ISAIDs inside the confidential content of the end-wise context messages as follows:
+Recall that the intermediaries are trusted 2nd parties. As trusted 2nd parties, the intermediaries can correlate the end-wise routing AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. But now, given the presence of iSAIDS, they can also correlate subsets of those end-wise routed messages at the AID level as belonging to distinct interactions. In some applications, *A* and *B* may wish to make the interactions private with respect to the intermediaries. They can do this by putting the iSAIDs inside the confidential content of the end-wise context messages as follows:
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, i<sup>0</sup>AB, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
@@ -843,7 +843,11 @@ Any message in that same interaction can be conveyed with either of the end-wise
 
 The second way to use this new end-wise relationship is to embed it in the pre-existing end-wise relationship. This makes the existence of this new end-wise relationship *(A<sub>3</sub>, <>, B<sub>3</sub>)* hidden from not just 3rd parties but also the 2nd party trusted intermediaries. A message using this approach is shown below.
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>, i<sup>0</sup>AB, data]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
+
+The embedded relationship's interaction context can be hidden from the routing relationship's context by making that identifier and data confidential as follows:
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>* 
 
 This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.
 
