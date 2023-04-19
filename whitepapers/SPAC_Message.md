@@ -2,7 +2,7 @@
 
 SPAC (Secure Privacy, Authenticity, and Confidentiality)
 
-Version 0.1.8 (Original draft 2023/03/25)
+Version 0.1.9 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
