@@ -2,7 +2,7 @@
 
 SPAC (Secure Privacy, Authenticity, and Confidentiality)
 
-Version 0.2.2 (Original draft 2023/03/25)
+Version 0.2.3 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -853,6 +853,37 @@ The embedded relationship's interaction context can be hidden from the routing r
 
 This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.
 
+### Sustainable Privacy, Authenticity, and Confidentiality
+
+#### Time Value of Information
+
+In general, privacy dissipates over time. This is because digital information is inherently leaky, and those leaks become more correlatable as the body of leaks grows over time. This leakiness can be balanced by the diminishing exploitable time value of correlated information. 
+
+In general, the primary time value of correlated information for data aggregators is that it can be used to predict behavior. Advertisers want to predict who will most likely be receptive to their marketing campaigns. The predictive accuracy of aggregated behavioral information of potential participants in any given market is largely a function of the nearness in time of the behavior used to make the prediction. We can ascribe a time constant to a given market's exploitable predictive potential where information older than the time constant no longer has net predictive value in excess of the cost of aggregating it. Information that exceeds this time constant is considered stale because there is no longer any incentive to aggregate and correlate it. Therefore, in spite of the fact that privacy dissipates over time, the value of correlation also diminishes over time so that cost-effective privacy protection mechanisms can focus resources on near-term correlatability. This provides a sweet spot for sustainable privacy protection that is governed by the time constant of the time value of exploitable correlation. Likewise, the cost of privacy protection can be weighed against the cost due to the harm of exploitation.  If the cost of protection exceeds the cost due to the harm of exploitation, then it's not worth protecting (i.e., it's counterproductive to the protector). If the cost of correlation in order to exploit exceeds the time value return of exploitation, then it's not worth exploiting (i.e., it's counterproductive to the exploiter).
+
+The protocols defined above provide mechanisms for granular partitioning contexts so that correlatability is also granularly partitioned. This enables one to control the exploitable time value of the correlatable information that can be leaked out of that context. Once a context has become leaky, a new isolated context can be created that restarts the clock on time value correlatability. This provides a trade-space between the friction and cost of forming and maintaining contexts, the length of time before a given context becomes leaky, and and the time constant of the exploitable value of leaked information. The cost of protection includes expensive one-time OOBA setups. If the leakiness of a given context is cost-effectively protectable beyond the time constant on the time value of exploitation, then new information is sustainably protectable indefinitely.
+
+#### Sustainable Management of Contexts
+
+A party wishing to protect against exploitation via correlatable metadata (identifiers) sustainably has a similar problem to that of the operatives in covert and/or clandestine operations. 
+
+***Covert*** 
+A covert operation is an operation that is planned and executed in secrecy so that the identity of the agency or organization remains unknown or is plausibly deniable.  
+
+***Clandestine*** 
+A clandestine operation is an operation that is carried out in such a manner that the operation remains in secrecy or is concealed.
+
+(see [DoD Dictionary](https://irp.fas.org/doddir/dod/dictionary.pdf), [Covert vs. Clandestine](https://www.differencebetween.com/difference-between-covert-and-vs-clandestine/))
+
+From the standpoint of a covert operative, the fact that the organization conducting the operation remains unknown puts the operative at great risk. The organization can burn or disavow the operative without incurring liability to the organization itself. This means the operative must have a legitimate public cover identity. Whereas a clandestine operative has no such public cover, should the operative be discovered then that discovery would incur liability to the orgainzation itself. This means clandestine operations have more limited use cases. Often constrained but the technical and operative challenges of maintaining the privacy of the whole operation, including all operatives. Consequently, covert operations have more use cases that come at the cost of setting up public cover identities for the operatives.
+
+As a result, A covert operative must be able to survive long-term without being found out. This means they must have a public cover identity that masks the private behavior they wish to hide. Effectively, their public cover identity allows them to hide other private behavior in plain sight. In comparison, a clandestine operative has no such public cover but must operate totally privately. Any leakage at all by a clandestine operative of its private behavior becomes a strong signal that can be correlated to detect their operation. As a result, a given clandestine operation is unsustainable long-term. They tend to be short-term, in and out. In contrast, covert operations can be much more long-term because the leakiness of private behavior is masked by their public cover behaviors. 
+
+The analogy for our purposes is that many approaches to internet privacy have tended to look like clandestine operations where the whole operation must be concealed and that concealment is largely technological. But any leakage at all jeopardizes the whole operation. This makes the approach fragile and largely unsustainable. In comparison, a more covert operation approach may be more robust to leakage and hence more sustainable.  For example, there are various ways to provide the equivalent of a "cover" identity for communications traffic. Specifically, with regard to the protocols above, parties *A* and **B** have several relationship contexts. They each have a hop-wise communications context with an intermediary, e.g. *A* with *C* and *B* with *D*. To the extent that *C* and *D* have many users that have well-known legitimate "public" uses of *C* and *D*, then *C* and *D* each have a cover identity with respect to their respective relationships with *A* and *B*. For example, if the only time anyone uses *C* is to conduct some private activity, then the use of *C* by itself is suspect and provides correlatable information.  Specifically, suppose that *C* is a VPN, and the only time *A* uses *C* is to communicate with a crypto-currency exchange in Cyprus in order to avoid the FATF KYC rules for exchanges in FATF-compliant countries then, anytime *A* uses *C* the use is exploitable information. Whereas if *A* uses *C* for all communications, then the occasional communication to Cyprus is concealed by the cover of the other activity. Likewise, if all users of *C* use *C* for all their traffic, then they provide herd privacy to every other user. But if most of the users of *C* only use *C* to conceal transactions for which they want more privacy (i.e., clandestine), they make the mere use of *C* itself a correlatable signal that exposes their clandestine operation. 
+
+The nesting of contexts extends the covert analogy. Given *A* has a generic end-wise routing relationship context with *B*, that *A* uses for a multitude of confidential interactions with *B* where each interaction uses a dedicated interaction relationship context between *A* and *B.*, then the end-wise routing context provides cover for the end-wise interaction contexts. The traffic over the general routing context is another form of herd privacy. This enables *A* *and *B* to conduct sustainable hide-in-plain-sight operations that minimize the exploitable correlatable information. Each of the relatively public long-term generic communication contexts (covert) and long-term generic routing contexts (covert) provide nested covers to the really valuable private short-term interaction contexts (clandestine).
+
+ 
 ### Relationship Discovery Protocols
 
 The protocols above assume that at least one relationship between any given pair of controllers given by *A* and *B* has been formed in a secure way which includes wich least one OOBA factor. We call this an OOB setup. We have not covered in any detail what various mechanisms may be employed to set up the initial relationships. We did, however, notionally outline a relationship formation protocol that can be used to form other relationships in a secure way, given the pre-existence of the first relationship. Essentially relationship formation is mostly about the discovery of the AIDs used for that relationship. That discovery can happen OOB in an insecure way but then be verified in-band (IB) before any sensitive data is exchanged. Or the discovery can happen in an authentic, confidential, and private manner.  
@@ -861,7 +892,7 @@ With KERI, we don't exchange public keys per se but AIDs that each has a verifia
  
 This seems to be the area where some of the patterns in DIDComm would benefit from being recast from an AID discovery or setup perspective. The DIDComm protocol includes different patterns for exchanging public keys as well as DIDs. The latter (a DID) is similar to an AID, although without the same security properties with respect to its key state. Indeed, a did:keri DID provides a DID-compatible version of a KERI AID but with the security properties of KERI preserved.
  
-Finally, KERI does have an associated AID discovery protocol called the [OOBI](https://github.com/WebOfTrust/ietf-oobi)protocol (out-of-band-introduction). This provides a bare-bones approach that covers many common use cases. This may be extended with other protocols for other application use cases. This may be one of the most fruitful ways to leverage the work done on DIDcomm.
+Finally, KERI has associated AID discovery protocol called the [OOBI](https://github.com/WebOfTrust/ietf-oobi)protocol (out-of-band-introduction). This provides a bare-bones approach that covers many common use cases. This may be extended with other protocols for other application use cases. This may be one of the most fruitful ways to leverage the work done on DIDcomm.
 
 ## CESR
 
