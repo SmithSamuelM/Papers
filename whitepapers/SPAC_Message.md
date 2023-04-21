@@ -2,7 +2,7 @@
 
 SPAC (Secure Privacy, Authenticity, and Confidentiality)
 
-Version 0.2.1 (Original draft 2023/03/25)
+Version 0.2.2 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -14,7 +14,7 @@ In my opinion, the three properties, authenticity, confidentiality, and privacy 
 
 The trilemma insists that one must make a trade-off by prioritizing one or two properties over a third.
 
-The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.md#61-design-goals) reflect that trade-off and provide an order of importance. The design goals indicate that one should start with high authenticity, then high confidentiality, and then as high as possible privacy given there is no trade-off with respect to the other two. The properties are defined as follows:  
+The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.md#61-design-goals) reflect that trade-off and provide an order of importance. The design goals indicate that one should start with high authenticity, then high confidentiality, and then as high as possible privacy, given there is no trade-off with respect to the other two. The properties are defined as follows:  
 
 
 > With regard to the first design goal, establishing trust between parties requires that each party develop confidence in the following properties of their relationship:
@@ -776,7 +776,9 @@ All any 3rd party ISP sees is that *A<sub>2</sub>* has a relationship with *C* a
 
 Note that the content data from *A<sub>1</sub>* to *B<sub>1</sub>* is not seen by either *C* or *D*, only the AIDs. Moreover, the AIDS in *(A<sub>1</sub>, <>, B<sub>1</sub>)* are never stored on disk by either *C* or *D*. They are only ever in memory. This means that an attacker who compromises the disk storage of *C* or *D* cannot leak *(A<sub>1</sub>, <>, B<sub>1</sub>)*.  An attack on *C*'s or *D*'s protected memory processes is much more difficult than an attack on *C*'s or *D*'s disk storage. This is more than sufficient to protect against 3rd party correlation for advertising aggregation.
 
-Furthermore, note that *A* does not need to know the *B* side of *B*'s relationship with *D*, and *B* does not need to know the *A* side of *A*'s relationship with *C*. So neither can leak that information. An attacker has to get that by attacking *C* and *D*, not either *A* or *B*. An attack on *C*'s disk does not expose that *A* has a relationship with any of *D*'s relationships because the farside destination is only exposed in memory. Likewise, an attack on *D*'s disk does not expose that *B* has any relationships with *A* because the farside destination is only exposed in memory.
+Furthermore, note that *A* does not need to know the *B* side of *B*'s relationship with *D*, and *B* does not need to know the *A* side of *A*'s relationship with *C*. So neither can leak that information. An attacker has to get that by successfully attacking both *C* and *D*. To elaborate, an attack on *A* and or *C* does not reveal the *B *side of *B*’s relationship with *D*. Both *C* and D must be attacked. Likewise, an attack on *B* and or *D* does not reveal the *A* side of *A*’s relationship with *C*. Both *C* and *D* must be attacked. Likewise, *A* does not have knowledge of *B*'s side of *B*'s relationship with *D*, only the *D* side. As well, 
+
+An attack on *C*'s disk does not expose that *A* has a relationship with any of *D*'s relationships because the farside destination is only exposed in memory. Likewise, an attack on *D*'s disk does not expose that *B* has any relationships with *A* because the farside destination is only exposed in memory.
 
 This approach is fully zero-trust because all table lookups by *C* and *D* are signed at rest, so an attacker can't misdirect traffic between the two or between their associated edge relationships.
 
