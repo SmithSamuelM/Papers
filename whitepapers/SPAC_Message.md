@@ -2,7 +2,7 @@
 
 SPAC (Secure Privacy, Authenticity, and Confidentiality)
 
-Version 0.2.3 (Original draft 2023/03/25)
+Version 0.2.4 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -795,10 +795,10 @@ For encryption, each key in a multi-sig provides a unique encryption destination
 
 ## Interaction Non-Content Metadata
 
-### ISAIDs
+### iSAIDs
 Other non-content metadata, such as interaction identifiers that “glue” messages together into a conversation, thread, topic, transaction, or interaction, may also provide correlatability across messages. We use the generic term *interaction identifier* (IID). We can think of interaction-specific metadata as the glue that forms an *end-wise* interaction context that is independent of any associated end-wise routing context at the AID level. The end-wise routing context does not need any glue to bind multiple messages together. Each message is independently routable between the AIDs at its ends (edges).
 
-For example, as suggested above in both the Header section and the Relationship Formation Protocol section, the [SAID](https://github.com/WebOfTrust/ietf-said) of the first message in an interaction can be used as the interaction ID. This can then be labeled as an *Interaction SAID* or ISAID for short. A SAID is a Self-Addressing IDentifier generated from a cryptographic digest of the message. Therefore a SAID is also a UUID, and if the message includes a salty nonce, then the content of the message is not discoverable merely from its SAID. The SAID can be employed as an interaction glue identifier (ISAID) that is cryptographically universally unique to a given interaction. Then another message can insert that ISAID as content into itself, thereby gluing or chaining the two messages together. This allows the two messages to be glued together without repeating any of the AIDs as non-content metadata from the first message (unless they are needed for the authenticity or confidentiality of the new message specifically but not in order to glue to the first message).  Any subsequent message in the conversation can use the SAID of the previous message to construct a chained (glued) together conversation, and so on. The set of messages so chained together form an interaction that is a verifiable data structure. Given that each message is signed by its source, then the whole interaction becomes a verifiable data structure that is strongly authenticatable.
+For example, as suggested above in both the Header section and the Relationship Formation Protocol section, the [SAID](https://github.com/WebOfTrust/ietf-said) of the first message in an interaction can be used as the interaction ID. This can then be labeled as an *interaction SAID* or iSAID for short. A SAID is a Self-Addressing IDentifier generated from a cryptographic digest of the message. Therefore a SAID is also a UUID, and if the message includes a salty nonce, then the content of the message is not discoverable merely from its SAID. The SAID can be employed as an interaction glue identifier (iSAID) that is cryptographically universally unique to a given interaction. Then another message can insert that iSAID as content into itself, thereby gluing or chaining the two messages together. This allows the two messages to be glued together without repeating any of the AIDs as non-content metadata from the first message (unless they are needed for the authenticity or confidentiality of the new message specifically but not in order to glue to the first message).  Any subsequent message in the conversation can use the SAID of the previous message to construct a chained (glued) together conversation, and so on. The set of messages so chained together form an interaction that is a verifiable data structure. Given that each message is signed by its source, then the whole interaction becomes a verifiable data structure that is strongly authenticatable.
 
 The important insight here is that given the same information-theoretic-secure non-correlatability of SAIDs with salty-nonces, the same partitioning principle used for contextually isolating identifiers (AIDs) in a relationship to the context in which that relationship applies can be used for isolating interaction glue identifiers (ISAIDs) to the interaction context in which they apply. 
 
@@ -852,6 +852,10 @@ The embedded relationship's interaction context can be hidden from the routing r
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>* 
 
 This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.
+
+### Combined Source Vector and Table Routing
+
+The non-shared intermediary protocols above use a combination of both source vector routing and table routing. This splits and isolation the routing information so that third parties cannot view a full route without compromising at least two parties (ends or intermediaries) and any near-end or near-side intermediary cannot view a full route without compromising at least either the far-side intermediary or far-end. Splitting the routing path into two components means no single source of failure exists.  This means that only part of the route is transmitted from the near-side source. The remainder of the route must be filled in from the far-side routing table. The source vector part is only ever in memory so that compromise of the routing table in persistent storage does not reveal the full route. Effectively the far-side intermediary acts like a dead drop controlled by the far-side destination to which the near-side source drops messages. The near-side source never sees the far-side eventual destination, just the far-side intermediary as a dead drop.
 
 ### Sustainable Privacy, Authenticity, and Confidentiality
 
