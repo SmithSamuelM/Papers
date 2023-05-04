@@ -1,8 +1,8 @@
-# Privacy Given Strongest Authenticity and Confidentiality
+# Secure Privacy, Authenticity, and Confidentiality (SPAC)
 
-SPAC (Secure Privacy, Authenticity, and Confidentiality)
+Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.2.4 (Original draft 2023/03/25)
+Version 0.2.5 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -30,7 +30,7 @@ The prioritization of authenticity first, confidentiality second, and privacy th
 
 Indeed, it may be best in some protocols if they don't share the same ordering. To be clear, the ordering of the ToIP design goals w.r.t. authenticity, confidentiality, and privacy may be different from the ordering of layers that employ these three in a given protocol. 
 
-This distinction, I believe is a source of much confusion in prior discussions and one of the reasons I provided the overlay spiral diagrams. The purpose of the overlay spiral is to illustrate that multiple layerings of authenticity, confidentiality, and privacy protection mechanisms may appear in different orders both in-band (IB) and out-of-band (OOB) with respect to the setup for and the eventual transmission of a message over a given communication channel or channels.  
+This distinction, I believe, is a source of much confusion in prior discussions and one of the reasons I provided the overlay spiral diagrams. The purpose of the overlay spiral is to illustrate that multiple layerings of authenticity, confidentiality, and privacy protection mechanisms may appear in different orders, both in-band (IB) and out-of-band (OOB), with respect to the setup for and the eventual transmission of a message over a given communication channel or channels.  
 
 ![SecurityOverlaySpiral](assets/SecurityOverlaySpiral.png)
 
