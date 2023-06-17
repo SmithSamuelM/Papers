@@ -2,7 +2,7 @@
 
 Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.2.5 (Original draft 2023/03/25)
+Version 0.2.6 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -604,8 +604,10 @@ The IP addresses and AID are correlatable by any ISP or intermediary that watche
 
 So it's strongly authentic and confidential but not private.
 
+### Direct Protocol as Wrapper
+
 Now suppose that *A* and *B* want to communicate about a business deal using a relationship that is unique to the business deal context but not the communication context.
-For that business deal context they use the relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Since this context is not used for communication it does not have any associated IP addresses. Instead, it must be transported over a communication context relationship.
+For that business deal context they use the relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Since this context is not used for communication, it does not have any associated IP addresses. Instead, it must be transported over a communication context relationship in a private way such that is is unobservable by any third party.
 
 Suppose there is an OOB exchange of *A<sub>1</sub>* and *B<sub>1</sub>* between *A* and *B*. Now *A* and *B* can communicate totally authentically, confidentially, and privately using the relationship associated with the business deal context but leveraging the communications context relationship. These are shown as follows:
 
@@ -614,9 +616,6 @@ From *A* to *B*:
 *|src ip A<sub>0</sub>, dst ip B<sub>0</sub>|<[src A<sub>0</sub>, dst B<sub>0</sub>, {src A<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, data]>A<sub>1</sub> }B<sub>0</sub>]>A<sub>0</sub>*
 
 Embedded in this confidential message is an authenticatable message of content data from *A<sub>1</sub>* to *B<sub>1</sub>* and signed by *A<sub>1</sub>*.
-
-
-
 
 Similarly from *B* to *A*:
 
@@ -628,6 +627,7 @@ Embedded in this confidential message is an authenticatable message of content d
 No 3rd party observer can view that there is a relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)* via the communication's context messages. Thus there is no leakage via correlation to any other use of the *(A<sub>1</sub>, <>, B<sub>1</sub>)* relationship. The *(A<sub>1</sub>, <>, B<sub>1</sub>)* relationship is a no-compromise, authentic, confidential, and private relationship between *A* and *B*. 
 
 To elaborate, *A* and *B* now have two different relationship contexts. These are mutually partitioned as far as any 3rd party observer is concerned. The first, *(A<sub>0</sub>, <>, B<sub>0</sub>)* is the communication context. It may be thought of as a *hop-wise* communication context because there is only one hop at the AID level of routing between A<sub>0</sub> and B<sub>0</sub>. At the IP level, there may be multiple hops. The second, *(A<sub>1</sub>, <>, B<sub>1</sub>)*, is the interaction context associated with the business deal that may span multiple messages. It may be thought of as an *end-wise* interaction context at the AID level. 
+
 
 ### Relationship Formation Protocol
 
