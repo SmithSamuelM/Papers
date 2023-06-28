@@ -2,7 +2,7 @@
 
 Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.2.7 (Original draft 2023/03/25)
+Version 0.2.8 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -898,7 +898,7 @@ As mentioned above, any de-identified dataset, even when all attributes are quas
 
 In light of this vulnerability, many of the standard use cases for ZKPs in VCs are examples of anti-patterns for privacy protection. This is because these standard use cases assume a presentation context that is under the control of the verifier, which means a smart verifier can restructure that context to statistically guarantee correlation and defeat the ZKP.
 
-Correctly understood, selective disclosure is a form of k-anonymity style de-identification performed by the presenter.  Unfortunately,  such disclosure is not performed with any statistical insight into the ability of the verifier to re-identify the selectively disclosed attributes given the contextual attributes that are also disclosed (inadvertently) at the time of presentation and under the control of the verifier.
+Correctly understood, selective disclosure is a naive form of k-anonymity style de-identification performed by the presenter.  Unfortunately,such disclosure is not performed with any statistical insight (hence naive) into the ability of the verifier to re-identify the selectively disclosed attributes given the contextual attributes that are also disclosed (inadvertently) at the time of presentation and under the control of the verifier.
 
 
 ### Relationship Discovery Protocols
