@@ -899,7 +899,7 @@ This limitation relegates the status of selective disclosure and/or ZKPs as priv
 
 In light of this vulnerability, many of the standard use cases for selective disclosure and/or ZKPs in VCs are examples of anti-patterns for privacy protection. This is because these standard use cases assume a presentation context that is under the control of the verifier, which means a smart verifier can restructure that context to statistically guarantee correlation and defeat the selective disclosure and/or ZKP.
 
-Correctly understood, selective disclosure is a naive form of k-anonymity style de-identification performed by the presenter.  Unfortunately, such disclosure is not performed with any statistical insight (hence naive) into the ability of the verifier to re-identify the selectively disclosed attributes given the contextual attributes that are also disclosed (inadvertently) at the time of presentation and under the control of the verifier.
+Correctly understood, selective disclosure is a naive k-anonymity like de-identification performed by the presenter.  Unfortunately, such disclosure is not performed with any statistical insight (hence naive) into the ability of the verifier to re-identify the selectively disclosed attributes given the contextual attributes that are also disclosed (inadvertently) at the time of presentation and under the control of the verifier.
 
 
 ### Relationship Discovery Protocols
