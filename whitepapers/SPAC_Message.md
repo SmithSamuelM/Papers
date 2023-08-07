@@ -2,7 +2,7 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.3.3 (Original draft 2023/03/25)
+Version 0.3.4 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -96,7 +96,9 @@ So the analogy holds. We can have strong authenticity and strong confidentiality
 
 ## Privacy as Protection Against Exploitation
 
-To better manage this difficult trade-off between the need to address the parties to a conversation and the need to restrict the disclosure of knowledge of those parties to the parties themselves (i.e., privacy) we focus our attention on managing exploitably correlatable non-content metadata, specifically ***exploitably correlatable identifiers***. Thus if we can protect against exploitation derived from the correlation of identifiers we may achieve effective privacy. 
+### Effective Privacy
+
+To better manage this difficult trade-off between the need to address the parties to a conversation and the need to restrict the disclosure of knowledge of those parties to the parties themselves (i.e., privacy) we focus our attention on managing exploitably correlatable non-content metadata, specifically ***exploitably correlatable identifiers***. Thus if we can protect against exploitation derived from the correlation of identifiers we may achieve ***effective privacy***. 
 
 Protection against exploitation via correlation provides a more gentle trade space than mere protection against correlation. The former is practical and amenable to cost-benefit analysis, but the latter is largely impractical.
 
@@ -792,7 +794,7 @@ We can conclude that we can have secure authenticity, confidentiality, and priva
 
 When any of the AIDS in the protocols above are thresholded multi-sig it means the set of controlling key-pairs for the AID is more than one. Then the basic protocol templates need to be modified.  For signing this modification is that at least one signature from the set of controlling keys must be attached or the message is dropped. In order to indicate which key was used to generate any signature, an indexed signature is used. This is a special encoding that embeds the index in the derivation code for the signature. The edge may then collect in escrow single-signed messages, where each is signed by at least one of the keys until the threshold is reached or drop the message if escrow times out before the threshold is reached. Any intermediary may do the collection and escrow before passing along the message. This enables the intermediary to load balance and reduces the memory and processing requirements of the edge.
 
-For encryption, each key in a multi-sig provides a unique encryption destination. This means that for each of the message examples where there is an encryption destination with a decryption key, the ciphertext must appear as a list of ciphertexts each with a destination that corresponds to one of the multi-sig destination AIDs controlling keys. This may require two destinations, one that is the AID in order to look up the key state and the second an index into the key list in order to look up the specific key used to decrypt. Using the index is a much more compact approach and separately listing each destination key. 
+For encryption, each key in a multi-sig provides a unique encryption destination. This means that for each of the message examples where there is an encryption destination with a decryption key, the ciphertext must appear as a list of ciphertexts each with a destination that corresponds to one of the multi-sig destination AIDs controlling keys. This may require two destinations, one that is the AID in order to look up the key state and the second an index into the key list in order to look up the specific key used to decrypt. Using the index is a much more compact approach than separately listing each destination key. 
 
 ## Interaction Non-Content Metadata
 
@@ -918,7 +920,7 @@ With KERI, we don't exchange public keys per se but AIDs that each has a verifia
  
 This seems to be the area where some of the patterns in DIDComm would benefit from being recast from an AID discovery or setup perspective. The DIDComm protocol includes different patterns for exchanging public keys as well as DIDs. The latter (a DID) is similar to an AID, although without the same security properties with respect to its key state. Indeed, a did:keri DID provides a DID-compatible version of a KERI AID but with the security properties of KERI preserved.
  
-Finally, KERI has an associated AID discovery protocol called the [OOBI](https://github.com/WebOfTrust/ietf-oobi)protocol (out-of-band-introduction). This provides a bare-bones approach that covers many common use cases. This may be extended with other protocols for other application use cases. This may be one of the most fruitful ways to leverage the work done on DIDcomm.
+Finally, KERI has an associated AID discovery protocol called the [OOBI](https://github.com/WebOfTrust/ietf-oobi) protocol (out-of-band-introduction). This provides a bare-bones approach that covers many common use cases. This may be extended with other protocols for other application use cases. This may be one of the most fruitful ways to leverage the work done on DIDcomm.
 
 ## CESR
 
@@ -948,12 +950,13 @@ For example, *mix* networks by design make it difficult for a load balancer to c
 
 ### Amplification Attacks
 
-Of particular concern are protocols that have an amplification attack vulnerability. Any exponential reduction in DDOS efficiency in any protocol stack becomes a juicy target for an amplification attack. The attacker constructs malicious packets that amplify the resources needed to make the drop decision. Amplification attack vulnerabilities are a sign of a poorly designed protocol. The less processing that must be done in order to make a drop decision the better. Any processing that is amplified by maliciously crafted packets is disproportionately vulnerable to DDOS attacks.
+Of particular concern are protocols that have an amplification attack vulnerability [Ampflication Attack](https://www.cyber-recon.com/glossary/amplification/). Any exponential reduction in DDOS efficiency in any protocol stack becomes a juicy target for an amplification attack. The attacker constructs malicious packets that amplify the resources needed to make the drop decision. Amplification attack vulnerabilities are a sign of a poorly designed protocol. The less processing that must be done in order to make a drop decision the better. Any processing that is amplified by maliciously crafted packets is disproportionately vulnerable to DDOS attacks.
 
-For example, A DDOS amplification attack vulnerability makes a W3C VC based on JSON-LD generated RDF with an embedded RDF URDNA-2015 integrity-proof problematic, especially at scale. One can easily construct a malicious JSON-LD VC that triggers an NP-hard amplification of the time to verify the JSON-LD signature integrity proof (when using URDNA-2015) on the receiver's end. This is because RDF blank nodes can induce recursive loops in URDNA-2015 that are of order (NP) hard. It's trivial to construct a malicious JSON-LD document that induces these loops. The receiver can't make a drop decision until after it has transformed the JSON-LD into an RDF graph and then computed the integrity proof on that graph. Any malformed packet that exploits any extra processing not merely in the RDF integrity proof but the RDF expansion including any @context or @vocab substitutions makes the receiver disproportionately vulnerable to DDOS amplification attacks. A mitigation would be to wrap any JSON-LD  -based VCs in an external proof (such as an ACDC container) of the over-the-wire packet with a drop decision based on verifying the external proof (container) such as a simple signature against a white list of approved senders. The packet gets dropped before the container is opened.
+For example, A DDOS amplification attack vulnerability makes a W3C VC based on JSON-LD generated RDF with an embedded RDF URDNA-2015 integrity-proof problematic, especially at scale. One can easily construct a malicious JSON-LD VC that triggers an NP-hard amplification of the time to verify the JSON-LD signature integrity proof (when using URDNA-2015) on the receiver's end. This is because RDF blank nodes can induce recursive loops in URDNA-2015 that are of order (NP) hard. It's trivial to construct a malicious JSON-LD document that induces these loops. The receiver can't make a drop decision until after it has transformed the JSON-LD into an RDF graph and then computed the integrity proof on that graph. Any malformed packet that exploits any extra processing not merely in the RDF integrity proof but the RDF expansion including any @context or @vocab substitutions makes the receiver disproportionately vulnerable to DDOS amplification attacks. A mitigation would be to wrap any JSON-LD-based VCs in an external proof (such as an ACDC container [ACDC Spec](https://github.com/trustoverip/tswg-acdc-specification)) of the over-the-wire packet with a drop decision based on verifying the external proof (container) such as a simple signature against a white list of approved senders. The packet gets dropped before the container is opened.
 
 
-One of the business models for DDOS attackers is DDOS ransomware. According to CloudFlare, 16% of DDoS attacks are ransomware. Thus an attacker needs only mount a short-term attack to prove a vulnerability that a more intensive attack could exploit in order to monetize via ransomware.
+One of the business models for DDOS attackers is DDOS ransomware. According to CloudFlare, 16% of DDoS attacks are ransomware. Thus an attacker needs only mount a short-term attack to prove a vulnerability that a more intensive attack could exploit in order to monetize via ransomware (see [Ransom DDoS Attack](https://www.cloudflare.com/learning/ddos/ransom-ddos-attack/), and  [DDoS Threat Report](https://blog.cloudflare.com/ddos-threat-report-2022-q4/#:~:text=Ransom%20DDoS%20attacks,-As%20opposed%20to&text=The%20attacker%20will%20demand%20a,threat%20or%20a%20ransom%20note))
+
 
 
 ## Appendix: Using Crypto in a way that is Too-Clever-By-Half
