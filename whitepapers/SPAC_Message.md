@@ -2,7 +2,7 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.3.7 (Original draft 2023/03/25)
+Version 0.3.8 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -733,33 +733,33 @@ This makes the databases zero-trust because they are signed at rest. An attacker
 
 We assume that *A* and *B* have formed at least one relationship by exchanging identifiers. This could have been formed using their direct communications relationship or using some OOB exchange of identifiers. For the sake of convenience let that relationship be denoted *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Now *A* and *B* can communicate using this relationship in a private (non-correlatable identifier) manner by leveraging each of their communication's relationships with their respective intermediaries, *A* with *C* and *B* with *D). This requires that *A* and *B* also exchange OOB the AIDs of the intermediary side of their respective communication's relationships with their own intermediaries. In this case *A* also knows *D<sub>0</sub>* and *B* also knows  *C<sub>0</sub>*.  
 
-Finally, in order for *C* and *D* to communicate with each other, they must both have an AID and corresponding ip service endpoint that will send and receive authenticated traffic from other intermediaries. If this is public then there is no need for an OOB exchange of this information. If not then *A* and *B* must also exchange the cross-intermediary AID and ip service endpoint of each of their intermediaries. Lets *C*'s be denoted *C<sub>2</sub>* with *ip C<sub>2</sub>* and *D*'s be denoted *D<sub>2</sub>* with *ip D<sub>2</sub>*. Now any previously unauthenticated intermediary is indistinguishable from a DDOSing cheap pseudonym with respect to a given intermediary. Therefore some form of reputation is required. One approach would be for *A* to authorize (*D<sub>2</sub>*, *ip D<sub>2</sub>*) to *C* and for *B* to authorize (*C<sub>2</sub>*, *ip C<sub>2</sub>*)* to *D*. Since *A* is already reputable from *C*'s standpoint and *B* is already reputable from *D*'s standpoint. A signed letter message acting as a letter of reference should suffice.
+Finally, for *C* and *D* to communicate with each other, they must both have an AID and corresponding IP service endpoint that will send and receive authenticated traffic from other intermediaries. If the connection between the AID *D<sub>2</sub>* and its *ip D<sub>2</sub>*  service endpoint are public, then there is no need for an OOB exchange of this information. If not, then *A* and *B* must also exchange the cross-intermediary AID and IP service endpoint of each of their intermediaries. Let *C*'s be denoted *C<sub>2</sub>* with *ip C<sub>2</sub>* and *D*'s be denoted *D<sub>2</sub>* with *ip D<sub>2</sub>*. 
 
-As a result *C* will have a database of approved intermediaries with the following entry:
+Please be aware that any previously unauthenticated intermediary is indistinguishable from a DDOSing cheap pseudonym with respect to some other intermediary. Therefore, some form of reputation is required. One approach would be for *A* to authorize (*D<sub>2</sub>*, *ip D<sub>2</sub>*) to *C* and for *B* to authorize (*C<sub>2</sub>*, *ip C<sub>2</sub>*)* to *D*. Since *A* is already reputable from *C*'s standpoint and *B* is already reputable from *D*'s standpoint. A signed letter message acting as a letter of reference should suffice.
+
+As a result, *C* will have a database of approved intermediaries with the following entry:
 
 *<[A<sub>2</sub>, D<sub>2</sub>, ip D<sub>2</sub>]>A<sub>2</sub>*.  
 
-Intermediary *C* is thereby DDOS protected and can whitelist any messages from D<sub>2</sub>. Moreover, *C* has the forwarding *ip ip D<sub>2</sub>* for any messages destined for *D*.
+Intermediary *C* is thereby DDOS protected and can whitelist any messages from D<sub>2</sub>. Moreover, *C* has the forwarding *ip ip D<sub>2</sub>* for any messages destined for *D<sub>2</sub>*.
 
 Likewise, *D* will have a database of approved intermediaries with the following entry:
 
 *<[B<sub>2</sub>, C<sub>2</sub>, ip C<sub>2</sub>]>B<sub>2</sub>*.  
 
-Intermediary *D* is thereby DDOS protected and can whitelist any messages from C<sub>2</sub>. Moreover, *D* has the forwarding *ip C<sub>2</sub>* for any messages destined for *C*.
+Intermediary *D* is thereby DDOS protected and can whitelist any messages from C<sub>2</sub>. Moreover, *D* has the forwarding *ip C<sub>2</sub>* for any messages destined for *C<sub>2</sub>*.
 
 Effectively these database entries create a communication context relationship between *C* and *D* denoted, *(C<sub>2</sub>, <>, D<sub>2</sub>)*.
 
-Given this setup, we can now send a fully secure authentic, confidential, and private message from *A* to *B* for relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)* through intermediaries *C* and *D*.
+Given this setup, we can now send a fully secure, authentic, confidential, and private message from *A* to *B* for relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)* through intermediaries *C* and *D*. This provides a routing path for messages from *A* to *B* via *C* and *D*:
 
-From *A* to *B* via *C* and *D*:
-
-First hop from *A* to *C*:
+#### First hop from *A* to *C*:
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
-Upon receipt of this message *C* verifies the source as coming from one of its authenticated relationships. In this case *A<sub>2</sub>*. Then *C* can extract the nearside intermediary destination *D<sub>2</sub>* to lookup *ip D<sub>2</sub>* as well as the farside intermediary destination *D<sub>2</sub>*.
+Upon receipt of this message, *C* verifies the source as coming from one of its authenticated relationships. In this case *A<sub>2</sub>*. Then *C* can extract the nearside intermediary destination *D<sub>2</sub>* to lookup *ip D<sub>2</sub>* as well as the farside intermediary destination *D<sub>0</sub>*. Even when the association *D<sub>2</sub>*  and *ip D<sub>2</sub>* is public, *C* still needs to know which intermediary to forward the message to. The presence of dst D<sub>0</sub> is insufficient without D<sub>2</sub> because there may be no way for *C* to know the association between *D<sub>0</sub>* and *D<sub>2</sub>*. These are AIDs, so they are mutually uncorrelatable without additional information. Even if both *D<sub>0</sub>* and *D<sub>2</sub>* and their IP addresses are public, there is no guarantee that they are reliably associable for *C* to infer the next hop with only *D<sub>0</sub>* and even dst ip D<sub>0</sub>.  Therefore, *C* needs to be given D<sub>2</sub> as the nearside destination for the next intermediary.
 
-Next hop from *C* to *D*:
+#### Next hop from *C* to *D*:
 
 Next *C* forms a new message to *D* as follows:
 
@@ -767,7 +767,7 @@ Next *C* forms a new message to *D* as follows:
 
 Now *D* can verify that the message comes from an approved source *C<sub>2</sub>* and then decrypt to extract the farside destination *D<sub>0</sub>*. Given *D<sub>0</sub>*, *D* can lookup B<sub>2</sub> and ip B<sub>2</sub>]. 
 
-Last hop from *D* to *B*:
+#### Last hop from *D* to *B*:
 
 Finally *D* forms a new message to *B* as follows:
 
@@ -775,53 +775,61 @@ Finally *D* forms a new message to *B* as follows:
 
 Now *B* can verify that this came from *D<sub>o</sub>* and then decrypt the contents which it can then verify as coming from *A<sub>1</sub>*. No 3rd party every sees the identifiers from *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Therefore this relationship is private with respect to correlatable identifiers. 
 
+#### Discussion
+
 All any 3rd party ISP sees is that *A<sub>2</sub>* has a relationship with *C* and *B<sub>2</sub>* has a relationship with *D* but can't correlate those relationships to *(A<sub>1</sub>, <>, B<sub>1</sub>)* given sufficient herd privacy of *C*'s and *D*'s relationships with others. This provides secure authenticity, confidentiality and privacy between *(A<sub>1</sub>, <>, B<sub>1</sub>)* that only requires that *A* trust *C* that *C* trust *A* and *B* trust *D* and *D* trust *B*. *A* and *B* both trust that *C* and *D* do not reveal that *(A<sub>1</sub>, <>, B<sub>1</sub>)* exists. 
 
 Note that the content data from *A<sub>1</sub>* to *B<sub>1</sub>* is not seen by either *C* or *D*, only the AIDs. Moreover, the AIDS in *(A<sub>1</sub>, <>, B<sub>1</sub>)* are never stored on disk by either *C* or *D*. They are only ever in memory. This means that an attacker who compromises the disk storage of *C* or *D* cannot leak *(A<sub>1</sub>, <>, B<sub>1</sub>)*.  An attack on *C*'s or *D*'s protected memory processes is much more difficult than an attack on *C*'s or *D*'s disk storage. This is more than sufficient to protect against 3rd party correlation for advertising aggregation.
 
-Furthermore, note that *A* does not need to know the *B* side of *B*'s relationship with *D*, and *B* does not need to know the *A* side of *A*'s relationship with *C*. So neither can leak that information. An attacker has to get that by successfully attacking both *C* and *D*. To elaborate, an attack on *A* and or *C* does not reveal the *B *side of *B*’s relationship with *D*. Both *C* and D must be attacked. Likewise, an attack on *B* and or *D* does not reveal the *A* side of *A*’s relationship with *C*. Both *C* and *D* must be attacked. Likewise, *A* does not have knowledge of *B*'s side of *B*'s relationship with *D*, only the *D* side. As well, 
+Furthermore, note that *A* does not need to know the *B* side of *B*'s relationship with *D*, and *B* does not need to know the *A* side of *A*'s relationship with *C*. So neither can leak that information. An attacker has to get that by successfully attacking both *C* and *D*. To elaborate, an attack on *A* and or *C* does not reveal the *B *side of *B*’s relationship with *D*. Both *C* and D must be attacked. Likewise, an attack on *B* and or *D* does not reveal the *A* side of *A*’s relationship with *C*. Both *C* and *D* must be attacked. Likewise, *A* does not know *B*'s side of *B*'s relationship with *D*, only the *D* side.
 
-An attack on *C*'s disk does not expose that *A* has a relationship with any of *D*'s relationships because the farside destination is only exposed in memory. Likewise, an attack on *D*'s disk does not expose that *B* has any relationships with *A* because the farside destination is only exposed in memory.
+An attack on *C*'s disk does not expose that *A* has a relationship with any of *D*'s relationships because the farside destination is exposed in memory only. Likewise, an attack on *D*'s disk does not expose that *B* has any relationships with *A* because the farside destination is exposed in memory only.
 
-This approach is fully zero-trust because all table lookups by *C* and *D* are signed at rest, so an attacker can't misdirect traffic between the two or between their associated edge relationships.
+This approach is fully zero-trust because all table lookups by *C* and *D* are signed at rest, so an attacker can't misdirect traffic between the two intermediaries or between their associated edge relationships.
 
-From a relationship context perspective, *A*, *B*, *C*, and *D* have isolated their independent *hop-wise* communication contexts with each other from the *A* and *B* joint end-wise context.  The hop-wise contexts are *(A<sub>2</sub>, <>, C<sub>0</sub>)*, *(C<sub>2</sub>, <>, D<sub>2</sub>)*, and *(B<sub>2</sub>, <>, D<sub>0</sub>)*. The joint end-wise context is  *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Given that there are now three hops, the end-wise relationship serves two purposes. The first is an end-to-end routing context at the AID level. The second is as an end-to-end interaction context for their business interaction that may span multiple messages.  Importantly these four contexts (independent hop-wise and joint end-wise) are mutually partitioned as far as any 3rd party observer is concerned. 
+From a relationship context perspective, *A*, *B*, *C*, and *D* have isolated their independent *hop-wise* communication contexts with each other from the joint end-wise context *A* and *B*.  The hop-wise contexts are *(A<sub>2</sub>, <>, C<sub>0</sub>)*, *(C<sub>2</sub>, <>, D<sub>2</sub>)*, and *(B<sub>2</sub>, <>, D<sub>0</sub>)*. The joint end-wise context is  *(A<sub>1</sub>, <>, B<sub>1</sub>)*. Given that there are now three hops, the end-wise relationship may serve two purposes. The primary purpose is an end-to-end routing context at the AID level. The second may be an end-to-end context for their business interaction that may span multiple messages.  Importantly, these four contexts (three independent hop-wise and one joint end-wise) are mutually partitioned as far as any 3rd party observer is concerned. 
 
 We can conclude that we can have secure authenticity, confidentiality, and privacy (identifier correlation), as well as DDOS protection. The only OOB setups are one-time setups between *A* and *B*, *A* and *C*, and *B* and *D*. Indeed if there is a trust anchor (registry) that provides reputation to intermediaries, then there would be no need for *A* and *B* to provide letters of reference to their own intermediary for the other's intermediary.
 
-
-### Multi-sig Extension
-
-When any of the AIDS in the protocols above are thresholded multi-sig it means the set of controlling key-pairs for the AID is more than one. Then the basic protocol templates need to be modified.  For signing this modification is that at least one signature from the set of controlling keys must be attached or the message is dropped. In order to indicate which key was used to generate any signature, an indexed signature is used. This is a special encoding that embeds the index in the derivation code for the signature. The edge may then collect in escrow single-signed messages, where each is signed by at least one of the keys until the threshold is reached or drop the message if escrow times out before the threshold is reached. Any intermediary may do the collection and escrow before passing along the message. This enables the intermediary to load balance and reduces the memory and processing requirements of the edge.
-
-For encryption, each key in a multi-sig provides a unique encryption destination. This means that for each of the message examples where there is an encryption destination with a decryption key, the ciphertext must appear as a list of ciphertexts each with a destination that corresponds to one of the multi-sig destination AIDs controlling keys. This may require two destinations, one that is the AID in order to look up the key state and the second an index into the key list in order to look up the specific key used to decrypt. Using the index is a much more compact approach than separately listing each destination key. 
+The end-to-end routing context can be the basis for other protocols that nest inside its ciphertext payload. We will discuss these below. But first we we introduce the concept of non-content metadata in the form of interaction identifiers. 
 
 ## Interaction Non-Content Metadata
 
-### iSAIDs
-Other non-content metadata, such as interaction identifiers that “glue” messages together into a conversation, thread, topic, transaction, or interaction, may also provide correlatability across messages. We use the generic term *interaction identifier* (IID). We can think of interaction-specific metadata as the glue that forms an *end-wise* interaction context that is independent of any associated end-wise routing context at the AID level. The end-wise routing context does not need any glue to bind multiple messages together. Each message is independently routable between the AIDs at its ends (edges).
+The primary purpose of interaction identifiers is to glue together messages that have been carried by one or more routing contexts. This allows the ultimate destination to match, link, or associate multiple messages into a single conversation, thread, topic, or transaction. We generalize these as euphemisms for an *interaction* between two parties as identified by an interaction identifier. This facility can be extended to more than two parties, but two parties are enough to understand its utility. Using a universally unique identifier for the interactions identifier means the routing context or contexts do not need to provide any information for matching messages.  This means that a given routing context may be used for multiple interactions or multiple routing contexts may be used for a single interaction. Interactions may be interleaved inside one routing context or dispersed across multiple routing contexts.  Dispersal can, therefore, provide better correlation privacy as long as the interaction identifier is kept confidential (hidden) within the ciphertext payload of the messages. 
 
-For example, as suggested above in both the Header section and the Relationship Formation Protocol section, the [SAID](https://github.com/WebOfTrust/ietf-said) of the first message in an interaction can be used as the interaction ID. This can then be labeled as an *interaction SAID* or iSAID for short. A SAID is a Self-Addressing IDentifier generated from a cryptographic digest of the message. Therefore a SAID is also a UUID, and if the message includes a salty nonce, then the content of the message is not discoverable merely from its SAID. The SAID can be employed as an interaction glue identifier (iSAID) that is cryptographically universally unique to a given interaction. Then another message can insert that iSAID as content into itself, thereby gluing or chaining the two messages together. This allows the two messages to be glued together without repeating any of the AIDs as non-content metadata from the first message (unless they are needed for the authenticity or confidentiality of the new message specifically but not in order to glue to the first message).  Any subsequent message in the conversation can use the SAID of the previous message to construct a chained (glued) together conversation, and so on. The set of messages so chained together form an interaction that is a verifiable data structure. Given that each message is signed by its source, then the whole interaction becomes a verifiable data structure that is strongly authenticatable.
+Suppose, for example, that between two parties, the routing relationships are one way only. Two-way communication, therefore, requires at least two different one-way routing contexts between the two parties, but there may be more. The AIDs used in each of those one-way contexts may form a partition, so there would be no way for either party to associate messages as belonging to a two-way interaction without an interaction identifier that glues together the messages from the routing contexts. 
+
+### iSAIDs as IIDs
+Interaction identifiers comprise a new class of non-content metadata that provides correlatability across messages.  We denote these with the generic term *interaction identifier* (IID). As described above, universally unique interaction-specific metadata may be the glue that forms an *end-wise* *interaction context* that is independent of any associated *end-wise* *routing context* at the AID level.  Each message in an end-wise routing context is independently routable between the AIDs at its ends (edges) with only the AIDs in its associated relationships. This provides herd privacy. Therefore we need an IID to glue together messages into an interaction. 
+
+Suppose, for example, as suggested above in both the Header section and the Relationship Formation Protocol section, the [SAID](https://github.com/WebOfTrust/ietf-said) of the first message in an interaction is used as the IID. A SAID is a Self-Addressing IDentifier generated from a cryptographic digest of the message. Therefore, a SAID is also a UUID (universally unique identifier). In addition, if the message includes a cryptographic strength salty nonce, then the content of the message is not discoverable merely from its SAID via a rainbow table attack. When used this way, we denote the SAID as the *interaction SAID* or iSAID for short. An iSAID as IID is cryptographically universally unique to a given interaction. Any other message can insert that iSAID as content, thereby gluing or chaining the two messages together. This also allows the two messages to be glued together without repeating any of the AIDs from the first message.  Any subsequent message in the conversation can use the SAID of the previous message to construct a chained (glued) together conversation, and so on. The set of messages so chained together form an interaction that is a verifiable data structure. Given that each message is also ESSR, hence signed by its source, the whole interaction becomes a verifiable data structure that is strongly authenticatable.
 
 The important insight here is that given the same information-theoretic-secure non-correlatability of SAIDs with salty-nonces, the same partitioning principle used for contextually isolating identifiers (AIDs) in a relationship to the context in which that relationship applies can be used for isolating interaction glue identifiers (ISAIDs) to the interaction context in which they apply. 
 
+We can generalize the IID to an *interaction context header*, which may contain the IID plus any other information beneficial to gluing together the messages in an interaction.
+
 ### Privacy by Isolating Interaction Contexts
 
-The interaction context can be completely confidential with respect to any communication context that conveys all or part of the interaction messages. This includes an interaction that is split across multiple communication contexts. Properly constructed, there is no mutual correlatability of any of the messages in the interaction except at or by the endpoints, regardless of any intermediaries or any communication context identifiers used to convey the confidential interaction. The communication messages are un-connected and un-glued (except at the level of the communication context for reliability). The embedded interaction header is completely confidential and un-correlatable to any 3rd party viewing the identifiers in the communication context messages.
+By embedding the IID (or, equivalently, the interaction context header) of a given interaction inside the ciphertext payload of a routing context message, the interaction context can be made completely confidential with respect to any communication context that conveys all or part of its messages. This includes an interaction that is split across multiple communication contexts. Properly constructed, there is no mutual correlatability of any of the messages in the interaction except at or by the endpoints. This lack of mutual correlatability may be preserved regardless of any intermediaries or communication context identifiers used to convey the confidential interaction. The communication messages are un-connected and un-glued (except at the level of the communication context for reliability). The embedded interaction header is completely confidential and un-correlatable to any 3rd party viewing the identifiers in the communication context messages.
 
-Thus, the hard problem of protecting against the correlatability of interaction metadata is providing a confidential context in which to embed the interaction metadata. Which we already established above. So given that, we can build confidential and private interactions ("conversations") by using confidential interaction metadata embedded in confidential data conveyed by communication relationship contexts.
+Thus, the hard problem of protecting against the correlatability of interaction metadata is solved by providing a confidential context in which to embed the interaction metadata. Which we already established above. Given that, we can build confidential and private interactions by using confidential interaction metadata embedded in the confidential data conveyed by communication relationship contexts.
 
-Indeed privacy comes from the fact that as far as any 3rd party is concerned, the communication context relationship is just conveying plain vanilla confidential data in un-connected messages that are unaffiliated with any interaction. 
+Indeed, privacy comes from the fact that as far as any 3rd party can observe, the communication context relationship is just conveying plain vanilla confidential data in un-connected messages that are unaffiliated with any interaction. 
 
-To elaborate, interaction context partitions can be a proper subset of any relationship context partition. A given relationship context partition may have multiple interaction contexts (i.e., multiple conversations). Therefore if the relationship context is private then any of its interactions contexts are also private (QED).
+To elaborate, interaction context partitions can be a proper subset of any relationship context partition. A relationship context partition may have multiple interaction contexts (i.e., multiple conversations). Therefore, if the relationship context is private, then any of its interaction contexts are also private (QED).
 
-In order to show a practical example we define some new syntax. Let *iAB* denote some pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *i<sup>0</sup>AB*, *i<sup>1</sup>AB*, *i<sup>2</sup>AB*. We assume that these identifiers are SAIDs or iSAIDs. An important nuance is that the actual interaction identifiers (iSAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the iSAID is the SAID of, and the next subsequent message where the iSAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes the iSAID of the interaction. For the sake of simplicity, we will use the former form in the examples below.
 
-Suppose, for example, we start with the non-shared intermediary protocol above. We can make any given message a member of an interaction by including the interaction's iSAID. In the example below, it's *iAB<sub>0</sub>*.
+### Interaction Context Syntax
+
+Let *iAB* denote some pair-wise end-wise interaction context between controllers *A* and *B*. We index specific interactions with a subscript and denote the associated interaction context identifiers as follows:  *i<sup>0</sup>AB*, *i<sup>1</sup>AB*, *i<sup>2</sup>AB*. We assume that these identifiers are SAIDs or iSAIDs. An important nuance is that interaction identifiers (iSAIDs) come in two forms. The simplest is to repeat the same identifier in each and every message in the interaction. The second is to chain identifiers where any given identifier only appears in two messages. The message that the iSAID is the SAID of and the next subsequent message where the iSAID is a reference to the previous message. The sequence of chained SAIDs forms a chaining set that constitutes interaction-specific non-content metadata. For the sake of simplicity, we will use the former form in the examples below, but the latter form is more secure.
+
+Suppose, for example, we start with the non-shared intermediary protocol above. In a simplistic approach, we can make any given message conveyed by that protocol a member of an interaction by including the interaction's iSAID in the message. 
+
+Let's use *iAB<sub>0</sub>* to get:
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>, i<sup>0</sup>AB, {src A<sub>1</sub>, data}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
-In the example above, *i<sup>0</sup>AB* appears as plaintext at the same level as the AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. All three of these are confidential with respect to the hop-wise communication contexts. No 3rd party can correlate the messages in the interaction. 
+In the example above, *i<sup>0</sup>AB* appears as plaintext at the same level as the AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. All three of these are confidential with respect to the hop-wise communication contexts. No 3rd party can correlate the messages in the interaction. The intermediaries, however, can correlate.
 
 Recall that the intermediaries are trusted 2nd parties. As trusted 2nd parties, the intermediaries can correlate the end-wise routing AIDs *src A<sub>1</sub>*, and *dst B<sub>1</sub>*. But now, given the presence of iSAIDS, they can also correlate subsets of those end-wise routed messages at the AID level as belonging to distinct interactions. In some applications, *A* and *B* may wish to make the interactions private with respect to the intermediaries. They can do this by putting the iSAIDs inside the confidential content of the end-wise context messages as follows:
 
@@ -834,7 +842,7 @@ Privacy comes from the fact that messages in the end-wise routing context look l
 
 ### Cross Relationship Context Interaction Contexts
 
-A complication arises when one wants to have an end context span multiple relationship contexts. Typically for communications purposes, when there are multiple communications media or intermediaries. But, given that one can form a private relationship by reference using the relationship formation protocol defined above, then one can avoid having any transaction spanning multiple relationships by first forming a relationship for such a transaction. And then leveraging those pre-existing communication contexts to confidentially (and privately) embed that relationship and its associated transaction (conversation) with its transaction metadata.
+A complication arises when one wants to have an end context span multiple relationship contexts. Typically for communications purposes, when there are multiple communications media or intermediaries. But, given that one can form a private relationship by reference using the relationship formation protocol defined above, one can avoid having any interaction that spans multiple relationships by first forming a relationship for such an interaction and then leveraging those pre-existing communication contexts to confidentially (and privately) embed that relationship and its associated interaction with its interaction metadata.
 
 Suppose *A* and *B* wish to use more than one end-wise routing context for a given interaction. This generalizes to any number of hop-wise communication contexts, but for the sake of simplicity, we will just use the one established above. Let *A* and *B* establish another end-wise relationship denoted by *(A<sub>3</sub>, <>, B<sub>3</sub>)*. This could have been formed using an OOB setup or using the relationship formation protocol leveraging the existing relationship *(A<sub>1</sub>, <>, B<sub>1</sub>)*.
 
@@ -846,19 +854,139 @@ The first way is to use it as yet another end-wise routing relationship at the A
 
 Any message in that same interaction can be conveyed with either of the end-wise routing relationships. This would be most useful if each of the end-wise routing relationships were one-way. In that case, messages from *A* to *B* would use a different end-wise relationship than messages from *B* to *A*. Any 3rd party, as well as any intermediary, could not correlate messages that went from *A* to *B* with messages in that same interaction that went from *B* to *A*.
 
-The second way to use this new end-wise relationship is to embed it in the pre-existing end-wise relationship. This makes the existence of this new end-wise relationship *(A<sub>3</sub>, <>, B<sub>3</sub>)* hidden from not just 3rd parties but also the 2nd party trusted intermediaries. A message using this approach is shown below.
+The second way to use this new end-wise relationship is to nest it in the pre-existing end-wise relationship. This makes the existence of this new end-wise relationship *(A<sub>3</sub>, <>, B<sub>3</sub>)* hidden from not just 3rd parties but also the 2nd party trusted intermediaries. A message using this approach is shown below.
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>, i<sup>0</sup>AB, data]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*  
 
-The embedded relationship's interaction context can be hidden from the routing relationship's context by making that identifier and data confidential as follows:
+The embedded relationship's interaction context can also be hidden from the routing relationship's context by making that identifier and data confidential as follows:
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>* 
 
-This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.
+This approach can be used with any hop-wise communication context and any end-wise routing context between *A* and *B* to convey an interaction between *A* and *B* that is strongly authentic, confidential, and private with respect to all 3rd parties and any 2nd party trusted intermediaries.  This last example provides a generic mechanism for embedding relationships and associated interactions inside an end-wise routing context or contexts which are each nested inside multiple hop-wise contexts. This we can call a three-level nested communication protocol.
 
-### Combined Source Vector and Table Routing
+In a subsequent section, we will walk through the three-level nested protocol in detail, showing all hops for a one-way route. This should determine how to construct a return route in the other direction simply by interchanging the parties' roles. But first, we will introduce a shorthand notation to simplify the expressions.
 
-The non-shared intermediary protocols above use a combination of both source vector routing and table routing. This splits and isolation the routing information so that third parties cannot view a full route without compromising at least two parties (ends or intermediaries) and any near-end or near-side intermediary cannot view a full route without compromising at least either the far-side intermediary or far-end. Splitting the routing path into two components means no single source of failure exists.  This means that only part of the route is transmitted from the near-side source. The remainder of the route must be filled in from the far-side routing table. The source vector part is only ever in memory so that compromise of the routing table in persistent storage does not reveal the full route. Effectively the far-side intermediary acts like a dead drop controlled by the far-side destination to which the near-side source drops messages. The near-side source never sees the far-side eventual destination, just the far-side intermediary as a dead drop.
+### Shorthand Notation
+
+To better show and discuss the nested layers, we introduce an additional syntactical element.  As discussed above, a full ESSR formatted message (but without a transport (IP) header, if any) has the following structure:
+
+*<[src A<sub>x</sub>, dst B<sub>y</sub>, {src A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>*,
+
+where *x* and *y* are variables that each represent a given AID controlled by *A* and *B* denoted  A<sub>x</sub> and B<sub>y</sub> respectively. The required elements, including the encrypted and signed portions with the associated AIDs used to lookup the encryption and signing keys are explicitly denoted. The payload *data* is an optional placeholder for whatever additional cipher text data is to be conveyed by the message, if any. Let parenthesis to used to clearly delimit a full ESSR message as follows:
+
+*(<[src A<sub>x</sub>, dst B<sub>y</sub>, {src A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>)*.
+
+We can create an equivalent shorthand notation for the items in the parenthesis. Let the order of appearance of *src A<sub>x</sub>* and *dst B<sub>y</sub>* be determinative; that is, the source is always required and must be the first element, and the destination is always required and must be the second element. Similarly, let's require that  *src A<sub>x</sub>*  must always be the first element of the ciphertext. As a result, we can leave off the *src* and *dst* modifiers in the plaintext and ciphertext portions. This simplifies to,
+
+*(<[A<sub>x</sub>, B<sub>y</sub>, {A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>)*.
+
+We can further simplify if we require that there must always be a ciphertext portion encrypted to the public decryption key for destination *B<sub>y</sub>* even when the *data* is empty. The first element of the plaintext encrypted into the ciphertext is the source *A<sub>x</sub>*, and the second element is *data* when not empty.  Furthermore, all messages must be signed by the private signing key(s) of the source *A<sub>x</sub>*. Given these additional requirements, we can further shorthand the expression to
+
+*([A<sub>x</sub>, B<sub>y</sub>, cipher])*,
+
+where *cipher* is short for ciphertext and always expands to 
+
+*{src A<sub>x</sub>, data}B<sub>y</sub>*,
+
+where *data* may or may not be empty.
+
+The square brackets are now redundant, and we can write simply
+
+*(A<sub>x</sub>, B<sub>y</sub>, cipher)*
+
+
+We add one more syntactical rule, that is, when there are additional plaintext elements they must appear after the source and destination but before the *cipher* element. In other words, *cipher* must always be the last element of the shorthand expression. This way, one can always unambiguously expand the shorthand expression without mixing the plaintext with the ciphertext elements.
+
+Suppose we have an additional plaintext element *C<sub>z</sub>*. We can write this in shorthand notation as
+
+*(A<sub>x</sub>, B<sub>y</sub>, C<sub>z</sub>, cipher)*. 
+
+This unambiguously expands to
+
+*<[src A<sub>x</sub>, dst B<sub>y</sub>, C<sub>z</sub>, {src A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>*
+
+To further generalize, we could always include *cipher* as a placeholder, even when empty. In this case, we would not have the actual ciphertext present in the message when data is empty, but in so doing, we may provide correlatable information depending on the application. In the three layer nested protocol we assume that the *cipher* element is never empty.
+
+
+### Three-Level Nested Protocol
+
+In this section, we deconstruct the three-level nested protocol in detail, showing how to map it to the non-shared-intermediary protocol defined above. This should also enable one to construct a return route in the other direction simply by interchanging the parties' roles.
+
+Recall from a previous section the first hop of the three-level nested protocol as follows:
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*.
+
+First we extract the nested ESSR message between *src A<sub>3</sub>* and *dst B<sub>3</sub>* as follows:
+
+*<[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>*.
+
+We denote this as  *msg_A<sub>3</sub>B<sub>3</sub>*. In shorthand notation, this becomes:
+
+*(A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>)*,
+
+where 
+
+*cipher_A<sub>3</sub>B<sub>3</sub> = {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>*.
+
+The ciphertext payload sans the source AID consists of the two elements *i<sup>0</sup>AB* and the placeholder *data*.
+
+Substituting back into the original expression we have now,
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>) }B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*.
+
+We can now extract the next outer nesting layer as the ESSR message between *src A<sub>1</sub>* and *dst B<sub>1</sub>* as follows:
+
+*<[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>) }B<sub>1</sub>]>A<sub>1</sub>*.
+
+We denote this as *msg_A<sub>1</sub>B<sub>1</sub>*. In shorthand notation, this becomes:
+
+*(A<sub>1</sub>, B<sub>1</sub>, cipher_A<sub>1</sub>B<sub>1</sub>)* 
+
+where
+
+*cipher_A<sub>1</sub>B<sub>1</sub> = {src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>)}B<sub>1</sub>*.
+
+The ciphertext payload sans the source AID consists of simply the ESSR *msg_A<sub>3</sub>B<sub>3</sub>*. This is an opaque payload of the routing nesting layer.
+
+Substituting back into the expression above, we have now,
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, (A<sub>1</sub>, B<sub>1</sub>, cipher_A<sub>1</sub>B<sub>1</sub>)}C<sub>0</sub>]>A<sub>2</sub>*.
+
+We can now simplify the outermost nesting layer that is the IP transported ESSR message between *src A<sub>2</sub>* and *dst C<sub>0</sub>*. We denote this as *msg_A<sub>2</sub>C<sub>0</sub>*. In shorthand notation, this becomes:
+
+*(A<sub>2</sub>, C<sub>0</sub>, cipher_A<sub>2</sub>C<sub>0</sub>)* 
+
+where
+
+* cipher_A<sub>2</sub>C<sub>0</sub> =  {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, (A<sub>1</sub>, B<sub>1</sub>, cipher_A<sub>1</sub>B<sub>1</sub>)}C<sub>0</sub>*
+
+The ciphertext payload sans the source AID consists of the elements *D<sub>2</sub>*, *D<sub>0</sub>*, and the ESSR *msg_A<sub>1</sub>B<sub>1</sub>*
+
+The only difference between the non-shared-intermediary protocol and the three-layer nested protocol is that the data portion 
+of *cipher_A<sub>1</sub>B<sub>1</sub> in the non-shared intermediary protocol is assigned to be ESSR *msg_A<sub>3</sub>B<sub>3</sub>*.  In other words, all we have to do is assign,
+
+*data = msg_A<sub>3</sub>B<sub>3</sub> = (A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>)*
+
+to nest a secure private ESSR protected message between *A<sub>3</sub>* and  *B<sub>3</sub>* in the routed message between *A<sub>1</sub>* and  *B<sub>1</sub>*.
+
+To conclude, once we can perform routing with the non-shared intermediary protocol, we can trivially use it to convey messages for any other AID relationships that are fully correlation private with respect to both third parties and intermediaries.
+
+### Combined Source Vector and Table Routing as Dead Drop
+
+The non-shared intermediary protocols above use a combination of both source vector routing and table routing. This splits and isolates the routing information so that third parties cannot view a full route without compromising at least two parties (ends or intermediaries), and any near-end or near-side intermediary cannot view a full route without compromising at least either the far-side intermediary or far-end. To elaborate, splitting the routing path into two components (pre-configured routing table and vector carried by message) means no single source of failure exists.  Only part of the route is transmitted from the near-side source. The remainder of the route must be filled in from the far-side routing table. 
+
+Moreover, the vector part is only ever in memory. It is much more difficult to attack information that is only ever in memory. This usually requires a code-supply-chain attack, not a disk-level-access attack. This increases the overall security of the protocol. Recall that compromising the routing table in persistent storage does not reveal the full route. 
+
+Effectively, the far-side intermediary acts like a dead drop controlled by the far-side destination to which the near-side source drops messages. The near-side source never sees the far-side eventual destination, just the far-side intermediary as a dead drop. An attacker of the far-side dead-drop can't easily compromise the dead-drop because the lookup to find the far-side destination is only ever in memory. This protocol construction makes recursive privilege escalation attacks that attempt to compromise its correlation privacy protection much more difficult.
+
+
+
+### Multi-sig Extension
+
+When any of the AIDS in the protocols above are thresholded multi-sig it means the set of controlling key-pairs for the AID is more than one. Then the basic protocol templates need to be modified.  For signing this modification is that at least one signature from the set of controlling keys must be attached or the message is dropped. In order to indicate which key was used to generate any signature, an indexed signature is used. This is a special encoding that embeds the index in the derivation code for the signature. The edge may then collect in escrow single-signed messages, where each is signed by at least one of the keys until the threshold is reached or drop the message if escrow times out before the threshold is reached. Any intermediary may do the collection and escrow before passing along the message. This enables the intermediary to load balance and reduces the memory and processing requirements of the edge.
+
+For encryption, each key in a multi-sig provides a unique encryption destination. This means that for each of the message examples where there is an encryption destination with a decryption key, the ciphertext must appear as a list of ciphertexts each with a destination that corresponds to one of the multi-sig destination AIDs controlling keys. This may require two destinations, one that is the AID in order to look up the key state and the second an index into the key list in order to look up the specific key used to decrypt. Using the index is a much more compact approach than separately listing each destination key. 
+
 
 ### Sustainable Privacy, Authenticity, and Confidentiality
 
