@@ -2,7 +2,7 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.4.1 (Original draft 2023/03/25)
+Version 0.4.2 (Original draft 2023/03/25)
 
 Copyright 2023 Samuel M. Smith
 
@@ -14,10 +14,10 @@ In my opinion, the three properties, authenticity, confidentiality, and privacy 
 
 The trilemma insists that one must make a trade-off by prioritizing one or two properties over a third.
 
-The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.md#61-design-goals) reflect that trade-off and provide an order of importance. The design goals indicate that one should start with high authenticity, then high confidentiality, and then as high as possible privacy, given there is no trade-off with respect to the other two. The properties are defined as follows:  
+The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.md#61-design-goals) reflect that trade-off and provide an order of importance. The design goals indicate that one should start with high authenticity, then high confidentiality, and then as high as possible privacy, given there is no trade-off concerning the other two. The properties are defined as follows:  
 
 
-> With regard to the first design goal, establishing trust between parties requires that each party develop confidence in the following properties of their relationship:
+> Concerning the first design goal, establishing trust between parties requires that each party develop confidence in the following properties of their relationship:
 > 
 > 1. Authenticity: is the receiver of a communication able to verify that it originated from the sender and has not been tampered with?
 > 2. Confidentiality: are the contents of a communication protected so that only authorized parties have access?
@@ -26,7 +26,7 @@ The ToIP [design goals](https://github.com/trustoverip/TechArch/blob/main/spec.m
 > Note that, in some trust relationships, confidentiality and privacy may be optional. Thus our design goal with the ToIP stack is to achieve these three properties in the order listed.
 > 
 
-The prioritization of authenticity first, confidentiality second, and privacy third does not mean that when constructing a message that the order of layering of mechanisms in the message that contribute to authenticity, confidentiality, and privacy protection must or should follow that same order. 
+The prioritization of authenticity first, confidentiality second, and privacy third does not mean that when constructing a message, the order of layering of mechanisms in the message that contribute to authenticity, confidentiality, and privacy protection must or should follow that same order. 
 
 Indeed, it may be best in some protocols if they don't share the same ordering. To be clear, the ordering of the ToIP design goals w.r.t. authenticity, confidentiality, and privacy may be different from the ordering of layers that employ these three in a given protocol. 
 
@@ -882,50 +882,69 @@ To better show and discuss the nested layers, we introduce an additional syntact
 
 where *x* and *y* are variables that each represent a given AID controlled by *A* and *B* denoted  A<sub>x</sub> and B<sub>y</sub> respectively. The required elements, including the encrypted and signed portions with the associated AIDs used to lookup the encryption and signing keys are explicitly denoted. The payload *data* is an optional placeholder for whatever additional cipher text data is to be conveyed by the message, if any. 
 
-In this new syntax, let parenthesis be used to delimit a full ESSR message as follows:
+Let parenthesis be used to delimit or group together all the components of a full ESSR message as follows:
 
 *(<[src A<sub>x</sub>, dst B<sub>y</sub>, {src A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>)*.
 
-We can create an equivalent shorthand notation for the items in the parenthesis if we let the order of appearance of *src A<sub>x</sub>* and *dst B<sub>y</sub>* be determinative; that is, the source is always required and must be the first element, and the destination is always required and must be the second element. Similarly, let's require that  *src A<sub>x</sub>*  must always be the first element of the ciphertext. As a result, we can leave off the *src* and *dst* modifiers in the plaintext and ciphertext portions. This simplifies to,
+We can create an equivalent shorthand notation for the items in the parenthesis if we let the order of appearance of *src A<sub>x</sub>* and *dst B<sub>y</sub>* be determinative; that is, the source is always required and must be the first element, and the destination is always required and must be the second element. Similarly, let's also require that the first element of the ciphertext must always be *src A<sub>x</sub>*. As a result, we can leave off the *src* and *dst* modifiers in the plaintext and ciphertext portions. This simplifies to,
 
 *(<[A<sub>x</sub>, B<sub>y</sub>, {A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>)*.
 
-We can further simplify if we require that there must always be a ciphertext portion encrypted to the public decryption key for destination *B<sub>y</sub>* even when the *data* is empty. The first element of the plaintext encrypted into the ciphertext is the source *A<sub>x</sub>*, and the second element is *data* when not empty.  Furthermore, all messages must be signed by the private signing key(s) of the source *A<sub>x</sub>*. Given these additional requirements, we can further shorthand the expression to
+We can further simplify if we require that there must always be a ciphertext portion encrypted to the public decryption key for destination *B<sub>y</sub>* even when the *data* is empty. The first element of the plaintext encrypted into the ciphertext is the required source *A<sub>x</sub>*, and the second element is *data* when not empty.  Furthermore, all messages must be signed by the private signing key(s) of the source *A<sub>x</sub>*. Given these additional requirements, we can further shorthand the expression to
 
 *([A<sub>x</sub>, B<sub>y</sub>, cipher])*,
 
 where *cipher* is short for ciphertext and always expands to 
 
-*{src A<sub>x</sub>, data}B<sub>y</sub>*,
+*{src A<sub>x</sub>, data}B<sub>y</sub>*, 
 
-where *data* may or may not be empty. But given that there must always be a ciphertext element and that the first element of the ciphertext must be the source AID, *A<sub>x</sub>*, then the only variable component is the plaintext  *data* input to the ciphertext. Therefore, we can further simplify *cipher* to be just its *data* as follows:
+where *data* may or may not be empty.
+
+To finish the expansion, attach the signature.
+
+In this shorthand have now gotten rid of the angle brackets, `<>` to delimit what is signed and the curly brackets, `{}` to delimit what is encrypted.
+
+Given that there must always be a ciphertext element and that the first element of the ciphertext must be the source AID, *A<sub>x</sub>*, the only variable component is the plaintext  *data* input to the ciphertext. Therefore, we can further simplify *cipher* to be represented by its only variable element, that is, *data*, as follows:
 
 *([A<sub>x</sub>, B<sub>y</sub>, data])*.
 
 where *data* expands to *cipher* which expands to *{src A<sub>x</sub>, data}B<sub>y</sub>*.
 
-The square brackets are now redundant, and we can write simply
+The parentheses around the square brackets are now redundant, and we can write simply
 
-*(A<sub>x</sub>, B<sub>y</sub>, data)*
+*[A<sub>x</sub>, B<sub>y</sub>, data]*.
 
-We add one more syntactical rule, that is when there are additional plaintext elements, they must appear after the source and destination but before the *data* element. In other words, *data* must always be the last element of the shorthand expression. This way, one can always unambiguously expand the shorthand expression without mixing the plaintext elements with the ciphertext element that *data* expands into.
+The square brackets above now have the new shorthand syntactical meaning that unambiguously expands to the full non-shorthand expression. That fact that there are no angle brackets, `<>` or curly brackets, `{}` indicates that the square brackets, `[]` express the shorthand representation for an ESSR message.
+
+We add another syntactical rule, that is, when there are additional plaintext elements, they must appear after the source and destination but before the *data* element. In other words, *data* must always be the last element of the shorthand expression. This way, one can always unambiguously expand the shorthand expression without mixing the plaintext elements with the ciphertext element that *data* expands into.
 
 For example, suppose we have an additional plaintext element *C<sub>z</sub>*. We can write this in shorthand notation as
 
-*(A<sub>x</sub>, B<sub>y</sub>, C<sub>z</sub>, data)*.
+*[A<sub>x</sub>, B<sub>y</sub>, C<sub>z</sub>, data]*.
 
 This unambiguously expands to
 
 *<[src A<sub>x</sub>, dst B<sub>y</sub>, C<sub>z</sub>, {src A<sub>x</sub>, data}B<sub>y</sub>]>A<sub>x</sub>*.
 
-To further generalize, we could always include *data* as a placeholder, even when empty. In this case, we would not have the actual ciphertext present in the message when data is empty. In the three-layer nested protocol detailed below, we assume that the *data* element is never empty, and hence, the *cipher* element to which it expands is also never empty.
+Finally, when it is desirable to represent the elements of *data* sans the source AID explicitly, we can group those elements with parentheses. For example, suppose *data* consists of the interaction identifier, *i<sup>0</sup>AB* and some other unspecified data. This we can represent recursively as *(i<sup>0</sup>AB, data)*. Inserting this into the message above results in,
+
+*[A<sub>x</sub>, B<sub>y</sub>, C<sub>z</sub>, (i<sup>0</sup>AB, data)]*.
+
+The last element inside the square brackets, `[]`, is a group delimited by parentheses, `()`. This shorthand expression expands to,
+
+*<[src A<sub>x</sub>, dst B<sub>y</sub>, C<sub>z</sub>, {src A<sub>x</sub>, i<sup>0</sup>AB, data}B<sub>y</sub>]>A<sub>x</sub>*,
+
+To further generalize, we could always include the *data* as a placeholder, even when empty. In this case, we would include the actual ciphertext in the message when the *data* element is empty. 
+
+In the three-layer nested protocol detailed below, we assume that the *data* element is never empty, and hence, the *cipher* element to which it expands is also never empty.
 
 
 ### Three-Level Nested Protocol
 
 In this section, we deconstruct the three-level nested protocol in detail, showing how to map it to the non-shared-intermediary protocol defined above. This should also enable one to construct a return route in the other direction simply by interchanging the parties' roles.
 
-Recall from a previous section the first hop of the three-level nested protocol as follows:
+#### First Hop 
+Recall from a previous section the first hop from *A* to *C* of the three-level nested protocol as follows:
 
 *|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>,  <[src A<sub>3</sub>, dst B<sub>3</sub>,  {src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>]>A<sub>3</sub>}B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*.
 
@@ -935,61 +954,91 @@ First we extract the nested ESSR message between *src A<sub>3</sub>* and *dst B<
 
 We denote this as  *msg_A<sub>3</sub>B<sub>3</sub>*. In shorthand notation, this becomes:
 
-*(A<sub>3</sub>, B<sub>3</sub>, data_A<sub>3</sub>B<sub>3</sub>)*,
+*[A<sub>3</sub>, B<sub>3</sub>, data_A<sub>3</sub>B<sub>3</sub>]*,
 
 where 
 
-*data_A<sub>3</sub>B<sub>3</sub>* expands to *{src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>*.
+*data_A<sub>3</sub>B<sub>3</sub>*  expands to *{src A<sub>3</sub>, i<sup>0</sup>AB, data}B<sub>3</sub>*. 
 
-The data payload to the ciphertext consists of the two elements *i<sup>0</sup>AB* and the placeholder *data*.
+The data payload to the ciphertext sans the source AID consists of the two elements *i<sup>0</sup>AB* and the placeholder *data*.
+In shorthand notation, this can be represented as *(i<sup>0</sup>AB, data)*. We can express in shorthand the nested ESSR message between *src A<sub>3</sub>* and *dst B<sub>3</sub>* as follows:
 
-Substituting back into the original expression we have now,
+*[A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]*,
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, data_A<sub>3</sub>B<sub>3</sub>) }B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*.
+Substituting back into the original expression, we have a mixed non-shorthand and shorthand expression as follows:
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, <[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)] }B<sub>1</sub>]>A<sub>1</sub>}C<sub>0</sub>]>A<sub>2</sub>*.
 
 We can now extract the next outer nesting layer as the ESSR message between *src A<sub>1</sub>* and *dst B<sub>1</sub>* as follows:
 
-*<[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, data_A<sub>3</sub>B<sub>3</sub>) }B<sub>1</sub>]>A<sub>1</sub>*.
+*<[src A<sub>1</sub>, dst B<sub>1</sub>,  {src A<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)] }B<sub>1</sub>]>A<sub>1</sub>*.
 
 We denote this as *msg_A<sub>1</sub>B<sub>1</sub>*. In shorthand notation, this becomes:
 
-*(A<sub>1</sub>, B<sub>1</sub>, data_A<sub>1</sub>B<sub>1</sub>)* 
+*[A<sub>1</sub>, B<sub>1</sub>, data_A<sub>1</sub>B<sub>1</sub>]* 
 
 where
 
 *data_A<sub>1</sub>B<sub>1</sub>* expands to the ciphertext 
 
-*{src A<sub>1</sub>, (A<sub>3</sub>, B<sub>3</sub>, data_A<sub>3</sub>B<sub>3</sub>)}B<sub>1</sub>*.
+*{src A<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]}B<sub>1</sub>*,
 
-The data payload of this expanded ciphertext consists of simply the ESSR *msg_A<sub>3</sub>B<sub>3</sub>* whose data payload further expands as shown above. This is an opaque payload of the end-wise routed nesting layer.
+which further expands as shown above.
 
-Substituting back into the expression above, we have now,
+The data payload of this expanded ciphertext consists of simply the ESSR *msg_A<sub>3</sub>B<sub>3</sub>*. This is an opaque payload of the end-wise routed nesting layer.
 
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, (A<sub>1</sub>, B<sub>1</sub>, data_A<sub>1</sub>B<sub>1</sub>)}C<sub>0</sub>]>A<sub>2</sub>*.
+We can write the ESSR message from A<sub>1</sub> to B<sub>1</sub> in shorthand notation as,
+
+*[A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]]* .
+
+Please note that the final element of the message above is the input to its ciphertext portion that also includes the unshown source AID *A<sub>1</sub>*.
+
+Substituting back into the full expression we have now the mixed shorthand and non-shorthand expression,
+
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|<[src A<sub>2</sub>, dst C<sub>0</sub>, {src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]]}C<sub>0</sub>]>A<sub>2</sub>*.
 
 We can now simplify the outermost nesting layer that is the IP transported ESSR message between *src A<sub>2</sub>* and *dst C<sub>0</sub>*. We denote this as *msg_A<sub>2</sub>C<sub>0</sub>*. In shorthand notation, this becomes:
 
-*(A<sub>2</sub>, C<sub>0</sub>, data_A<sub>2</sub>C<sub>0</sub>)* 
+*[A<sub>2</sub>, C<sub>0</sub>, data_A<sub>2</sub>C<sub>0</sub>]* 
 
 where
 
-*data_A<sub>2</sub>C<sub>0</sub>* expands to ciphertext  
-*{src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, (A<sub>1</sub>, B<sub>1</sub>, data_A<sub>1</sub>B<sub>1</sub>)}C<sub>0</sub>*
+*data_A<sub>2</sub>C<sub>0</sub>* expands to mixed expression ciphertext  
+*{src A<sub>2</sub>, dst D<sub>2</sub>, dst D<sub>0</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]]}C<sub>0</sub>*
+
+The ciphertext can be expressed in shorthand as,
+
+*(D<sub>2</sub>, D<sub>0</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]])*
+
 
 We can express the full message with IP header in shorthand as
-*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|(A<sub>2</sub>, C<sub>0</sub>, *data_A<sub>2</sub>C<sub>0</sub>* )
 
-The data payload consists of the elements *D<sub>2</sub>*, *D<sub>0</sub>*, and the ESSR *msg_A<sub>1</sub>B<sub>1</sub>*. The latter is expressed in shorthand as (A<sub>1</sub>, B<sub>1</sub>, data_A<sub>1</sub>B<sub>1</sub>).
+*|src ip A<sub>2</sub>, dst ip C<sub>0</sub>|[A<sub>2</sub>, C<sub>0</sub>, (D<sub>2</sub>, D<sub>0</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]])]*
 
-### Discussion 
-The non-shared-intermediary protocol and the three-layer nested protocol are equivalent when the data portion 
+The ciphertext input data payload consists of the elements *D<sub>2</sub>*, *D<sub>0</sub>*, and the ESSR [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]]. 
+
+The first hop of the non-shared-intermediary protocol and the three-layer nested protocol are equivalent when the data portion 
 of *cipher_A<sub>1</sub>B<sub>1</sub> in the non-shared intermediary protocol is assigned to be ESSR *msg_A<sub>3</sub>B<sub>3</sub>*.  In other words, all we have to do is assign,
 
-*data = msg_A<sub>3</sub>B<sub>3</sub> = (A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>)*
+*data = msg_A<sub>3</sub>B<sub>3</sub> = [A<sub>3</sub>, B<sub>3</sub>, cipher_A<sub>3</sub>B<sub>3</sub>]*
 
 to nest a secure private ESSR protected message between *A<sub>3</sub>* and  *B<sub>3</sub>* in the routed message between *A<sub>1</sub>* and  *B<sub>1</sub>*.
 
-To conclude, once we can perform routing with the non-shared intermediary protocol, we can trivially use it to convey messages for any other AID relationships that are fully correlation private concerning both third parties and intermediaries.
+#### Next Hop
+
+Using this new shorthand notation the next hop from *C* to *D* becomes:
+
+*|src ip C<sub>2</sub>, dst ip D<sub>2</sub>|[C<sub>2</sub>, D<sub>2</sub>, (D<sub>0</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]])]*
+
+
+#### Last hop
+
+Finally, using the shorthand notation, the final hop from *D* to *B* becomes:
+
+*|src ip D<sub>0</sub>, dst ip B<sub>2</sub>|[D<sub>0</sub>, B<sub>2</sub>, [A<sub>1</sub>, B<sub>1</sub>, [A<sub>3</sub>, B<sub>3</sub>, (i<sup>0</sup>AB, data)]]]*
+
+
+To conclude, once we can convey and route end-wise messages with the non-shared intermediary protocol, we can trivially use it to convey a confidential end-to-end message for some other AID relationship that is fully correlation-private concerning third parties and intermediaries.
 
 ### Combined Source Vector and Table Routing as Dead Drop
 
