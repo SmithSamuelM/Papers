@@ -111,3 +111,9 @@ Because eaxch EXN includes the SAID of the prior EXN in the transaction, And the
 
 The transaction itself is ordered and self synchronizing.
 
+
+## Afterword
+
+A little bit of historical perspective may help. In the early days of computing, there were no network time servers. Consequently timestamps had no meaning. Each party could just lie about time so time was untrustable. Historically a nonce was just a sequence number. To be a nonce it only had the property of being used once. There are other ways to create a nonce. A datetime can be a nonce. A hash of a datetime or the hash of a sequence number etc. In the early days CSPRNGs (cryptographic strenght pseudo random number generator) were both rare and computationally expensive. So a Salty Nonce was hard. What was common were private networks (the internet did not exist yet). Private networks could have really strong synchronization properties. So given these conditions, using extra messages that do not depend on a time stamp but use a simple nonce (not a Salty Nonce). In those days signing did not mean digital signatures with asymmetric crypto but merely an HMAC (a hash using a shared secret key).
+
+But today where we assume a KERI context, we can already assume CSPRNGs, assemetric digital signatures tied to keystate of AIDs, cryptographic strength hashes, salty nonces,  network time servers and a requirement to work over asynchronous public networks. The cryptographic operations have gotten relatively cheap given multiple exponential Moore's law increases in computation performance per cost. What has not scaled relatively exponentially is bandwith per cost. Synchronous networks do not scale as well as asynchronous networks and almost all communication now happens over public networks. So refactoring the solution to support asynchronous networks at scale and eliminate 1/2 of the packets is a huge design win.
