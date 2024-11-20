@@ -62,6 +62,52 @@ Because generally replay attack protection mechanisms use timeliness, caching of
 In a zero-trust non-interactive environment where every request is self-contained and self authenticating with an embedded date time stamp and attached identifier and signature couple, request caching would be problematic. This may be viewed as a trade-off where the scalability advantages of non-interactivity exceed the scalability disadvantages of not being able to cache requests.
 
 
+## Examples
+
+There is some terminological ambiguity becuase of the extra two messages that are the nonced challenge and nonced response to that challenge.
+
+So to better remove ambiquity lets not use request but query. This uses KERI parlance.
+```
+Querier                                    Replier
+------------------------------------------
+Query  ->
+                                                       <- Nonced Challenge
+Signed Nonced Response ->
+                                                        <-   Reply
+```
+A replay attack is the succesfful reuse of a prior  Signed Response. 
+A First-play attack uses Signed Responses out of order.
+
+This approach only works if the channel is synchronous and the Replier caches the current/last interaction (at least the Signed Nonced Response.  This means only one interaction per channel is allowed at any time. This does not work on an asynchronous channel unless a database of all interactions is kept which grows without bound unless a monotonic ordering is placed on the interactions  so that the database may be pruned of stale intereraction which effectively creates a synchronized set of channels. This means at the least putting time stamps in the Query messages and then keeping the latest Interaction for each Querier and dropping any interactions that are earler.
+Given this timed ordered cache all the querier has to do differently is sign the query and now you have exactly  KRAM. There is no need anymore for the Nonce challenge response set of messages.
 
 
+With KRAM you have
+
+```
+Querier                                    Replier
+------------------------------------------
+Signed Query  ->
+                                                     <-   Signed Reply
+```
+But the Query MUST have a datetime and should have a SAID
+The Signed Reply should include the Query's SAID
+The Replier has a sliding timed window cache that enforces that any Query's datetime must be later than any so far previously received query.
+
+KRAM works just as well on asynchronous channels and peer-to-peer exchanges not simply query-reply between client and server. So KRAM can be applied to exchange messages
+
+```
+Peer Initiater                                    Peer Correspondent
+------------------------------------------
+Signed EXN  ->
+                                                     <-   Signed EXN
+```
+
+Both sides keep a timeliness cache of EXNs from the other party to protect from replay attacks.
+
+Given that routes in the exns define an interactive protocol that is a transaction. Then the timed cache can be per transaction type per Peer  not just per Peer.  The timeout on the timed cache can then be of any size bounded only by the memory of the cache across all simulataneous live transactions of a given type for all peers.
+
+Because eaxch EXN includes the SAID of the prior EXN in the transaction, And the first EXN message in the transaction has a datetime stamp  it is not vulnerable to First Play attack.
+
+The transaction itself is ordered and self synchronizing.
 
