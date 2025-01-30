@@ -105,11 +105,11 @@ Signed EXN  ->
 
 Both sides keep a timeliness cache of EXNs from the other party to protect from replay attacks.
 
-Given that routes in the exns define an interactive protocol that is a transaction of a given type. Then the timed cache can be per transaction type per Peer  not just per Peer.  The timeout on the timed cache can then be of any size bounded only by the memory of the cache across all simulataneous live transactions of a given type for all peers.
+Given that routes in the EXNs define an interactive protocol, i.e., a transaction of a given type. Then, the timed cache can be per transaction type per Peer, not just per Peer.  The timeout on the timed cache can then be of any size bounded only by the cache's memory across all simultaneous live transactions of a given type for all peers.
 
-Because eaxch EXN includes the SAID of the prior EXN in the transaction, And the first EXN message in the transaction has a datetime stamp  it is not vulnerable to First Play attack.
+Because each EXN includes the SAID of the prior EXN in the transaction, And the first EXN message in the transaction has a datetime stamp it is not vulnerable to First Play attack.
 
-The transaction itself is ordered and self synchronizing.
+The transaction itself is ordered and self-synchronizing.
 
 
 
