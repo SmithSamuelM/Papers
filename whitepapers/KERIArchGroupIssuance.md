@@ -286,6 +286,46 @@ This means that each member of the group may cooperate very loosely except on gr
 
 For example, when desirable, joint issuance would allow each stage of a negotiation to be anchored singly in each single-sig group member KEL. The other party would have more work to validate, having to look up anchors in multiple KELs instead of one. But that is an automatable effort. The final issued ACDC would be a joint issued ACDC as defined above. A joint issuance summary ACDC could also be issued by the negotiator at each stage of the negotiation to help automate the validation of the jointly issued ACDCs.
 
+## Implementation
+
+### Full Kram
+
+We suggest defining a vector of attributes as the key for each cache entry will work. In keripy lmdb we use a tuple to derive the key for an given database entry. So as long as the tuples are well structured you can mix and match in the same database. Some entries have more elements in thier tuple than others. This just changes the b-tree location. The only place this complicates things is the the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do. We do it in other places.
+
+So for those cache entries that need custom window sizes you define a tuple that includes sufficient detail to differentiate them. Like source AID, message type, and for exns, then also transaction type. the final element in either case (exn or not) is the window duration. or the window duration goes in the database entry not its key space. In a b tree, essentially anything in the key is also retreivable as a value. Onc can retrieve whole branches as a collection of values.
+
+We need to be careful to avoid transaction-specific windows. These have the potential for an attack.  If some transactions of a given type need longer or shorter KRAM cache windows with respect to other transactions of the same type, then we want to add a modifier to transaction types, that is, the window type.  This way, any transaction of a given window class gets the same window size.
+
+So we would have two tables. A lagging window size table. Indexed hierarchically as follows.
+For the non transactioned message types (qry, rpy, pro, bar) we have:
+KEY = MessageType.WindowType and VALUE = window size
+For the transactioned message type, (exn) we have:
+KEY = MessageType.TransactionType.WindowType  and VALUE = window size
+
+The corresponding replay caches have the following structure:
+For non-transactioned message types
+
+KEY = MessageType.WindowType.MessageID and VALUE=Timestamp
+
+For transactioned message types
+
+KEY = MessageType.TransactionType.WindowType.TRansactionID.MessageID and VALUE = timestamp 
+
+The TransactionID and MessageID are SAIDs (ie hashes) Each message has a SAID, `d` field  and each exchange message has a prior message SAID, `p` field.   Which means the SAID of the first message in a multi-message exchange transaction can be used as the TransactionID.  
+
+Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. Why not then use universally unique transaction IDs for replay attack protection?  Unfortunately, we still need a timestamp to know when we can prune any given transaction. Otherwise, we must store all transactions forever in order to prevent replay attacks. The timestamp orders transactions monotonically so that we create the property of "stale" transactions that can both be pruned and not replayed.
+
+In KERI v2, we have a `xip` transaction inception message that normatively defines the first message in a given transaction. The exchange `exn` message then populates its `x` field with this transaction ID. But in v1 we just have to book keep which exchange message was first and verify the other messages by walking the prior hash links back to the first.
+
+The reason we want window durations to be classified is that when durations are per transaction, not a class of transactions, then when a given transaction is not in the cache, we don't know what default window to apply to decide if we can create a new cache value.  If we apply a default that is longer than the one the transaction itself uses, then when we prune it, we have a gap where the replay is possible.   
+
+So we want to unambiguously classify every message as belonging to a window duration class.  If we can assume that all messages of a given type have the same duration, then the message type is synonymous with the window type. Likewise, if all transactions of a given type have the same window duration, then the transaction type is synonymous with the window type. 
+
+However when they are not synonymous, then we need a way to explicitly unambiguously associate a given message with a window size from information in the packet itself.  One way to do this would be to use the route, `r` field, or a field in the route modifier `q` block when we can't simply use either the message type or the combination of message type and transaction id to determine the window size.
+
+Typically we would use the route `r` field for the transaction type. So we would either extend the route path to have a window type differentiator or better use a field in the route modifier `q` block to provide that differentiator.
+
+
 
 
 
