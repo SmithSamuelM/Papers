@@ -84,7 +84,7 @@ A message sent over the wire that includes the source AID with an attached signa
 
 That ephemerality is perfectly suitable for protecting over-the-wire messages that must be authenticated at the time of reception to protect from impersonation fraud. The caveat is that the message signature does not use a stale key state. Including the source AID in the message header in the clear enables a load balancer or other filter or firewire to drop messages that are not verifiably signed. Verification of signatures only requires the public key of the AID. So, there is no security weakness induced by this leading-edge verification as a result of sharing secrets.
 
-An additional problem when using ephemerally signed messages on asynchronous channels is that signed messages may be captured by adversaries and replayed out of order. If the only protection is that the key state must not have changed since the message originated, then the adversary could incept en-route and then reorder the reception of these securely attributed messages at the destination. 
+An additional problem when using ephemerally signed messages on asynchronous channels is that signed messages may be captured by adversaries and replayed out of order. If the only protection is that the key state must not have changed since the message originated, then the adversary could intercept the messages en-route and then reorder the reception of these securely attributed messages at the destination. 
 
 In some cases, depending on what type of transaction the messages are used for, this out-of-order replay may result in a harmful exploit. These are called replay attacks. So, in addition to signing the over-the-wire messages, we need a replay attack protection mechanism.  
 
