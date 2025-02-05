@@ -129,7 +129,10 @@ Importantly, the lagging time window for releasing cached timestamps can be quit
 
 This can largely relieve any latency or ephemerality problems with group multi-sig AID signed over-the-wire messages. Especially if the cache is granular, i.e. per the vector (AID, transaction type or transaction ID). This way, if a given exchange message is signed with a given timestamp by one member of the group and then not fully signed by a threshold number of other members of the group until days later (assuming the lagging window is days in duration), it could still be accepted by Full Kram. 
 
-For example, let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. Typical values could be `d = .01` seconds, and `l=2` weeks.
+For example, let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. [NTP Clock Skew](https://www.sciencedirect.com/topics/computer-science/network-time-protocol#:~:text=However%2C%20path%20delay%20asymmetry%20is,its%20skew%20below%200.01%20ppm.)  Typical values for for clock skew are around 10 milliseconds with worst case usually 100 milliseconds. So a value for d would be some integer multiple  of 10 milliseconds, say `d = .1` seconds that is 100 milliseconds.  We could let `l`  be on the order of days or weeks, say `l=2` weeks.
+
+If we have two networks nodes with really bad network time clock skew we could set `d` to be an integer multiple of the worst case clock skew of 100 milliseconds, like say 200 or 300 milliseconds.
+
 When a message is received, the first filter is to test if its timestamp lies within the interval. If not the message is dropped. The next filter is to check if a cache entry already exists for the AID and transaction ID and message type. If so then check to see if the timestamp of the received message is earlier than that of the cached message, if so drop the received message. If the timestamp is the same or and the message is the same then verify attached signatures. If verified, then accept (idempotently for the message) and process attachments. If the timestamp is later, then verify the attached signatures signatures and accept if verified and then update the cache, replacing the existing message entry with this new one. One a periodic basis scan the cache and prune any entries the lie outside the interval  `[t-d-l, t+d]`.
 
 The above approach could work with group multi-sig in the following manner: A given message sourced by a multi-sig AID must be verifiably signed by at least one member of the group. If the message is the first received message, it must lie within the receiver's lagging time window with respect to its current time. A new cache is created with the time stamp, message type, and transaction ID. The message itself and its attached signatures are added to a partially signed escrow.
@@ -324,6 +327,69 @@ So we want to unambiguously classify every message as belonging to a window dura
 However when they are not synonymous, then we need a way to explicitly unambiguously associate a given message with a window size from information in the packet itself.  One way to do this would be to use the route, `r` field, or a field in the route modifier `q` block when we can't simply use either the message type or the combination of message type and transaction id to determine the window size.
 
 Typically we would use the route `r` field for the transaction type. So we would either extend the route path to have a window type differentiator or better use a field in the route modifier `q` block to provide that differentiator.
+
+
+
+## Time Resolution and Throughput
+
+In a timeliness cache used for replay attack protection, their is a limit on throughput that is a function of the clock resolution. For KERI exchange messages the clock resolution of the timestamp is is microseconds.  Most modern operating systems support clocks with resolutions in nanoseconds. But microseconds should be good for the forseable future. When they no longer are then we can version KERI to support higher resolution timestamps.
+
+### Limitations
+
+Given a microsecond clock there are 1M time slots available per second for monotonically increasing timestamps in a given cache. Each cache entry gets its own 1M per second set of slots. So its inherently parallelizable. 
+
+Lets say worst case we only have 1 cache entry per source AID for all exchange messages from that source AID. This means that in any given second that Source AID can send at most 1M messages to a given Dest AID.  When it runs out of slots it stops sending and waits for the clock to tick up, and then a new set of slots are created.  If we have a cache entry per transaction, then each transaction gets 1M time slots per second. So highly parallelizable.
+
+Let's be more specific. Recall that the receiver's KRAM acceptance window is `[t-d-l, t+d]`  where `d` is some multiple of the clock skew, and `l` is the lagging window which could on the order of days or weeks. 
+
+So the worst case scenario is that the sender sends enough messages fast enough to fill all the time slots and runs ahead of the leading edge of the window at `t+d`.  This is only going to happen on very high speed networks.  Given there are 1M messages per second and the minimum size of a signed exchange message is about 300 bytes then we have a throughput of 300 MegaBytes per second. Or 2.4 Gigabits per second. So, a high-speed network.
+
+ Let's suppose the worst case, which is that on such a high-speed network, there is zero network latency (every millisecond of network latency effectively provides an extra 1000 time slots because the receiver's clock has incremented by a millisecond after the source message was timestamped and before it was received. On such a high-speed network, a reasonable worst-case clock skew is 10 ms, so we can set `d` to 100 ms.  
+
+Given the 10 ms worst-case clock skew, the senders' clock could be 10 ms ahead of the receivers' clock. The leading edge of the receiver's window is at `t+d`  = `t + 100 ms`.  This means that there are 90 ms worth of microsecond time slots ahead of the sender before it runs ahead of the receiver's leading edge. This means the sender could send as many as 90,000 messages in that 90 ms to the receiver before the sender ran ahead of the leading edge and would have to block waiting for network time to tick up.  But this is only true if network latency is truly zero. Recall that each ms that a message takes to traverse the network, the receiver's clock has added another 1000 time slots. 
+
+So the sender has to batch send at least 90,000 messages at once, each with a monotonically increasing timestamp where it increments each message's timestamp by one microsecond before any messages have timestamps that could possibly run ahead of the leading edge of the receiver's time window and would therefore be dropped by the receiver's full KRAM timeliness clock
+
+### Practical considerations
+
+High-volume transaction infrastructure is usually measured in tens of thousands of transactions per second. So, with reasonable values for the time window clock skew, we have a capacity of 90,000 pipelined transaction messages per second if we do not partition the traffic by transaction but lump all transactions into one timeliness cache per source AID.  This means we are multiplexing and pipelining the transactions into one ordered batch.  
+
+Consider that in a practical, interactive transaction, at each stage of the transaction, the sending party waits for a response from the other party before sending its next message. So the one-way turnaround and traversal time (parsing and verifying SAIDs and signatures) on a stage in an interactive exchange would have to take less than 1 microsecond per one way to consume all the available 1-microsecond slots and, therefore, be blocked at the sender or dropped at the receiver. A typical turnaround time for an exchange message will be in the tens of milliseconds. So, it is highly unlikely that any given transaction would ever run into any clock skew based limitation. We are, therefore only worried about the case where there are 90,000 simultaneous transactions between a given sender and received that are all concurrent and share the same timeliness cache. 
+
+If we reach that limit, the receiver simply makes its timeliness cache more granular. Instead of one cache entry per AID per message type, it can have one cache entry per AID per message type per transaction type or even more granular to one cache entry per message type per transaction type per transaction ID.  Now, it would have 90,000 slots per transaction. It would be entirely surprising that anytime soon, any infrastructure would need to process a single transaction between two parties with 90,000 interactive stages that all happen in 10 ms, i.e., a full round trip since we are not pipelining transactions on a single cache entry. Therefore, each round trip must happen in less than 1 microsecond to fully consume all the available time slots for that cache entry.
+
+Therefore we can safely conclude that microsecond clock resolution on our timeliness caches is more than adequate for the foreseeable future.
+
+
+### Asynchronous Out-of-order Messages
+
+The above analysis assumes that message from the same sender are delivered in order at the receiver. In an asynchronous network with routers and gateways using the Internet there may be multiple paths through the network, so a given set of messages when conveyed asynchronously may show up out of order due to different latency for different paths. This means that the timeliness cache would drop a message with an earlier timestamp that showed up later than a message with a later timestamp.  
+
+There are several ways to address this problem. 
+
+The first is to recognize that  interactive transactions induce a natural ordering because the two parties take turns. One solution therefore is to use a timeliness cache entry per transaction. That means that a given sender won't send a subsequent message unless:
+
+1. a retry timer has timeout out so it sends a retry of a previously sent message. 
+2.  the other party has responded 
+3. a transaction stage timeout timer expires so the sender gives up on the transactions and sends a Nack. 
+ 
+So in the case of interactive transactions with one transaction per cache entry, 
+
+1.  is not a problem because if it's truly a retry, it won't matter to the transaction if it's the first try or some later retry that is delivered first.  Since there are retries, then it won't matter if a message is lost because it will send a retry.
+2. It is not a problem because if the other party has responded, then the first party knows that its original try was already accepted by KRAM before it sends another message. 
+3. in this case, the transaction timeout needs to be long enough to account for the worst-case path latency difference, and the sender, once it decides to cancel a transaction, can't reverse that decision. It must restart the transaction. This way even if the first message is not lost and the nack shows up after the first message, and the other party responds, the response is ignored, and then when the other party gets the nack it also cancels the transaction.
+
+Therefore out-of-order messages are only a problem when we are pipelining messages from multiple transactions into the same timeliness cache entry to maximize throughput. In this case out-of-order messages between transactions could interfere with each other. But then again this is only a problem if the transactions have no reliable retry mechanism. If the transaction itself is unreliable, then one should be using a reliable synchronous channel where one is guaranteed that messages are delivered in order and no messages are lost.
+
+But for the use case where the transactions include retry capability, i.e. the transaction is reliable, then even if multiple transactions are pipelined interleaved with messages from other transactions it won't matter if some messages are delivered out of order as long as the rate of out-of-order messages is small relative to the number of interleaved transactions because the retries will repair any dropped messages.
+
+To conclude, when one is forced to use asynchronous transport then it is recommened that one use non-interleaved cache entries, i.e. one cache entry per transaction. When one is forced to use interleaved  transactions on the same cache entry then it is recommended that the one use a reliable channel where messages are delivered in-order.  Othewise one has to depend on a reliable transaction with retries to overcome any out-of-order messages on an unreliable channel when using and interleaved cache entry.
+
+
+
+
+
+
 
 
 
