@@ -121,7 +121,7 @@ Simply speaking, a timeliness cache stores the timestamp of the last message rec
 
 To protect against retrograde attacks on the receiver's time server or internal clock, the receiver saves a single timestamp of the latest time it sees. If the network time is even older than the latest saved time, the receiver can refuse to accept messages until the clock catches up.
 
-The timeliness cache can be made more granular to save timestamps not merely by source AID but by some vector of attributes such as (source AID, message transaction ID).  
+The timeliness cache can be made more granular to save timestamps not merely by source AID but by some vector of attributes such as all of or a subset of the following: (source AID, message type, transaction type, transaction ID).  
 
 The timeliness cache can be stored in memory only or persistently on disk. The latter consumes more resources and may be less performant but does not induce retries in the event of a reboot of the receiver's process.
 
@@ -132,6 +132,8 @@ This can largely relieve any latency or ephemerality problems with group multi-s
 For example, let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. [NTP Clock Skew](https://www.sciencedirect.com/topics/computer-science/network-time-protocol#:~:text=However%2C%20path%20delay%20asymmetry%20is,its%20skew%20below%200.01%20ppm.)  Typical values for for clock skew are around 10 milliseconds with worst case usually 100 milliseconds. So a value for d would be some integer multiple  of 10 milliseconds, say `d = .1` seconds that is 100 milliseconds.  We could let `l`  be on the order of days or weeks, say `l=2` weeks.
 
 If we have two networks nodes with really bad network time clock skew we could set `d` to be an integer multiple of the worst case clock skew of 100 milliseconds, like say 200 or 300 milliseconds.
+
+The clock's resolution determines how many messages can be received in order in any timeframe before the sender must block to avoid running past the leading edge of the receiver's time window. The timestamp in KERI exchange messages uses a microsecond resolution, which support up to 1 million messages with unique monotonically increasing time stamps per second per timeliness cache entry. This is discussed in more detail below in the comment labeled time resolution. 
 
 When a message is received, the first filter is to test if its timestamp lies within the interval. If not the message is dropped. The next filter is to check if a cache entry already exists for the AID and transaction ID and message type. If so then check to see if the timestamp of the received message is earlier than that of the cached message, if so drop the received message. If the timestamp is the same or and the message is the same then verify attached signatures. If verified, then accept (idempotently for the message) and process attachments. If the timestamp is later, then verify the attached signatures signatures and accept if verified and then update the cache, replacing the existing message entry with this new one. One a periodic basis scan the cache and prune any entries the lie outside the interval  `[t-d-l, t+d]`.
 
