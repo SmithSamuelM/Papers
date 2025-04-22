@@ -124,7 +124,7 @@ The body may be encrypted. The plain text body must be one of the following TSP 
 Native TSP payloads are also called TSP control message payloads. These have the following payload types:
 
 |  TSP Payload Type | CESR Code | Protocol | Description |
-|:------:||:------:|:--------:|:------------|
+|:------:|:------:|:--------:|:------------|
 | `HOP` | `XHOP` |  TSP |    hop list tunneled payload  |
 | `RFI` | `XRFI` | TSP | relationship formation invite payload |
 | `RFA` | `XRFA` | TSP | relationship formation accept payload |
