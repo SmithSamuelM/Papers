@@ -2,9 +2,9 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.4.5 (Original draft 2023/03/25)
+Version 0.5.0 (Original draft 2023/03/25)
 
-Copyright 2023 Samuel M. Smith
+Copyright 2023, 2024, 2025 Samuel M. Smith
 
 ## PAC Trilemma
 
@@ -1186,79 +1186,14 @@ The point is that it gives any source the tools to enforce which ends have end-o
 
 The SPAC is a tunneling routing protocol that is meant to be transparent to any other message protocol that is tunneled as a payload of the SPAC. Viewed from the perspective of the tunneled protocol, the SPAC is all overhead, so the SPAC wants to be very efficient. 
 
-The most efficient approach is to encode
-SPAC native fields in its wrappers and native payloads as CESR primitives and groups. To clarify, the SPAC native payloads for control messages like hop and relationship formation are fixed field with exclusively CESR native field values. 
+The most efficient approach is to encode SPAC native fields in its wrappers and native payloads as CESR primitives and groups. To clarify, the SPAC native payloads for control messages like hop and relationship formation are fixed field with exclusively CESR native field values. 
 
 In contrast, all tunneled payload messages (i.e. non-native SPAC payloads) are encoded as sniffable CESR streams. A sniffable CESR stream supports not only native CESR primitives and groups but interleaved JSON, CBOR, and MGPK serializations. This provides a composable compact universal serialization format for tunneled messages.
 
-## VID Serialization in Open and Closed Mode
 
-Because VIDs appear in multiple places in SPAC wrappers, using a separate type field everywhere to indicate the type of VID would be verbose. Instead a given SPAC implementation may operate on one of two
-modes. These are `open` mode and `closed` mode. 
+## AID Fields
 
-## VID fields in Open Mode
-
-In `open` mode, all VIDs must be either URNs or DIDs encoded as variable-length CESR UTF-8 byte strings (bytes). The CESR variable-length UTF-8 encoded byte strings (bytes) use one of the following 6 CESR codes in Base64 Text domain:  
-
-```
-    Bytes_L0:             str = '4B'  # Byte String lead size 0
-    Bytes_L1:             str = '5B'  # Byte String lead size 1
-    Bytes_L2:             str = '6B'  # Byte String lead size 2
-    Bytes_Big_L0:         str = '7AAB'  # Byte String big lead size 0
-    Bytes_Big_L1:         str = '8AAB'  # Byte String big lead size 1
-    Bytes_Big_L2:         str = '9AAB'  # Byte String big lead size 2
-```
-Each code prefix is followed by length characters encoded in Base64 but abstractly represented as a `#` character. For example, `4B##` has two length characters that indicate the length of the associated bytestring in quadlets in Base64 (Text mode) or triplets in Base2 (Binary mode). 
-There are two families of codes, the small codes and the big codes. The difference is the
-length of the encoded byte string in base64 quadlets or base2 triplets (24 bits of information). The small codes have two size characters that thereby support VID bytestrings up to `64^2-1 = 4095` triplets/quadlets.  The big codes have four size characters that thereby support VID bytestrings up to `64^4-1 = 16,777,215` triplets/quadlets. 
-
-Because all CESR encoded primitives must align on 24-bit boundaries, variable-length byte strings are pre-padded with leading pad bytes of zero. This lead padding ensures that the padded byte string is
-24-bit aligned prior to conversion to Base64. The padded bytestring is then converted to Base64, and the appropriate bytestring code is attached.  There is a separate code for each padding length. The 24-bit alignment is ensured with either 0,1, or 2 lead pad bytes. 
-
-Let `rs` be the size in bytes of the VID bytes; moreover, let `ps` be the lead pad byte size. The number of lead pad bytes, `ps`, is computed as follows (Python syntax):  
-
-```python
-ps = (3 - (rs % 3)) % 3
-```
-When `ps` is 0, then either of the code prefixes `4B` or `7AAB` is used. When `ps` is 1, then either of the code prefixes `5B` or `8AAB` is used. When `ps` is 2, then either of the code prefixes `6B` or `9AAB` is used. 
-
-When an open-mode VID field is not encoded with one of these codes, then the VID field is erroneous and the packet may be silently dropped.
-
-### Example VID encoding in open-mode
-
-Let the VID be a `did:webs` DID as follows:
-
-`did:webs:example.com:EAco5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M`
-
-The length of the corresponding byte string is 65, i.e., `rs = 65`. This as a lead pad size of 1, i.e. `ps = ``
-This means that code prefix `4B` is indicated. With lead pad the total raw string size is 66. This is
-exactly 22 triplets in length `22 = 66/3`. The two length characters for the code prefix are `AW` which is 22 in Base64.  The byte string with lead pad byte is converted to Base64 which gives:
-
-`AGRpZDp3ZWJzOmV4YW1wbGUuY29tOkVBY281ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN`
-The full CESR code prefix with length characters is then prefixed to the given fully qualified CESR encoded Base64 (Text domain) representation as follows:
-
-`5BAWAGRpZDp3ZWJzOmV4YW1wbGUuY29tOkVBY281ZFU1V2pEcnhEQks0YjRIckY4Ml9yWWI2TVg2eHNlZ2pxNG4wWTdN`
-
-The Base2 (Binary domain) CESR representation is obtained by decoding the Base64 above as follows:
-
-`\xe4\x10\x16\x00did:webs:example.com:EAco5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M`
-
-The substring `\xe4\x10\x16\x00` prefex above represents 4 non-ASCII bytes in escaped notation. The first three byes are the Base2 representation of the CESR code `4BAW` the fourth one is the single lead pad byte. 
-
-One advantage of the CESR lead pad approach is apparent from the example.  It is easy to read the original DID bytestring at the tail end of the Base2 encoded CESR primitive. 
-
-Encoding and decoding of a variable-length byte primitive is provided by the Texter class in the `keri.core.coring` module of the `keripy` reference implementation library.
-
-
-## VID Fields in Closed Mode
-
-The CESR encoding of the VID field in closed mode is whatever that particular closed mode decides to use by pre-agreement. These must be encoded as CESR primitives.
-
-When the closed mode assumes that all VIDs are KERI native AIDs then each VID would appear as a standard KERI AID which is a CESR encoded Digest or Public Key.  No did:keri or did:webs namespace is needed.
-
-### Example VID Encoding in Close Mode KERI
-
-An AID in KERI is encoded as the appropriate CESR cryptographic primitive. Usually, this is the CESR-encoded Blake3 hash of the inception event for that AID. An AID of this type would appear as:
+AID fields in SPAC are encoded as CESR Primitives as per the KERI protocol.  An AID in KERI is encoded as the appropriate CESR cryptographic primitive. Usually, this is the CESR-encoded Blake3 hash of the inception event for that AID. An AID of this type would appear as:
 
 `EAco5dU5WjDrxDBK4b4HrF82_rYb6MX6xsegjq4n0Y7M`
 
@@ -1269,7 +1204,7 @@ An AID in KERI is encoded as the appropriate CESR cryptographic primitive. Usual
 A SPAC wrapper can be modeled with three parts:  Head, Body, Tail.  
 
 ### Head
-The Head includes all the information that indicates that it is a SPAC wrapper. This includes a SPAC ESSR wrapper group code with wrapper size.  The ESSR SPAC protocol and version field, the source VID field, and the destination VID field. The head is always plain text. All SPAC wrappers have the same head structure. This is by design so that the head contains no correlatable metadata besides the source and destination VIDs. 
+The Head includes all the information that indicates that it is a SPAC wrapper. This includes a SPAC ESSR wrapper group code with wrapper size.  The ESSR SPAC protocol and version field, the source AID field, and the destination AID field. The head is always plain text. All SPAC wrappers have the same head structure. This is by design so that the head contains no correlatable metadata besides the source and destination AIDs. 
 
 #### SPAC ESSR Wrapper
 
@@ -1288,13 +1223,13 @@ Examples of the head section of a SPAC wrapper are as follows:
 
 #### Example SPAC Head in Open Mode
 
-| SPAC ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
+| SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID  |
 |:--------:|:-------:|:------------|:------------|
 | `-E##` | `YSPACAAB` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
 
 #### Example SPAC Head in Closed Mode
 
-| SPAC ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
+| SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID  |
 |:--------:|:-------:|:------------|:------------|
 | `-E##` | `YSPACAAB` | `EAAABBB...` |  `EAAADDD...` |
 
@@ -1308,7 +1243,7 @@ The body may be encrypted. The plain text body must be one of the following SPAC
 Native SPAC payloads are also called SPAC control message payloads. These have the following payload types:
 
 |  SPAC Payload Type | CESR Code | Protocol | Description |
-|:------:||:------:|:--------:|:------------|
+|:------:|:------:|:--------:|:------------|
 | `HOP` | `XHOP` |  SPAC |    hop list tunneled payload  |
 | `RFI` | `XRFI` | SPAC | relationship formation invite payload |
 | `RFA` | `XRFA` | SPAC | relationship formation accept payload |
@@ -1325,7 +1260,7 @@ The actual field structure for each native SPAC body payload will be defined bel
 
 #### Padding Control Message Payloads
 
-An observer of a SPAC wrapper packet may use the packet size as correlatable metadata. To protect against this type of correlation, every SPAC control message payload includes a trailing pad field. The purpose of the pad field is to pad the total packet size to some desired minimum length, regardless of the non-padded payload size. The value of the pad field is CESR encoded as variable-length byte string primitive. The raw pad bytes should be a random set of characters to minimize correlability. Pad fields use the same encoding as open-mode VIDs. 
+An observer of a SPAC wrapper packet may use the packet size as correlatable metadata. To protect against this type of correlation, every SPAC control message payload includes a trailing pad field. The purpose of the pad field is to pad the total packet size to some desired minimum length, regardless of the non-padded payload size. The value of the pad field is CESR encoded as variable-length byte string primitive. The raw pad bytes should be a random set of characters to minimize correlability. 
 
 The pad value primitive is one of the following variable-length byte string codes as follows:
 ```
@@ -1348,6 +1283,19 @@ Empty Padding Content:
 Non-Empty Padding Content:
 `4BACabcdefghi`
 
+In variable-length CESR primitive coding, each code prefix is followed length characters encoded in Base64 but each is abstractly represented as a `#` character. For example, `4B##` has two length characters that indicate the length of the associated bytestring in quadlets in Base64 (Text mode) or triplets in Base2 (Binary mode). 
+There are two families of codes, the small codes and the big codes. The difference is the
+length of the encoded byte string in base64 quadlets or base2 triplets (24 bits of information). The small codes have two size characters that thereby support AID bytestrings up to `64^2-1 = 4095` triplets/quadlets.  The big codes have four size characters that thereby support AID bytestrings up to `64^4-1 = 16,777,215` triplets/quadlets. 
+
+Because all CESR-encoded primitives must align on 24-bit boundaries, variable-length byte strings are pre-padded with leading pad bytes of zero. This lead padding ensures that the padded byte string is
+24-bit aligned prior to conversion to Base64. The padded bytestring is then converted to Base64, and the appropriate bytestring code is attached.  There is a separate code for each padding length. The 24-bit alignment is ensured with either 0,1, or 2 lead pad bytes. 
+
+Let `rs` be the size in bytes of the pad bytes; moreover, let `ps` be the lead pad byte size. The number of lead pad bytes, `ps`, is computed as follows (Python syntax):  
+
+```python
+ps = (3 - (rs % 3)) % 3
+```
+When `ps` is 0, then either of the code prefixes `4B` or `7AAB` is used. When `ps` is 1, then either of the code prefixes `5B` or `8AAB` is used. When `ps` is 2, then either of the code prefixes `6B` or `9AAB` is used. 
 
 ### Ciphertext Body
 
@@ -1384,13 +1332,13 @@ CESR codes for other sniffable stream HPKE encryption formats have yet to be def
 
 ### Plaintext Body
 
-The plaintext representation of the payload body appears as a single CESR group that starts with the dedicated SPAC payload group code `-Z##`.  The embedded fields in the payload group always start with the payload type field, which is then followed by the source VID field. The source VID field is required to support the ESSR format when the payload group is encrypted.
+The plaintext representation of the payload body appears as a single CESR group that starts with the dedicated SPAC payload group code `-Z##`.  The embedded fields in the payload group always start with the payload type field, which is then followed by the source AID field. The source AID field is required to support the ESSR format when the payload group is encrypted.
 
 See above for a table of the payload types.
 
 #### Example Payload Front End
 
-| SPAC Payload Group |   Payload Type   |  Src VID |
+| SPAC Payload Group |   Payload Type   |  Src AID |
 |:--------:|:--------:|:-------|
 | `-Z##` | `XPAD` | `5BAWAG...klmn` |
 
@@ -1400,7 +1348,7 @@ See above for a table of the payload types.
 The most complex payload type is the `HOP` payload. This is because a `HOP` payload includes a
 nested ESSR message.
 
-In the hop payload in order includes, the payload group code, the payload type field, the source VID field, the hop list group with zero or more hop VIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-I##`. 
+In the hop payload in order includes, the payload group code, the payload type field, the source AID field, the hop list group with zero or more hop AIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-I##`. 
 If the hop list is empty, then the empty list group, `-IAA`, is provided.
 If the embedded message is empty, then the empty ESSR group code, `-EAA`, is provided.
 
@@ -1408,7 +1356,7 @@ If the embedded message is empty, then the empty ESSR group code, `-EAA`, is pro
 
 The following is an example of HOP payload with two hops and an embedded ESSR message with an encrypted payload.
 
-| SPAC Payload Group |   Payload Type   |  Src VID | Hop List Group | Hop VID 0 | Hop VID 1 | Pad | SPAC ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group | Hop AID 0 | Hop AID 1 | Pad | SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----:|:-----:|:------------|:-----:|:--------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `5BAWAG...klmn` | `-I##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YSPACABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
 
@@ -1416,7 +1364,7 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 The following is an example of HOP payload with two hops and an embedded ESSR messagewith an encrypted payload.
 
-| SPAC Payload Group |   Message Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | SPAC ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC Payload Group |   Message Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EChij...` | `-I##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YSPACABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
 
@@ -1428,13 +1376,13 @@ The First three fields of the `SCS` payload are as defined above for all payload
 
 
 #### Generic payload as sniffable CESR stream in  Open Mode
-| SPAC Payload Group |   Message Type   | Source VID |  Pad | CESR Stream |
+| SPAC Payload Group |   Message Type   | Source AID |  Pad | CESR Stream |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XSCS` | `5BAWAG...klmn` | `4B##` | `-A##....` |
 
 
 #### Generic payload as sniffable CESR stream in  Closed Mode
-| SPAC Payload Group |   Message Type   | Source VID | Pad | CESR Stream |
+| SPAC Payload Group |   Message Type   | Source AID | Pad | CESR Stream |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XSCS` | `EAcsr...` | `4B##` | `-A##....` | 
 
@@ -1446,17 +1394,12 @@ Packet size as well as the time-of-departure (TOD) and the time-of-arrival (TOD)
 
 One way to minimize TOD/TOA correlation is to whiten the stream of packets by injecting pad packets so that there is a uniform distribution of packets over time. When a source does not have any material data to send, it may send a steady stream of pad packets instead, so that a correlator always sees a uniform time distribution of packets. The `PAD` packet payload starts with the standard three fields for payloads and adds a final field that is a pad field. The pad field is described above.
 
-#### Pad Payload in Open Mode
-| SPAC Payload Group |   Message Type   | Source VID | Pad |
-|:--------:|:--------:|:-------|:------------|
-| `-Z##` | `XPAD` |  `5BAWAG...klmn` |  `4B##` |
+The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source AID is the source AID as per the ESSR format, i.e. encrypt source.
 
-The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source VID is the source VID as per the ESSR format, i.e. encrypt source.
-
-#### Pad Payload in Closed Mode
-| SPAC Payload Group |   Message Type   | Source VID | Pad |
+#### Pad Payload
+| SPAC Payload Group |   Message Type   | Source AID | Pad |
 |:--------:|:--------:|:-------|:------------|
-| `-Z##` | `XPAD` | `EAfg_src_VID` |  `4B##` |
+| `-Z##` | `XPAD` | `EAfg...` |  `4B##` |
 
 
 
@@ -1464,67 +1407,52 @@ The pad field in the `XPAD` payload type has the same semantics as the pad field
 
 The relationship formation sub-protocol defines three body payload types. These are `RFI`, `RFA` and `RFD`.  All include a pad field. 
 
-The SPAC ESSR wrapper in which a relationship formation payload is embedded is normative for the relationship formation sub-protocol. This is because the source and destination VIDs of the wrapper 
+The SPAC ESSR wrapper in which a relationship formation payload is embedded is normative for the relationship formation sub-protocol. This is because the source and destination AIDs of the wrapper 
 are used in relationship formation.
 
-The SPAC wrapper uses an existing relationship for the source and destination VIDS. Let these be  `X0` and `Y0` respectively. 
+The SPAC wrapper uses an existing relationship for the source and destination AIDS. Let these be  `X0` and `Y0` respectively. 
 
-Should `X0` wish to form a new relationship with `Y0` with a new VID that X0 controls, say `X1`. Then `X0` sends a SPAC ESSR Wrapped packet to `Y0` with an `RFI` payload. The source VID in the `RFI` payload is `X0`.
+Should `X0` wish to form a new relationship with `Y0` with a new AID that X0 controls, say `X1`. Then `X0` sends a SPAC ESSR Wrapped packet to `Y0` with an `RFI` payload. The source AID in the `RFI` payload is `X0`.
 
-The `RFI` payload serves as an invitation from `X0` to `Y0` to form a new relationship using `X1` provided as the new `iVID` in the `RFI` payload. `X1` is controlled by `X0`. This invitation must be signed by the key(s) for `X`1 so that `Y0` knows that the invite came from the controller of `X1` via `X0`. This signature is included in the `RFI` payload inside the SPAC ESSR Wrapper. The source VID in the `RFI` payload is `X0`.
+The `RFI` payload serves as an invitation from `X0` to `Y0` to form a new relationship using `X1` provided as the new `iAID` in the `RFI` payload. `X1` is controlled by `X0`. This invitation must be signed by the key(s) for `X`1 so that `Y0` knows that the invite came from the controller of `X1` via `X0`. This signature is included in the `RFI` payload inside the SPAC ESSR Wrapper. The source AID in the `RFI` payload is `X0`.
 
 If `Y0` wishes to accept the invite, then `Y0` responds with an `RFA` payload wrapped in a SPAC ESSR wrapper from `Y0` to `X0`.  This payload includes the `iSAID` IID from the `RFI` payload. 
-The `RFA` payload serves as an acceptance by `Y0` of the invite to form a new relationship between `X1` and `Y1`, where `Y1` is the new `aVID` in the RFA payload. `Y1` is controlled by `Y0`. This acceptance must be signed by `Y1` so that `X0` knows that acceptance came from the controller of `Y1` via `Y0`. This signature is included in the `RFI` payload inside the SPAC ESSR Wrapper. The source VID in the `RFA` payload is `Y0`.
+The `RFA` payload serves as an acceptance by `Y0` of the invite to form a new relationship between `X1` and `Y1`, where `Y1` is the new `aAID` in the RFA payload. `Y1` is controlled by `Y0`. This acceptance must be signed by `Y1` so that `X0` knows that acceptance came from the controller of `Y1` via `Y0`. This signature is included in the `RFI` payload inside the SPAC ESSR Wrapper. The source AID in the `RFA` payload is `Y0`.
 
-If `Y0` chooses not to accept the invite, then `Y0` sends a SPAC ESSR-wrapped packet from `Y0` to `X0`  with payload `RFD`. This payload includes the `iSAID` IID from the `RFI` payload. The source VID in the `RFA` payload is `Y0`.
+If `Y0` chooses not to accept the invite, then `Y0` sends a SPAC ESSR-wrapped packet from `Y0` to `X0`  with payload `RFD`. This payload includes the `iSAID` IID from the `RFI` payload. The source AID in the `RFA` payload is `Y0`.
 
 The `iSAID` in the `RFI` payload is computed over the non-pad, non-signature portions of the `RFI` payload.
 The `aSAID` in the `RFA` payload is computed over the non-pad, non-signature portions of the `RFA` payload
 
 ####  Replay Attack
 
-A reply attack mechanism is not required as long as relationship formations are treated as idempotent actions. The pair of cryptographically derived VIDs in a relationship form a universally unique pairing. Therefore, the formation of the pairing can be treated as idempotent in that a replay attack is just treated as a redundant or duplicate formation attempt that does not change the state of the relationship once formed.  This means that a stale decline (`RFD`) is ignored for any previously accepted relationships.
+A reply attack mechanism is not required as long as relationship formations are treated as idempotent actions. The pair of cryptographically derived AIDs in a relationship form a universally unique pairing. Therefore, the formation of the pairing can be treated as idempotent in that a replay attack is just treated as a redundant or duplicate formation attempt that does not change the state of the relationship once formed.  This means that a stale decline (`RFD`) is ignored for any previously accepted relationships.
 
 #### Salty Nonce
 
-The salty nonce field in the `RFI` and `RFA` payloads protects against a rainbow table attack that could correlate the embedded new VID to the SAID of the payload. This assumes that the unencrypted SAID of the payload or the Signature of the payload is/are leaked in some way, and the encrypted payload is also leaked. When this happens, the SaltyNonce field ensures that the encrypted payload includes enough entropy to prevent correlating the newly leaked VID to the leaked SAID or Signature.
+The salty nonce field in the `RFI` and `RFA` payloads protects against a rainbow table attack that could correlate the embedded new AID to the SAID of the payload. This assumes that the unencrypted SAID of the payload or the Signature of the payload is/are leaked in some way, and the encrypted payload is also leaked. When this happens, the SaltyNonce field ensures that the encrypted payload includes enough entropy to prevent correlating the newly leaked AID to the leaked SAID or Signature.
 
-#### Relationship Formation Invitation (RFI) Payload in Open Mode
-| SPAC Payload Group |   Message Type   | Source VID | RFI SAID (RF IID)  | Salty Nonce| New Rel iVID  |  Idx Sig Group | Signature iVID | Pad |
-|:--------:|:--------:|:-------|:-------|:-------|:-----------------|:---------|:---------|:-----------|
-| `-Z##` | `XRFI` | `5BAWAG...klmn`  | `EBa...`  | `Abcd...` | `5BAWAG...wxyz`  | `-0J##` | `AAEaz4...` |  `4B##`|
-
-#### Relationship Formation Acceptance (RFA) Payload in Open Mode
-| SPAC Payload Group |   Message Type   |  Source VID | RFA SAID  |  Salty Nonce | RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad |
-|:--------:|:--------:|:-------|:-------|:------|:-------|:-----------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` |  `5BAWAG...rstu`  |  `EAz...`  | `Aevg...` |  `EBa...`  | `5BAWAG...mnop`   | `-0J##` | `AAEbw3...` |  `4B##` |
-
-#### Relationship Formation Decline (RFD) Payload in Open Mode
-| SPAC Payload Group |   Message Type   | Source VID | RF IID  | Pad |
-|:--------:|:--------:|:-------|:-------|:------------|
-| `-Z##` | `XRFD` | `5BAWAG...rstu`  | `EBa...`  | `4B##` |
-
-#### Relationship Formation Invitation (RFI) Payload in Closed Mode
-| SPAC Payload Group |   Message Type   | Source VID | RFI SAID (RF IID)  | Salty Nonce | New Rel iVID   | Idx Sig Group | Signature iVID | Pad|
+#### Relationship Formation Invitation (RFI) Payload
+| SPAC Payload Group |   Message Type   | Source AID | RFI SAID (RF IID)  | Salty Nonce | New Rel iAID   | Idx Sig Group | Signature iAID | Pad|
 |:--------:|:--------:|:-------:|:-------|:-------|:----------------|:---------|:---------|:----------|
 | `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-0J##` | `AAEbw3...` |  `4B##` |
 
 
-#### Relationship Formation Acceptance (RFA) Payload in Closed Mode
-| SPAC Payload Group |   Message Type   | Source VID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad|
+#### Relationship Formation Acceptance (RFA) Payload
+| SPAC Payload Group |   Message Type   | Source AID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
 |:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDab_new_aVID`  | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDabc...`  | `-0J##` | `AAEbw3...` |  `4B##` |
 
 
-### Relationship Formation Decline (RFD) Payload in Closed Mode
-| SPAC Payload Group |   Message Type   | Source VID | RF IID  | Pad |
+### Relationship Formation Decline (RFD) Payload
+| SPAC Payload Group |   Message Type   | Source AID | RF IID  | Pad |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XRFD` | `EBcde...` | `EBa...`  |  `4B##` |
 
 
 ### Tail
 
-The Tail part of each ESSR wrapper consists the attached signature(s) for the source VID. The attachment is CESR encoded as an attachment group with an embedded indexed signature group with embedded indexed signatures.
+The Tail part of each ESSR wrapper consists the attached signature(s) for the source AID. The attachment is CESR encoded as an attachment group with an embedded indexed signature group with embedded indexed signatures.
 
 #### Example Tail
 
@@ -1536,28 +1464,14 @@ The Tail part of each ESSR wrapper consists the attached signature(s) for the so
 
 ## Examples of SPAC ESSR Wrappers with Hop Payloads
 
-
-### SPAC Wrapper with encrypted payload in Open Mode
-With SPAC Protocol+Version
-
-| SPAC ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
-|:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YSPACAAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
-
-
-#### Hop Payload with tunneled ESSR in Open Mode
-| SPAC Payload Group |   Message Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | SPAC ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
-|:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...rstu` | `-I##` |  `5BAWAG...abcd` |  `5BAWAG...efgh` | `4B##` | `-E##` | `YSPACAAB` |  `5BAWAG...ijkl` | `5BAWAG...mnop` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
-
 #### ESSR Wrapper with encrypted payload in closed mode
 
-| SPAC ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC ESSR Wrapper | Protocl+Version  |  Src AID  |  Dst AID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
 | `-E##` | `YSPACAAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR in closed Mode
-| SPAC Payload Group |   Message Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | SPAC ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC Payload Group |   Message Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EAbce...`  | `-I##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YSPACAAB` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
 
@@ -1615,7 +1529,7 @@ Below is a proposed SPAC Payload Message type table.
 
 ### Examples
 #### KERI `exn` Payload
-| SPAC Payload Group |   Message Type   |  Src VID |  Pad | exn message|
+| SPAC Payload Group |   Message Type   |  Src AID |  Pad | exn message|
 |:--------:|:--------:|:-------|:------:|:---------|
 | `-Z##` | `Xexn` |`EAABCD...` |  `4B##`| exn message |
 
