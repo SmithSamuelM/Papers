@@ -1221,13 +1221,7 @@ An example SPAC protocol type/version field value is as follows:
 
 Examples of the head section of a SPAC wrapper are as follows:
 
-#### Example SPAC Head in Open Mode
-
-| SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID  |
-|:--------:|:-------:|:------------|:------------|
-| `-E##` | `YSPACAAB` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
-
-#### Example SPAC Head in Closed Mode
+#### Example SPAC Head 
 
 | SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID  |
 |:--------:|:-------:|:------------|:------------|
@@ -1352,15 +1346,7 @@ In the hop payload in order includes, the payload group code, the payload type f
 If the hop list is empty, then the empty list group, `-IAA`, is provided.
 If the embedded message is empty, then the empty ESSR group code, `-EAA`, is provided.
 
-#### Example Hop Payload Open Mode
-
-The following is an example of HOP payload with two hops and an embedded ESSR message with an encrypted payload.
-
-| SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group | Hop AID 0 | Hop AID 1 | Pad | SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
-|:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----:|:-----:|:------------|:-----:|:--------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-I##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YSPACABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
-
-#### Example Hop Payload Closed Mode
+#### Example Hop Payload
 
 The following is an example of HOP payload with two hops and an embedded ESSR messagewith an encrypted payload.
 
@@ -1375,13 +1361,7 @@ When not used for SPAC native control messages, the embedded payload of a SPAC t
 The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `-0A#####`.
 
 
-#### Generic payload as sniffable CESR stream in  Open Mode
-| SPAC Payload Group |   Message Type   | Source AID |  Pad | CESR Stream |
-|:--------:|:--------:|:-------|:-------|:------------|
-| `-Z##` | `XSCS` | `5BAWAG...klmn` | `4B##` | `-A##....` |
-
-
-#### Generic payload as sniffable CESR stream in  Closed Mode
+#### Generic payload as sniffable CESR stream
 | SPAC Payload Group |   Message Type   | Source AID | Pad | CESR Stream |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XSCS` | `EAcsr...` | `4B##` | `-A##....` | 
@@ -1464,13 +1444,13 @@ The Tail part of each ESSR wrapper consists the attached signature(s) for the so
 
 ## Examples of SPAC ESSR Wrappers with Hop Payloads
 
-#### ESSR Wrapper with encrypted payload in closed mode
+#### ESSR Wrapper with encrypted payload
 
 | SPAC ESSR Wrapper | Protocl+Version  |  Src AID  |  Dst AID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
 | `-E##` | `YSPACAAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
 
-#### Hop Payload with tunneled ESSR in closed Mode
+#### Hop Payload with tunneled ESSR
 | SPAC Payload Group |   Message Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EAbce...`  | `-I##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YSPACAAB` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
