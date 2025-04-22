@@ -90,6 +90,10 @@ The Head includes all the information that indicates that it is a TSP wrapper. T
 #### TSP ESSR Wrapper
 
 All wrappers start with a CESR count code. This makes it sniffable in a stream.
+
+All wrappers start with a CESR count code. This makes it sniffable in a stream. 
+The count code must be one of the two count codes for ESSR type packets. These are `-E##` for small ESSR packets or `-0E#####` for big ESSR packets.
+
 The next field is the protocol type and version field.
 The protocol type uses four characters and must be `TSP—` for a normative TSP protocol. Changing the protocol type to anything but `TSP-` enables staging and testing and experimentation with non-normative variants of the TSP protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the TSP protocol.
 
@@ -200,7 +204,9 @@ CESR codes for other sniffable stream HPKE encryption formats have yet to be def
 
 ### Plaintext Body
 
-The plaintext representation of the payload body appears as a single CESR group that starts with the dedicated TSP payload group code `-Z##`.  The embedded fields in the payload group always start with the payload type field, which is then followed by the source VID field. The source VID field is required to support the ESSR format when the payload group is encrypted.
+The plaintext representation of the payload body appears as a single CESR group that starts with one of the two dedicated SPAC payload group codes. For small payloads the code is  `-Z##`. For big payloads the code is `-0Z#####`. 
+
+The embedded fields in the payload group always start with the payload type field, which is then followed by the source VID field. The source VID field is required to support the ESSR format when the payload group is encrypted.
 
 See above for a table of the payload types.
 
