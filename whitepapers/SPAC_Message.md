@@ -1208,10 +1208,8 @@ The Head includes all the information that indicates that it is a SPAC wrapper. 
 
 #### SPAC ESSR Wrapper
 
-All wrappers start with a CESR count code. This makes it sniffable in a stream.
-
 All wrappers start with a CESR count code. This makes it sniffable in a stream. 
-The count code must be one of the two count codes for ESSR type packets. These are `-E##` for small ESSR packets or `-0E#####` for big ESSR packets.
+The count code must be one of the two count codes for ESSR-type packets. These are `-E##` for small ESSR packets or `-0E#####` for big ESSR packets. The count value counts the wrapped quadlets/triplets up to but not including the attached attachment group with signatures. To clarify, the count value includes the wrapped payload, including any recursively nested ESSR wrappers with their attachment groups, but not the top-level attachment group.
 
 The next field is the protocol type and version field.
 The protocol type uses four characters and must be `SPAC` for a normative SPAC protocol. Changing the protocol type to anything but `SPAC` enables staging and testing and experimentation with non-normative variants of the SPAC protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the SPAC protocol.
@@ -1330,7 +1328,7 @@ CESR codes for other sniffable stream HPKE encryption formats have yet to be def
 
 ### Plaintext Body
 
-The plaintext representation of the payload body appears as a single CESR group that starts with one of the two dedicated SPAC payload group codes. For small payloads the code is  `-Z##`. For big payloads the code is `-0Z#####`.
+The plaintext representation of the payload body appears as a single CESR group that starts with one of the two dedicated SPAC payload group codes. For small payloads, the code is  `-Z##`. For big payloads, the code is `-0Z#####`.
 
  The embedded fields in the payload group always start with the payload type field, which is then followed by the source AID field. The source AID field is required to support the ESSR format when the payload group is encrypted.
 
@@ -1342,23 +1340,29 @@ See above for a table of the payload types.
 |:--------:|:--------:|:-------|
 | `-Z##` | `XPAD` | `5BAWAG...klmn` |
 
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field.
+
 ## Payloads by Type
 ### Hop Payload
 
 The most complex payload type is the `HOP` payload. This is because a `HOP` payload includes a
 nested ESSR message.
 
-In the hop payload in order includes, the payload group code, the payload type field, the source AID field, the hop list group with zero or more hop AIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-I##`. 
+In the hop payload includes in order: the payload group code, the payload type field, the source AID field, the hop list group with zero or more hop AIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-I##`. 
 If the hop list is empty, then the empty list group, `-IAA`, is provided.
 If the embedded message is empty, then the empty ESSR group code, `-EAA`, is provided.
 
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded ESSR message with its attached signature group.
+
+
 #### Example Hop Payload
 
-The following is an example of HOP payload with two hops and an embedded ESSR messagewith an encrypted payload.
+The following is an example of HOP payload with two hops and an embedded ESSR message with an encrypted payload.
 
-| SPAC Payload Group |   Message Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EChij...` | `-I##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YSPACABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+
 
 
 ### Generic Tunneled Payloads as Sniffable CESR Streams.
@@ -1366,11 +1370,14 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 When not used for SPAC native control messages, the embedded payload of a SPAC tunnel is entirely application-specific. Sniffable CESR streams can accommodate virtually any data format. The `SCS` for sniffable CESR Stream is the generic payload type meant to encapsulate application-specific payloads to be delivered by SPAC. These would include any trust task payloads. In CESR, the `-A##` and `-0A#####` group codes are meant for generic pipeline able groups of other group or primitive codes. This enables parseable delimitation of a perfectly generic payload.
 The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `-0A#####`.
 
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded CESR stream which includes the contents of the `-A##` or `-0A#####` group.
+
 
 #### Generic payload as sniffable CESR stream
-| SPAC Payload Group |   Message Type   | Source AID | Pad | CESR Stream |
+| SPAC Payload Group |   Payload Type   | Source AID | Pad | CESR Stream |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XSCS` | `EAcsr...` | `4B##` | `-A##....` | 
+
 
 
 
@@ -1382,11 +1389,12 @@ One way to minimize TOD/TOA correlation is to whiten the stream of packets by in
 
 The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source AID is the source AID as per the ESSR format, i.e. encrypt source.
 
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the pad field.
+
 #### Pad Payload
-| SPAC Payload Group |   Message Type   | Source AID | Pad |
+| SPAC Payload Group |   Payload Type   | Source AID | Pad |
 |:--------:|:--------:|:-------|:------------|
 | `-Z##` | `XPAD` | `EAfg...` |  `4B##` |
-
 
 
 ### Relationship Formation (Sub) Protocol
@@ -1418,27 +1426,48 @@ A reply attack mechanism is not required as long as relationship formations are 
 
 The salty nonce field in the `RFI` and `RFA` payloads protects against a rainbow table attack that could correlate the embedded new AID to the SAID of the payload. This assumes that the unencrypted SAID of the payload or the Signature of the payload is/are leaked in some way, and the encrypted payload is also leaked. When this happens, the SaltyNonce field ensures that the encrypted payload includes enough entropy to prevent correlating the newly leaked AID to the leaked SAID or Signature.
 
+#### Count Group Code Computation
+
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
+
+
+#### Computed Fields in the RFI Payload
+
+The signature field is computed on the concatenation of the following fields in order: Payload Type, Source AID, RFI SAID, Salty Nonce, New Rel iAID. This concatenation is signed, and that signature becomes the value of the signature in the Idx Sig Group. The pad field is not included in the signature computation.
+
+The RFI SAID field is calculated using the SAID protocol (which substitutes dummy characters in the SAID field itself) on the concatenation of the following fields in order: Payload Type, Source AID, RFI SAID, Salty Nonce, New Rel iAID. The pad field is not included in the SAID computation.
+
+#### Computed Fields in the RFA Payload
+
+The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
+
+The signature field is computed on the concatenation of the following fields in order: Payload Type, Source AID, RFA SAID, Salty Nonce, RFI SAID, New Rel aAID. This concatenation is signed, and that signature becomes the value of the signature in the Idx Sig Group. The pad field is not included in the signature computation.
+
+The RFA SAID field is calculated using the SAID protocol (which substitutes dummy characters in the SAID field itself) on the concatenation of the following fields in order: Payload Type, Source AID, RFA SAID, Salty Nonce, RFI SAID, New Rel aAID. The pad field is not included in the SAID computation.
+
+
+
 #### Relationship Formation Invitation (RFI) Payload
-| SPAC Payload Group |   Message Type   | Source AID | RFI SAID (RF IID)  | Salty Nonce | New Rel iAID   | Idx Sig Group | Signature iAID | Pad|
+| SPAC Payload Group |   Payload Type   | Source AID | RFI SAID (RF IID)  | Salty Nonce | New Rel iAID   | Idx Sig Group | Signature iAID | Pad|
 |:--------:|:--------:|:-------:|:-------|:-------|:----------------|:---------|:---------|:----------|
 | `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-0J##` | `AAEbw3...` |  `4B##` |
 
 
 #### Relationship Formation Acceptance (RFA) Payload
-| SPAC Payload Group |   Message Type   | Source AID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
+| SPAC Payload Group |   Payload Type   | Source AID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
 |:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
 | `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDabc...`  | `-0J##` | `AAEbw3...` |  `4B##` |
 
 
 ### Relationship Formation Decline (RFD) Payload
-| SPAC Payload Group |   Message Type   | Source AID | RF IID  | Pad |
+| SPAC Payload Group |   Payload Type   | Source AID | RF IID  | Pad |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XRFD` | `EBcde...` | `EBa...`  |  `4B##` |
 
 
 ### Tail
 
-The Tail part of each ESSR wrapper consists the attached signature(s) for the source AID. The attachment is CESR encoded as an attachment group with an embedded indexed signature group with embedded indexed signatures.
+The Tail part of each ESSR wrapper consists of the attached signature(s) for the source AID. The attachment is CESR encoded as an attachment group with an embedded indexed signature group with embedded indexed signatures. Other groups may be included in the attachment group but are not normative and may be ignored when processing the attachment group.
 
 #### Example Tail
 
@@ -1457,7 +1486,7 @@ The Tail part of each ESSR wrapper consists the attached signature(s) for the so
 | `-E##` | `YSPACAAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR
-| SPAC Payload Group |   Message Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
+| SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EAbce...`  | `-I##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YSPACAAB` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
 
