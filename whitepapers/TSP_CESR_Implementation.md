@@ -92,7 +92,7 @@ The Head includes all the information that indicates that it is a TSP wrapper. T
 All wrappers start with a CESR count code. This makes it sniffable in a stream.
 
 All wrappers start with a CESR count code. This makes it sniffable in a stream. 
-The count code must be one of the two count codes for ESSR type packets. These are `-E##` for small ESSR packets or `-0E#####` for big ESSR packets. The count value counts the wrapped quadlets/triplets up to but not including the attached attachment group with signatures. To clarify, the count value includes the wrapped payload, including any recursively nested ESSR wrappers with their attachment groups, but not the top-level attachment group.
+The count code must be one of the two count codes for ESSR type packets. These are `-E##` for small ESSR packets or `--E#####` for big ESSR packets. The count value counts the wrapped quadlets/triplets up to but not including the attached attachment group with signatures. To clarify, the count value includes the wrapped payload, including any recursively nested ESSR wrappers with their attachment groups, but not the top-level attachment group.
 
 
 The next field is the protocol type and version field.
@@ -205,7 +205,7 @@ CESR codes for other sniffable stream HPKE encryption formats have yet to be def
 
 ### Plaintext Body
 
-The plaintext representation of the payload body appears as a single CESR group that starts with one of the two dedicated SPAC payload group codes. For small payloads, the code is  `-Z##`. For big payloads, the code is `-0Z#####`. 
+The plaintext representation of the payload body appears as a single CESR group that starts with one of the two dedicated SPAC payload group codes. For small payloads, the code is  `-Z##`. For big payloads, the code is `--Z#####`. 
 
 The embedded fields in the payload group always start with the payload type field, which is then followed by the source VID field. The source VID field is required to support the ESSR format when the payload group is encrypted.
 
@@ -217,7 +217,7 @@ See above for a table of the payload types.
 |:--------:|:--------:|:-------|
 | `-Z##` | `XPAD` | `5BAWAG...klmn` |
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field.
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field.
 
 
 ## Payloads by Type
@@ -226,11 +226,11 @@ The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed a
 The most complex payload type is the `HOP` payload. This is because a `HOP` payload includes a
 nested ESSR message.
 
-In the hop payload includes in order: the payload group code, the payload type field, the source VID field, the hop list group with zero or more hop VIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-I##`. 
-If the hop list is empty, then the empty list group, `-IAA`, is provided.
+In the hop payload includes in order: the payload group code, the payload type field, the source VID field, the hop list group with zero or more hop VIDs, the pad field, and an embedded ESSR message as indicated by an ESSR group code. The hop list group code is `-J##`. 
+If the hop list is empty, then the empty list group, `-JAA`, is provided.
 If the embedded message is empty, then the empty ESSR group code, `-EAA`, is provided.
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded ESSR message with its attached signature group.
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded ESSR message with its attached signature group.
 
 
 #### Example Hop Payload Open Mode
@@ -239,7 +239,7 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group | Hop VID 0 | Hop VID 1 | Pad | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----:|:-----:|:------------|:-----:|:--------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-I##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YTSP-ABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-J##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YTSP-ABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 #### Example Hop Payload Closed Mode
 
@@ -247,15 +247,15 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EChij...` | `-I##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 ### Generic Tunneled Payloads as Sniffable CESR Streams.
 
-When not used for TSP native control messages, the embedded payload of a TSP tunnel is entirely application-specific. Sniffable CESR streams can accommodate virtually any data format. The `SCS` for sniffable CESR Stream is the generic payload type meant to encapsulate application-specific payloads to be delivered by TSP. These would include any trust task payloads. In CESR, the `-A##` and `-0A#####` group codes are meant for generic pipeline able groups of other group or primitive codes. This enables parseable delimitation of a perfectly generic payload.
-The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `-0A#####`.
+When not used for TSP native control messages, the embedded payload of a TSP tunnel is entirely application-specific. Sniffable CESR streams can accommodate virtually any data format. The `SCS` for sniffable CESR Stream is the generic payload type meant to encapsulate application-specific payloads to be delivered by TSP. These would include any trust task payloads. In CESR, the `-A##` and `--A#####` group codes are meant for generic pipeline able groups of other group or primitive codes. This enables parseable delimitation of a perfectly generic payload.
+The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `--A#####`.
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded CESR stream which includes the contents of the `-A##` or `-0A#####` group.
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded CESR stream which includes the contents of the `-A##` or `--A#####` group.
 
 #### Generic payload as sniffable CESR stream in  Open Mode
 | TSP Payload Group |   Payload Type   | Source VID |  Pad | CESR Stream |
@@ -278,7 +278,7 @@ One way to minimize TOD/TOA correlation is to whiten the stream of packets by in
 
 The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source VID is the source VID as per the ESSR format, i.e. encrypt source.
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the pad field.
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the pad field.
 
 #### Pad Payload in Open Mode
 | TSP Payload Group |   Payload Type   | Source VID | Pad |
@@ -324,7 +324,7 @@ The salty nonce field in the `RFI` and `RFA` payloads protects against a rainbow
 
 #### Count Group Code Computation
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
 
 
 #### Computed Fields in the RFI Payload
@@ -335,7 +335,7 @@ The RFI SAID field is calculated using the SAID protocol (which substitutes dumm
 
 #### Computed Fields in the RFA Payload
 
-The count portion of the payload count codes `-Z##` or `-0Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and ending with the pad field (inclusive).
 
 The signature field is computed on the concatenation of the following fields in order: Payload Type, Source AID, RFA SAID, Salty Nonce, RFI SAID, New Rel aAID. This concatenation is signed, and that signature becomes the value of the signature in the Idx Sig Group. The pad field is not included in the signature computation.
 
@@ -346,12 +346,12 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 #### Relationship Formation Invitation (RFI) Payload in Open Mode
 | TSP Payload Group |   Payload Type   | Source VID | RFI SAID (RF IID)  | Salty Nonce| New Rel iVID  |  Idx Sig Group | Signature iVID | Pad |
 |:--------:|:--------:|:-------|:-------|:-------|:-----------------|:---------|:---------|:-----------|
-| `-Z##` | `XRFI` | `5BAWAG...klmn`  | `EBa...`  | `Abcd...` | `5BAWAG...wxyz`  | `-0J##` | `AAEaz4...` |  `4B##`|
+| `-Z##` | `XRFI` | `5BAWAG...klmn`  | `EBa...`  | `Abcd...` | `5BAWAG...wxyz`  | `-K##` | `AAEaz4...` |  `4B##`|
 
 #### Relationship Formation Acceptance (RFA) Payload in Open Mode
 | TSP Payload Group |   Payload Type   |  Source VID | RFA SAID  |  Salty Nonce | RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad |
 |:--------:|:--------:|:-------|:-------|:------|:-------|:-----------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` |  `5BAWAG...rstu`  |  `EAz...`  | `Aevg...` |  `EBa...`  | `5BAWAG...mnop`   | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFA` |  `5BAWAG...rstu`  |  `EAz...`  | `Aevg...` |  `EBa...`  | `5BAWAG...mnop`   | `-K##` | `AAEbw3...` |  `4B##` |
 
 #### Relationship Formation Decline (RFD) Payload in Open Mode
 | TSP Payload Group |   Payload Type   | Source VID | RF IID  | Pad |
@@ -361,13 +361,13 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 #### Relationship Formation Invitation (RFI) Payload in Closed Mode
 | TSP Payload Group |   Payload Type   | Source VID | RFI SAID (RF IID)  | Salty Nonce | New Rel iVID   | Idx Sig Group | Signature iVID | Pad|
 |:--------:|:--------:|:-------:|:-------|:-------|:----------------|:---------|:---------|:----------|
-| `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 #### Relationship Formation Acceptance (RFA) Payload in Closed Mode
 | TSP Payload Group |   Payload Type   | Source VID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad|
 |:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDab_new_aVID`  | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDab_new_aVID`  | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 ### Relationship Formation Decline (RFD) Payload in Closed Mode
@@ -386,7 +386,7 @@ The Tail part of each ESSR wrapper consists the attached signature(s) for the so
 
 | Attachment Group | Idx Sig Group | Signature |
 |:-----------:|:-----------:|:------------|
-| `-C##` | `-0J##` | `AACZ0j...` |
+| `-C##` | `-K##` | `AACZ0j...` |
 
 
 
@@ -398,24 +398,24 @@ With TSP Protocol+Version
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YTSP-AAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
+| `-E##` | `YTSP-AAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 
 #### Hop Payload with tunneled ESSR in Open Mode
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...rstu` | `-I##` |  `5BAWAG...abcd` |  `5BAWAG...efgh` | `4B##` | `-E##` | `YTSP-ABA` |  `5BAWAG...ijkl` | `5BAWAG...mnop` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `5BAWAG...rstu` | `-J##` |  `5BAWAG...abcd` |  `5BAWAG...efgh` | `4B##` | `-E##` | `YTSP-ABA` |  `5BAWAG...ijkl` | `5BAWAG...mnop` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 #### ESSR Wrapper with encrypted payload in closed mode
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YTSP-AAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
+| `-E##` | `YTSP-AAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR in closed Mode
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EAbce...`  | `-I##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EAbce...`  | `-J##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 ## Determining if the payload field value is a ciphertext CESR primitive or a plaintext CESR group
