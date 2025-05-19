@@ -2,7 +2,7 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.5.0 (Original draft 2023/03/25)
+Version 0.5.1 (Original draft 2023/03/25)
 
 Copyright 2023, 2024, 2025 Samuel M. Smith
 
@@ -1361,7 +1361,7 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 | SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EChij...` | `-I##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YSPACABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YSPACABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 
@@ -1450,13 +1450,13 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 #### Relationship Formation Invitation (RFI) Payload
 | SPAC Payload Group |   Payload Type   | Source AID | RFI SAID (RF IID)  | Salty Nonce | New Rel iAID   | Idx Sig Group | Signature iAID | Pad|
 |:--------:|:--------:|:-------:|:-------|:-------|:----------------|:---------|:---------|:----------|
-| `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFI` | `EAmnb...` | `EBa...` | `Azbef...` | `EArsa...` | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 #### Relationship Formation Acceptance (RFA) Payload
 | SPAC Payload Group |   Payload Type   | Source AID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
 |:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDabc...`  | `-0J##` | `AAEbw3...` |  `4B##` |
+| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDabc...`  | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 ### Relationship Formation Decline (RFD) Payload
@@ -1483,12 +1483,12 @@ The Tail part of each ESSR wrapper consists of the attached signature(s) for the
 
 | SPAC ESSR Wrapper | Protocl+Version  |  Src AID  |  Dst AID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YSPACAAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-0J##` | `AACZ0j...` |
+| `-E##` | `YSPACAAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR
 | SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EAbce...`  | `-I##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YSPACAAB` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-0J##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EAbce...`  | `-J##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YSPACAAB` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 ## Determining if the payload field value is a ciphertext CESR primitive or a plaintext CESR group
