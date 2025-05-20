@@ -1240,12 +1240,13 @@ Native SPAC payloads are also called SPAC control message payloads. These have t
 
 |  SPAC Payload Type | CESR Code | Protocol | Description |
 |:------:|:------:|:--------:|:------------|
-| `HOP` | `XHOP` |  SPAC |    hop list tunneled payload  |
+| `CTL` | `XCTL` | SPAC | control message tunneled payload  |
+| `HOP` | `XHOP` | SPAC | hop list tunneled payload  |
 | `RFI` | `XRFI` | SPAC | relationship formation invite payload |
 | `RFA` | `XRFA` | SPAC | relationship formation accept payload |
 | `RFD` | `XRFD` | SPAC | relationship formation decline payload  |
+| `PAD` | `XPAD` | SPAC | padding payload to minimize metadata correlation based on departure and arrival times
 | `SCS` | `XSCS` | SPAC | sniffable CESR stream as payload |
-| `PAD` | `XPAD` | SPAC |  padding payload to minimize metadata correlation based on departure and arrival times
 
 The second column is the actual CESR encoding of the payload type field value. The CESR code for 3-character primitives is `X`. 
 
@@ -1343,6 +1344,26 @@ See above for a table of the payload types.
 The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field.
 
 ## Payloads by Type
+
+### Control Payload
+
+The control message, `CTL` payload includes a nested sniffable CESR stream. This designates the purpose of that nested stream as a control message for the TSP protocol.  Because all TSP messages are themselves sniffable CESR streams, any TSP message could be conveyed as a nested CESR stream using the `SCS` message (see below). However, to make it clear that the purpose of the nested message is for control, the `CTL` message is more specific.
+
+The fields in the `CTL` message appear in order: the payload group code, the payload type field, the source VID field, the pad field, and an embedded CESR stream as indicated by the generic group code `-A##` or big `--A#####`. 
+If the embedded message is empty, then the empty ESSR group code, `-EAA`, is provided.
+
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded ESSR message with its attached signature group.
+
+#### Example Control Payload
+
+The following is an example of a `CTL` payload with an embedded ESSR message with an encrypted payload.
+
+| TSP Payload Group |   Payload Type   |  Src VID  | Pad | CESR Stream|
+|:--------:|:--------:|:-------|:------:|:---------|
+| `-Z##` | `XCTL` | `EChij...` | `4B##` | `-A##...` |
+
+
+
 ### Hop Payload
 
 The most complex payload type is the `HOP` payload. This is because a `HOP` payload includes a
@@ -1362,39 +1383,6 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 | SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YSPACABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
-
-
-
-### Generic Tunneled Payloads as Sniffable CESR Streams.
-
-When not used for SPAC native control messages, the embedded payload of a SPAC tunnel is entirely application-specific. Sniffable CESR streams can accommodate virtually any data format. The `SCS` for sniffable CESR Stream is the generic payload type meant to encapsulate application-specific payloads to be delivered by SPAC. These would include any trust task payloads. In CESR, the `-A##` and `--A#####` group codes are meant for generic pipeline able groups of other group or primitive codes. This enables parseable delimitation of a perfectly generic payload.
-The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `--A#####`.
-
-The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded CESR stream which includes the contents of the `-A##` or `--A#####` group.
-
-
-#### Generic payload as sniffable CESR stream
-| SPAC Payload Group |   Payload Type   | Source AID | Pad | CESR Stream |
-|:--------:|:--------:|:-------|:-------|:------------|
-| `-Z##` | `XSCS` | `EAcsr...` | `4B##` | `-A##....` | 
-
-
-
-
-### Pad Payload
-
-Packet size as well as the time-of-departure (TOD) and the time-of-arrival (TOD) at the final destination can be used as correlatable metadata by a surveillor to correlate source and final destination of routed packets. While the pad field in the SPAC payloads enables a given source to pad all packets to the same length to minimize correlation on packet size it does not protect against TOD and TOA metadata correlation. 
-
-One way to minimize TOD/TOA correlation is to whiten the stream of packets by injecting pad packets so that there is a uniform distribution of packets over time. When a source does not have any material data to send, it may send a steady stream of pad packets instead, so that a correlator always sees a uniform time distribution of packets. The `PAD` packet payload starts with the standard three fields for payloads and adds a final field that is a pad field. The pad field is described above.
-
-The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source AID is the source AID as per the ESSR format, i.e. encrypt source.
-
-The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the pad field.
-
-#### Pad Payload
-| SPAC Payload Group |   Payload Type   | Source AID | Pad |
-|:--------:|:--------:|:-------|:------------|
-| `-Z##` | `XPAD` | `EAfg...` |  `4B##` |
 
 
 ### Relationship Formation (Sub) Protocol
@@ -1463,6 +1451,39 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 | SPAC Payload Group |   Payload Type   | Source AID | RF IID  | Pad |
 |:--------:|:--------:|:-------|:-------|:------------|
 | `-Z##` | `XRFD` | `EBcde...` | `EBa...`  |  `4B##` |
+
+
+### Pad Payload
+
+Packet size as well as the time-of-departure (TOD) and the time-of-arrival (TOD) at the final destination can be used as correlatable metadata by a surveillor to correlate source and final destination of routed packets. While the pad field in the SPAC payloads enables a given source to pad all packets to the same length to minimize correlation on packet size it does not protect against TOD and TOA metadata correlation. 
+
+One way to minimize TOD/TOA correlation is to whiten the stream of packets by injecting pad packets so that there is a uniform distribution of packets over time. When a source does not have any material data to send, it may send a steady stream of pad packets instead, so that a correlator always sees a uniform time distribution of packets. The `PAD` packet payload starts with the standard three fields for payloads and adds a final field that is a pad field. The pad field is described above.
+
+The pad field in the `XPAD` payload type has the same semantics as the pad field in the other payload types. The Source AID is the source AID as per the ESSR format, i.e. encrypt source.
+
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the pad field.
+
+#### Pad Payload
+| SPAC Payload Group |   Payload Type   | Source AID | Pad |
+|:--------:|:--------:|:-------|:------------|
+| `-Z##` | `XPAD` | `EAfg...` |  `4B##` |
+
+
+### Generic Tunneled Payloads as Sniffable CESR Streams.
+
+When not used for SPAC native control messages, the embedded payload of a SPAC tunnel is entirely application-specific. Sniffable CESR streams can accommodate virtually any data format. The `SCS` for sniffable CESR Stream is the generic payload type meant to encapsulate application-specific payloads to be delivered by SPAC. These would include any trust task payloads. In CESR, the `-A##` and `--A#####` group codes are meant for generic pipeline able groups of other group or primitive codes. This enables parseable delimitation of a perfectly generic payload.
+The First three fields of the `SCS` payload are as defined above for all payload types. The next field is the pad field (see above). The last field is the embedded payload field as an encapsulated CESR stream. The stream is encapsulated as a generic CESR group with small size code `-A##` or large size code `--A#####`.
+
+The count portion of the payload count codes `-Z##` or `--Z#####`, is computed as the number of following quadlets/triplets in the payload starting with the payload type field and includes the full size of the embedded CESR stream which includes the contents of the `-A##` or `--A#####` group.
+
+
+#### Generic payload as sniffable CESR stream
+| SPAC Payload Group |   Payload Type   | Source AID | Pad | CESR Stream |
+|:--------:|:--------:|:-------|:-------|:------------|
+| `-Z##` | `XSCS` | `EAcsr...` | `4B##` | `-A##....` | 
+
+
+
 
 
 ### Tail
