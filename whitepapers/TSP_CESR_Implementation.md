@@ -96,14 +96,14 @@ The count code must be one of the two count codes for ESSR type packets. These a
 
 
 The next field is the protocol type and version field.
-The protocol type uses four characters and must be `TSP—` for a normative TSP protocol. Changing the protocol type to anything but `TSP-` enables staging and testing and experimentation with non-normative variants of the TSP protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the TSP protocol.
+The protocol type uses four characters and must be `TSP_` for a normative TSP protocol. Changing the protocol type to anything but `TSP_` enables staging and testing and experimentation with non-normative variants of the TSP protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the TSP protocol.
 
 The version uses three Base64 characters. The first one provide the major version. The second two provide the minor version. For example, `AAB` represents a major version of `0` and a minor version of `01`. In dotted notation this would be `0.01`.  This provides for a total of 64 major versions and 4096 minor versions for each major version. 
 
 The CESR primitive code for such a 7 character primitive is `Y`.
 An example TSP protocol type/version field value is as follows:
 
-`YTSP-AAB`
+`YTSP_AAB`
 
 Examples of the head section of a TSP wrapper are as follows:
 
@@ -111,13 +111,13 @@ Examples of the head section of a TSP wrapper are as follows:
 
 | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
 |:--------:|:-------:|:------------|:------------|
-| `-E##` | `YTSP-AAB` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
+| `-E##` | `YTSP_AAB` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
 
 #### Example TSP Head in Closed Mode
 
 | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
 |:--------:|:-------:|:------------|:------------|
-| `-E##` | `YTSP-AAB` | `EAAABBB...` |  `EAAADDD...` |
+| `-E##` | `YTSP_AAB` | `EAAABBB...` |  `EAAADDD...` |
 
 
 ### Body
@@ -271,7 +271,7 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group | Hop VID 0 | Hop VID 1 | Pad | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----:|:-----:|:------------|:-----:|:--------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-J##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YTSP-ABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-J##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` | `-E##` | `YTSP_ABA` | `5BAWAG...rstu` | `5BAWAG...jklm` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 #### Example Hop Payload Closed Mode
 
@@ -279,7 +279,7 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YTSP_ABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 ### Relationship Formation (Sub) Protocol
@@ -433,24 +433,24 @@ With TSP Protocol+Version
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YTSP-AAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
+| `-E##` | `YTSP_AAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 
 #### Hop Payload with tunneled ESSR in Open Mode
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `5BAWAG...rstu` | `-J##` |  `5BAWAG...abcd` |  `5BAWAG...efgh` | `4B##` | `-E##` | `YTSP-ABA` |  `5BAWAG...ijkl` | `5BAWAG...mnop` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `5BAWAG...rstu` | `-J##` |  `5BAWAG...abcd` |  `5BAWAG...efgh` | `4B##` | `-E##` | `YTSP_ABA` |  `5BAWAG...ijkl` | `5BAWAG...mnop` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 #### ESSR Wrapper with encrypted payload in closed mode
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `YTSP-AAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
+| `-E##` | `YTSP_AAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR in closed Mode
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
-| `-Z##` | `XHOP` | `EAbce...`  | `-J##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YTSP-ABA` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
+| `-Z##` | `XHOP` | `EAbce...`  | `-J##` |  `EAzei...` |  `ECkel....` | `4B##` | `-E##` | `YTSP_ABA` |  `EBcde...` | `EBkms..` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
 
 ## Determining if the payload field value is a ciphertext CESR primitive or a plaintext CESR group
