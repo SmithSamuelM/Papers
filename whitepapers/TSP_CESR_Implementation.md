@@ -340,9 +340,9 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 | `-Z##` | `XRFI` | `5BAWAG...klmn`  | `EBa...`  | `Abcd...` | `5BAWAG...wxyz`  | `-K##` | `AAEaz4...` |  `4B##`|
 
 #### Relationship Formation Acceptance (RFA) Payload in Open Mode
-| TSP Payload Group |   Payload Type   |  Source VID | RFA SAID  |  Salty Nonce | RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad |
-|:--------:|:--------:|:-------|:-------|:------|:-------|:-----------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` |  `5BAWAG...rstu`  |  `EAz...`  | `Aevg...` |  `EBa...`  | `5BAWAG...mnop`   | `-K##` | `AAEbw3...` |  `4B##` |
+| TSP Payload Group |   Payload Type   |  Source VID | RFA SAID  | RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad |
+|:--------:|:--------:|:-------|:-------|:------|:-----------------|:---------|:---------|:------------|
+| `-Z##` | `XRFA` |  `5BAWAG...rstu`  |  `EAz...`  |  `EBa...`  | `5BAWAG...mnop`   | `-K##` | `AAEbw3...` |  `4B##` |
 
 #### Relationship Formation Decline (RFD) Payload in Open Mode
 | TSP Payload Group |   Payload Type   | Source VID | RF IID  | Pad |
@@ -356,9 +356,9 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 
 
 #### Relationship Formation Acceptance (RFA) Payload in Closed Mode
-| TSP Payload Group |   Payload Type   | Source VID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad|
-|:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDab_new_aVID`  | `-K##` | `AAEbw3...` |  `4B##` |
+| TSP Payload Group |   Payload Type   | Source VID | RFA SAID  |  RFI SAID (RF IID)  | New Rel aVID   | Idx Sig Group | Signature aVID | Pad|
+|:--------:|:--------:|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
+| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `EBa...`  | `EDab_new_aVID`  | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 ### Relationship Formation Decline (RFD) Payload in Closed Mode

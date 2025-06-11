@@ -1446,9 +1446,9 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 
 
 #### Relationship Formation Acceptance (RFA) Payload
-| SPAC Payload Group |   Payload Type   | Source AID | RFA SAID  | Salty Nonce |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
-|:--------:|:--------:|:-------|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
-| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `Aklmj...` | `EBa...`  | `EDabc...`  | `-K##` | `AAEbw3...` |  `4B##` |
+| SPAC Payload Group |   Payload Type   | Source AID | RFA SAID  |  RFI SAID (RF IID)  | New Rel aAID   | Idx Sig Group | Signature aAID | Pad|
+|:--------:|:--------:|:-------|:-------|:-------|:-------------------|:---------|:---------|:------------|
+| `-Z##` | `XRFA` | `EBcde...` | `ECh....` | `EBa...`  | `EDabc...`  | `-K##` | `AAEbw3...` |  `4B##` |
 
 
 ### Relationship Formation Decline (RFD) Payload
