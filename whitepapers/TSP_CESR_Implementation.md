@@ -94,32 +94,32 @@ All wrappers start with a CESR count code. This makes it sniffable in a stream.
 All wrappers start with a CESR count code. This makes it sniffable in a stream. 
 The count code must be one of the two count codes for ESSR type packets. These are `-E##` for small ESSR packets or `--E#####` for big ESSR packets. The count value counts the wrapped quadlets/triplets up to but not including the attached attachment group with signatures. To clarify, the count value includes the wrapped payload, including any recursively nested ESSR wrappers with their attachment groups, but not the top-level attachment group.
 
-The next field is the protocol type and version field. This provides the protocol type, the protocol version, and the CESR genus table version. The latter enables the message to the CESR genus table version used by any CESR codes in the message.
-
+The next field is the protocol type and version field. This provides the protocol type, and the protocol version. 
 The protocol type uses four characters and must be `TSP_` for a normative TSP protocol. Changing the protocol type to anything but `TSP_` enables staging and testing and experimentation with non-normative variants of the TSP protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the TSP protocol.
 
 The protocol version uses three Base64 characters. The first one provide the major version. The second two provide the minor version. For example, `AAB` represents a major version of `0` and a minor version of `01`. In dotted notation this would be `0.01`.  This provides for a total of 64 major versions and 4096 minor versions for each major version. 
 
-The CESR genus version uses three Base64 characters. The first one provides the major version. The second two provide the minor version. For example, `AAB` represents a major version of `0` and a minor version of `01`. In dotted notation, this would be `0.01`.  This provides for a total of 64 major versions and 4096 minor versions for each major version. 
+The CESR Genus table version is implied. This forces the TSP minor version to always increment whenever the CESR Genus minor version increments.
 
-The encoded protocol type, protocol version, and genus version consume 10 Base64 characters. The CESR primitive code for such a 10-character primitive is `0O`.  
-An example TSP protocol type/protocolversion/genusversion field value for protocol version 0.1 and genus version 2.0  is as follows:
+The encoded  protocol type and protocol version consume 7 Base64 characters. CESR primitive code for such a 7 character primitive is `Y`.  
+An example TSP protocol type/protocolversion field value for protocol version 0.1   is as follows:
 
-`0OTSP_AABCAA`
+`YTSP_AAB`
 
+Examples of the head section of a TSP wrapper are as follows:
 Examples of the head section of a TSP wrapper are as follows:
 
 #### Example TSP Head in Open Mode
 
 | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
 |:--------:|:-------:|:------------|:------------|
-| `-E##` | `0OTSP_AABCAA` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
+| `-E##` | `YTSP_AAB` |`5BAWAG...klmn` | `5BAWAG...p3ZW` | 
 
 #### Example TSP Head in Closed Mode
 
 | TSP ESSR Wrapper | Protocol+Version  | Src VID |  Dst VID  |
 |:--------:|:-------:|:------------|:------------|
-| `-E##` | `0OTSP_AABCAA` | `EAAABBB...` |  `EAAADDD...` |
+| `-E##` | `YTSP_AAB` | `EAAABBB...` |  `EAAADDD...` |
 
 
 ### Body
@@ -435,7 +435,7 @@ With TSP Protocol+Version
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `0OTSP_AABCAA` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
+| `-E##` | `YTSP_AAB` | `5BAWAG...rstu` |  `5BAWAG...xyzw` | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 
 #### Hop Payload with tunneled ESSR in Open Mode
@@ -447,7 +447,7 @@ With TSP Protocol+Version
 
 | TSP ESSR Wrapper | Protocl+Version  |  Src VID  |  Dst VID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `0OTSP_AABCAA` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
+| `-E##` | `YTSP_AAB` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR in closed Mode
 | TSP Payload Group |   Payload Type   |  Src VID | Hop List Group |  Hop VID  |   Hop VID   | Pad | TSP ESSR Wrapper | Version  | Src VID | Dst VID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
