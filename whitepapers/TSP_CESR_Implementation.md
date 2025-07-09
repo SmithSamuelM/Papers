@@ -283,6 +283,38 @@ The following is an example of HOP payload with two hops and an embedded ESSR me
 |:--------:|:--------:|:-------|:------:|:---------:|:--------|:---------|:-----:|:-----:|:-------|:-------|:------------|:--------:|:-------:|:-----------|
 | `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` | `-E##` | `YTSP_ABA` |  `EBabc...` | `EAzmk...` | `4C##CefH...`  | `-C##` | `-K##` | `AAEbw3...` |
 
+### Hop Payload Encrypted to Final Destination (Proposed Variant for Discussion)
+
+In the normal hop message protocol, the final message (i.e. message to the final destination) is formed by the last intermediary whose VID is the last hop. This last intermediary has a private table that maps the last hop VID to the final destination VID. It forms the final message by creating an ESSR message of payload type `CTL` or `SCS` that is  sourced from the last hop VID to a final destination VID that is looked up from its table.  Embedded in the payload of the final message is the embedded message from the original `HOP` payload.  
+
+A different variant of this approach would be to encrypt the embedded HOP payload to the final destination VID.  For this to work, the original source would need to know the final destination VID not just the final intermediary VID. This knowledge is not required in the normal approach.
+
+The disadvantage of this variant is that it requires the source and destination to trust each other enough to disclose their final destination VIDs. The advantage of this variant is that the source and destination VIDs of the embedded message are not exposed to any of the intermediaries. So, it is a trade-off in terms of trust.  Between whom does one trust more?  The normal protocol assumes that the local intermediary can be trusted with knowledge of the final hop. Recall that the TSP protocol itself mitigates the exposure of the embedded payload VIDs by enabling a further nesting of relationships, i.e., the three-layer nesting, so that all that is correlatable is a transit relationship used in the embedded payload VIDs.  The observability of transit relationship VIDs by intermediaries in the hop payload can be further mitigated by using ephemeral VIDs generated from a verifiable random process, similar to a hierarchically deterministic key generation algorithm. Notwithstanding the foregoing, one case where encrypting to the final destination could be advantageous would be when the same party wishes to communicate between distributed infrastructure under that party's own control, but using less-trusted intermediaries.
+
+
+##### Example Open Mode
+
+Let the final destination VID in open mode be given by the CESR encoding `5BAWAG...stuv` 
+
+| TSP Payload Group |   Payload Type   |  Src VID | Hop List Group | Hop VID 0 | Hop VID 1 | Pad | Encrypted Embedded ESSR| 
+|:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----|
+| `-Z##` | `XHOP` | `5BAWAG...klmn` | `-J##` | `5BAWAG...zxyw`  | `5BAWAG...efgh`  | `4B##` |  `4C##ABCD...` |
+
+The embedded encrypted ESSR message is encrypted to the final destination `5BAWAG...stuv`.  This means that the original source VID would need to know the final destination VID.
+
+
+#### Example Closed Mode
+
+Let the final destination VID in closed mode be given by the CESR encoding `EFabc...
+
+| TSP Payload Group |   Payload Type   |  Src VID | Hop List Group | Hop VID 0 | Hop VID 1 | Pad | Encrypted Embedded ESSR| 
+|:--------:|:--------:|:-------|:------:|:------------|:----------|:--------|:-----|
+| `-Z##` | `XHOP` | `EChij...` | `-J##` |  `EDxyz...` |  `ECkel....` | `4B##` |  `4C##ABCD...`|
+
+The embedded encrypted ESSR message is encrypted to the final destination  `EFabc....  This means that the original source VID would need to know the final destination VID.
+
+
+
 
 ### Relationship Formation (Sub) Protocol
 
