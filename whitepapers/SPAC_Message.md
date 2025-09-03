@@ -2,7 +2,7 @@
 
 The Best Privacy Possible Given the Strongest Authenticity and Confidentiality
 
-Version 0.5.2 (Original draft 2023/03/25)
+Version 0.5.3 (Original draft 2023/03/25)
 
 Copyright 2023, 2024, 2025 Samuel M. Smith
 
@@ -1211,9 +1211,10 @@ The Head includes all the information that indicates that it is a SPAC wrapper. 
 All wrappers start with a CESR count code. This makes it sniffable in a stream. 
 The count code must be one of the two count codes for ESSR-type packets. These are `-E##` for small ESSR packets or `--E#####` for big ESSR packets. The count value counts the wrapped quadlets/triplets up to but not including the attached attachment group with signatures. To clarify, the count value includes the wrapped payload, including any recursively nested ESSR wrappers with their attachment groups, but not the top-level attachment group.
 
-The next field is the protocol type and version field. This provides the protocol type, the protocol version, and the CESR genus table version. The latter enables the message to the CESR genus table version used by any CESR codes in the message.
+##### Version Field
+The first field inside the counted group is the protocol type and version field. This provides the protocol type, the protocol version, and the CESR genus table version. The latter enables the message to the CESR genus table version used by any CESR codes in the message.
 
-The protocol type uses four characters and must be `TSP_` for a normative TSP protocol. Changing the protocol type to anything but `TSP_` enables staging and testing and experimentation with non-normative variants of the TSP protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the TSP protocol.
+The protocol type uses four characters and must be `SPAC` for a normative SPAC protocol. Changing the protocol type to anything but `SPAC` enables staging and testing and experimentation with non-normative variants of the SPAC protocol that use the same ESSR wrapper structure but may have different payload types. It also provides future proofing for the development of future features to the SPAC protocol.
 
 The protocol version uses three Base64 characters. The first one provide the major version. The second two provide the minor version. For example, `AAB` represents a major version of `0` and a minor version of `01`. In dotted notation, this would be `0.01`.  This provides for a total of 64 major versions and 4096 minor versions for each major version. 
 
@@ -1222,7 +1223,7 @@ The CESR genus version uses three Base64 characters. The first one provide the m
 The encoded protocol type, protocol version, and genus version consume 10 Base64 characters. The CESR primitive code for such a 10-character primitive is `0O`.  
 An example TSP protocol type/protocolversion/genusversion field value for protocol version 0.1 and genus version 2.0  is as follows:
 
-`0OTSP_AABCAA`
+`0OSPACAABCAA`
 
 
 Examples of the head section of a SPAC wrapper are as follows:
@@ -1231,7 +1232,7 @@ Examples of the head section of a SPAC wrapper are as follows:
 
 | SPAC ESSR Wrapper | Protocol+Version  | Src AID |  Dst AID  |
 |:--------:|:-------:|:------------|:------------|
-| `-E##` | `YSPACAAB` | `EAAABBB...` |  `EAAADDD...` |
+| `-E##` | `0OSPACAABCAA` | `EAAABBB...` |  `EAAADDD...` |
 
 
 ### Body
@@ -1528,7 +1529,7 @@ The Tail part of each ESSR wrapper consists of the attached signature(s) for the
 
 | SPAC ESSR Wrapper | Protocl+Version  |  Src AID  |  Dst AID  |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
 |:---------------:|:-------:|:-------|:------|:----------|:----------:|:---------:|:----------|
-| `-E##` | `0OTSP_AABCAA` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
+| `-E##` | `0OSPACAABCAA` | `EAbce...` |  `EDefg...`  | `4C##BacD...` | `-C##` | `-K##` | `AACZ0j...` |
 
 #### Hop Payload with tunneled ESSR
 | SPAC Payload Group |   Payload Type   |  Src AID | Hop List Group |  Hop AID  |   Hop AID   | Pad | SPAC ESSR Wrapper | Version  | Src AID | Dst AID   |  Ciphertext Payload  | Attachment Group | Idx Sig Group | Signature |
