@@ -1,6 +1,6 @@
 # ACDC with Static Age Predicate Proof SMT
 
-Version 1.5  2025/10/28
+Version 1.6  2025/10/28
 
 ## Motivation
 
@@ -61,7 +61,7 @@ Moreover, because a given branch in a hash tree may be constructed in different 
 
 The final leaf node digest is computed over the concatenation of the date-predicate string, the blinding factor, and the node index for the particular SMT algorithm. In simple form for the example predicate `>=13` the digested value is given by:
 
-`H[20381020>=13, blind, level]'. 
+`H[20381020>=13, blind, index]`. 
 
 The digest of this value is the leaf node digest (key). This is added to the SMT. To fully populate the SMT for this predicate, a leaf node predicate value is computed for every date that satisfies the predicate.
 
