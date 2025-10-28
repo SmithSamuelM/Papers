@@ -1,5 +1,7 @@
 # ACDC with Static Age Predicate Proof SMT
 
+Version 1.3  2025/10/28
+
 ## Motivation
 
 The primary problem is to select an ACDC-compatible mechanism that provides proof of age without disclosing the actual birthdate or leaking information that can be correlated to infer it. The primary technical difficulty is that a given individual's age changes over time. Therefore, a static a priori issuance of a given proof of age could become invalid as the individual's age changes. 
