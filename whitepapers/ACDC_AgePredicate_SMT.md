@@ -1,6 +1,6 @@
 # ACDC with Static Age Predicate Proof SMT
 
-Version 1.4  2025/10/28
+Version 1.5  2025/10/28
 
 ## Motivation
 
@@ -26,7 +26,7 @@ In either approach—dynamic ZKP predicate or static SMT predicate—the storage
 
 ## Optimized Compact Sparse Merkle Trees
 
-A sparse Merkle tree (SMT) is a special type of binary tree that can be used as a verifiable map or key-value store. This is called a verifiable map. Each leaf node provides a key. The key is computed as the cryptographic digest (hash) of the data value stored at or referenced by that leaf node. Each non-leaf node value is the optimized digest hash of the node digests attached to it. The root node of the tree is called the root digest or Merkle root. Because each node in the tree is a cryptographic digest of its attached branches, the tree is tamper-evident. Any change to any branch or leaf at the end of any branch changes the digest values of the nodes on that branch and hence the root digest of the whole tree. 
+A sparse Merkle tree (SMT) is a special type of binary tree that can be used as a verifiable key-value store called a verifiable map.  Each leaf node provides a key. The key is computed as the cryptographic digest (hash) of the data value stored at or referenced by that leaf node. Each non-leaf node value is the optimized digest hash of the node digests attached to it. The root node of the tree is called the root digest or Merkle root. Because each node in the tree is a cryptographic digest of its attached branches, the tree is tamper-evident. Any change to any branch or leaf at the end of any branch changes the digest values of the nodes on that branch and hence the root digest of the whole tree. 
 
 A useful feature of an SMT is that one can provide a proof-of-inclusion of a given leaf in that SMT without disclosing all the leaves in the SMT. Indeed, a proof of inclusion only requires disclosing the nodes along the branch to that leaf.  The number of nodes on a branch of a binary tree is proportional to logN, where N is the number of leaves in the tree. Computing the hashes along the disclosed branch enables verification that the SMT MUST include the leaf. Optimized compact sparse Merkle trees have the property that the number of operations for inclusion proofs, exclusion proofs, leaf additions, and leaf subtractions is all proportional to logN. This makes them very performant even for very large N. 
 
