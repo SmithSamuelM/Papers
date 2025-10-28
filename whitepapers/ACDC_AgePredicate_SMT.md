@@ -1,6 +1,6 @@
 # ACDC with Static Age Predicate Proof SMT
 
-Version 1.3  2025/10/28
+Version 1.4  2025/10/28
 
 ## Motivation
 
@@ -97,7 +97,7 @@ The worst-case predicate has 100 * 365 = 36,500 leaves, for a worst-case size of
 
 Let's go even further, suppose we want two predicates, `<` and `>=`, for every age from 1 to 100, for a total of 200 predicates. This would allow proof of any age range, providing essentially the same flexibility as a dynamic ZKP predicate range proof for any daily resolution of a yearly age. The minimum number of years of leaf node predicates of 365 predicates per year is 1 year of leaf nodes, and the maximum is 100 years of leaf nodes. Therefore, the average number of years of leaf nodes per predicate is 50 for an equivalent total of 50 years of leaf nodes per `<` predicate + 50 years of leaf nodes per `<=` predicate. The size of this SMT can be calculated as about 200 predicates * 50 years of leaf nodes per predicate * 365 daily predicate leaf nodes per year * 2 nodes per leaf * 32 bytes = 233,600,000 bytes = 233.6 MB = 222.78 MiB. This is equivalent to a single five-minute MPEG video. This is a worst-case. 
 
-The total number of leaves in this SMT is about N = 2 * 200 * 50 * 365 = 7,300,000. The number of operations required to provide a single predicate proof is O(log N) = log2(7,300,000) ≈ 23. A range proof requires two predicate proofs for a total of 46 hashing operations. This is a tiny fraction of the computing power required to generate a ZKP circuit for a predicate range proof. So SMT proofs will be really, really fast compared to ZKP proofs. A time to generate a given ZKP predicate proof is usually estimated at around 1 second. Multiple ZKP proofs would become annoyingly long, whereas a storage requirement of 200 MB is unlikely to be problematic for late-model mobile devices that have at least 128 GB of storage and usually 256 GB or more. For example, 233 MB is less than 1/100 of a percent of the storage on a 256 GB mobile phone (233 MB / 256 GB = 0.00091).
+The total number of leaves in this SMT is about N = 2 * 200 * 50 * 365 = 7,300,000. The number of operations required to provide a single predicate proof is O(log N) = log2(7,300,000) ≈ 23. A range proof requires two predicate proofs for a total of 46 hashing operations. This is a tiny fraction of the computing power required to generate a ZKP circuit for a predicate range proof. So SMT proofs will be really, really fast compared to ZKP proofs. A time to generate a given ZKP predicate proof is usually estimated at around 1 second. Multiple ZKP proofs would become annoyingly long, whereas a storage requirement of 200 MB is unlikely to be problematic for late-model mobile devices that have at least 128 GB of storage and usually 256 GB or more. For example, 233 MB is less than 1/10 of a percent of the storage on a 256 GB mobile phone (233 MB / 256 GB = 0.00091).
 
 
 ## Usage
