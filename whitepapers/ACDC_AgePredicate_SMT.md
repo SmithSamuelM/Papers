@@ -1,6 +1,6 @@
 # ACDC with Static Age Predicate Proof SMT
 
-Version 1.6  2025/10/28
+Version 1.7  2025/11/07
 
 ## Motivation
 
