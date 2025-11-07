@@ -56,14 +56,17 @@ A predicate value is created by concatenating the predicate consisting of the pr
 In addition to the date predicate values created above, each leaf may benefit from a blinding factor. The blinding factor protects leaf values against a 3rd-party rainbow-table attack in which the attacker queries the SMT for inclusion proofs of a sequence of leaf predicates that enable it to walk back to the earliest true predicate and thereby deduce the birthdate. With a blinding factor, however, only 2nd parties to a disclosure can construct a valid query of the SMT. The blinding factor is typically a salty nonce. To elaborate, the blinding factor is only disclosed to the Disclosee (Verifier) at the time of disclosure by the Issuee (Holder) of a given proof-of-age presentation. This enables only the Disclosee (Verifier) of a given presentation to construct a valid leaf-node inclusion proof query for the SMT, not any 3rd party. Without access to the blinding factor, it becomes computationally infeasible for a third party to infer valid age predicate values by repeatedly querying the tree.
 
 To create the blinding factor, the Issuer and Issuee exchange a shared secret salt at the time of issuance. Each leaf's blinding factor is then generated using a hierarchical-deterministic algorithm that hashes the salt concatenated with the date-predicate string. 
+
+
+`blind = H[salt, '20381020>=13']`
  
 Moreover, because a given branch in a hash tree may be constructed in different ways but have the same hash at the top of the branch, other values, such as a node's level in the tree (branch), must be included in the digested value for each node. We call the set of these bookkeeping values simply the node index. A node index is SMT algorithm-specific.
 
-The final leaf node digest is computed over the concatenation of the date-predicate string, the blinding factor, and the node index for the particular SMT algorithm. In simple form for the example predicate `>=13` the digested value is given by:
+The final leaf node digest is computed over the concatenation of the date-predicate string, the blinding factor, and the node index for the particular SMT algorithm. In simple form for the example predicate `>=13` the leaf digest  is given by:
 
-`H[20381020>=13, blind, index]`. 
+`leaf = H['20381020>=13', blind, level]`
 
-The digest of this value is the leaf node digest (key). This is added to the SMT. To fully populate the SMT for this predicate, a leaf node predicate value is computed for every date that satisfies the predicate.
+This is the leaf node digest (key). This is added to the SMT. To fully populate the SMT for this predicate, a leaf node predicate value is computed for every date that satisfies the predicate.
 
 In general, predicates that are `>` or `>=` an age require a leaf for every date where the predicate is true up to the maximum age of 100, and predicates that are `<` or `<=` require a leaf for every date where the predicate is true down to the date of issuance.
 
