@@ -1,12 +1,5 @@
----
-tags: KERI
-email: sam@samuelsmith.org
-comment: Local Copy
----
-
-
 # Keri Request Authentication Mechanism  (KRAM)
-
+v0.1.5
 
 Originally I solved this decentralized end-to-end non-interactive authorization problem as part of a proof-of-concept for a privacy preserving lost and find registry and peer-to-peer messaging service. This proof-of-concept was implemented in python in an open source Apache2 project called Indigo-BluePea which may be found here. [Indigo BluePea](https://github.com/reputage/bluepea)  
 
