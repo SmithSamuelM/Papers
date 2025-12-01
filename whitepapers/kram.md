@@ -1,5 +1,5 @@
 # Keri Request Authentication Mechanism  (KRAM)
-v0.1.5
+v0.1.6
 
 Originally I solved this decentralized end-to-end non-interactive authorization problem as part of a proof-of-concept for a privacy preserving lost and find registry and peer-to-peer messaging service. This proof-of-concept was implemented in python in an open source Apache2 project called Indigo-BluePea which may be found here. [Indigo BluePea](https://github.com/reputage/bluepea)  
 
@@ -176,6 +176,39 @@ This is the current supported approach. This allows escrow of the embedded paylo
 
 #### Two-Level Simple KRAM with pre-protocol
 A variant of the two-level method with simple KRAM is to use a pre-protocol to collect the signatures on the embedded payload so that a designated member can send a single-sig signed wrapped with multi-sig signed payload all at once. This is the motivation for the above-referenced HAMI issue. This approach avoids having to deal with the escrow timeout while collecting signatures. The HAMI protocol uses a different mechanism for collecting signatures asynchronously given very loose coordination time frames.
+
+### Time Windows
+We should avoid transaction-specific windows but use transaction typed windows. Transaction specific windows have the potential for an attack.  If some transactions of a given type need longer or shorter KRAM cache windows with respect to other transactions of the same type, then we want to add a modifier to transaction types, that is, the window type.  This way, any transaction of a given window class gets the same window size.
+
+So we would have two tables. A lagging window size table. Indexed hierarchically as follows.
+For the non transactioned message types (qry, rpy, pro, bar) we have:
+KEY = MessageType.WindowType and VALUE = window size
+For the transactioned message type, (exn) we have:
+KEY = MessageType.TransactionType.WindowType  and VALUE = window size
+
+The corresponding replay caches have the following structure:
+For non-transactioned message types
+
+KEY = SourceAID.MessageType.WindowType.MessageID and VALUE=Timestamp
+
+For transactioned message types
+
+KEY = SourceAID.MessageType.TransactionType.WindowType.TRansactionID.MessageID and VALUE = timestamp 
+
+The TransactionID and MessageID are SAIDs (ie hashes) Each message has a SAID, `d` field  and each exchange message has a prior message SAID, `p` field.   Which means the SAID of the first message in a multi-message exchange transaction can be used as the TransactionID.  
+
+Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. Why not then use universally unique transaction IDs for replay attack protection?  Unfortunately, we still need a timestamp to know when we can prune any given transaction. Otherwise, we must store all transactions forever in order to prevent replay attacks. The timestamp orders transactions monotonically so that we create the property of "stale" transactions that can both be pruned and not replayed.
+
+In KERI v2, we have a `xip` transaction inception message that normatively defines the first message in a given transaction. The exchange `exn` message then populates its `x` field with this transaction ID. But in v1 we just have to book keep which exchange message was first and verify the other messages by walking the prior hash links back to the first.
+
+The reason we want window durations to be classified is that when durations are per transaction, not a class of transactions, then when a given transaction is not in the cache, we don't know what default window to apply to decide if we can create a new cache value.  If we apply a default that is longer than the one the transaction itself uses, then when we prune it, we have a gap where the replay is possible.   
+
+So we want to unambiguously classify every message as belonging to a window duration class.  If we can assume that all messages of a given type have the same duration, then the message type is synonymous with the window type. Likewise, if all transactions of a given type have the same window duration, then the transaction type is synonymous with the window type. 
+
+However when they are not synonymous, then we need a way to explicitly unambiguously associate a given message with a window size from information in the packet itself.  One way to do this would be to use the route, `r` field, or a field in the route modifier `q` block when we can't simply use either the message type or the combination of message type and transaction id to determine the window size.
+
+Typically we would use the route `r` field for the transaction type. So we would either extend the route path to have a window type differentiator or better use a field in the route modifier `q` block to provide that differentiator.
+
 
 #### Summary
 Any of the policies works with full KRAM, be it single-level with escrow or two-level policy with single attached signatures and embedded payload signature or with a threshold and pre-protocol to collect signatures. Moreover, with granular full KRAM each transaction type could employ a different acceptance policy.
