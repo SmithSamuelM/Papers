@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.2.1
+v0.2.2
 
 
 ## Forward
@@ -110,7 +110,8 @@ Both sides keep a timeliness cache of EXNs from the other party to protect from 
 
 Given that routes in the EXNs define an interactive protocol, i.e., a transaction of a given type. Then, the timed cache can be per transaction type per Peer, not just per Peer.  The timeout on the timed cache can then be of any size bounded only by the cache's memory across all simultaneous live transactions of a given type for all peers.
 
-Because each EXN includes the SAID of the prior EXN in the transaction, and the first EXN message in the transaction has a datetime stamp,  it is not vulnerable to First Play attack.
+Because each EXN includes the SAID of the prior EXN in the transaction, and the first EXN message in the transaction has a datetime stamp,  it is not vulnerable to a First-Play attack. In KERI v2, their is a XIP (exchange inception event) that provides a specific transaction ID for all later EXNs that use it as prior or are in a chain of EXNs that root in the XIP message. This makes it even easier to determine which messages belong to a given transaction.
+
 
 The transaction itself is ordered and self-synchronizing.
 
