@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.3.1
+v0.3.2
 
 
 ## Forward
@@ -220,12 +220,14 @@ Recall, that in a b tree, essentially anything in the key is also retreivable as
 So we can store the window size tuple as either part of the key space for a chache or part of the cache value.
 This is a design choice.  The constraint is that the total key space is limited to 511 bytes (including the sub db name)
 
-So we would have two tables. A window-size table. Indexed hierarchically as follows.
-Default window size undifferentiated at the lexocographic first entry (maybe a key of `_`).
-Then differentiated window sizes, if any, for all the message types `(qry, rpy, pro, bar, xip, exn)`.  
+So we would have two tables. A window-size table and a cache table. Each table is indexed hierarchically.
+
+
+The window size table has a default window size that is undifferentiated as the lexocographic first entry (maybe a key of `_`).
+The window size table may include differentiated window sizes, if any, for all the message types `(qry, rpy, pro, bar, xip, exn)`.  
 Note `xip` and `exn` belong to the same class of messages.
 
-If a differentiated window size is not in the database, then the undifferentiated default size is used. If a more specific differented window size is not in the database but a less specific but still differentiated window size is in the database then use the most specific window size available that matches the message vecotor.
+If a differentiated window size is not in the database, then the undifferentiated default size is used. If a more specific differentiated window size is not in the database, but a less specific but still differentiated window size is in the database, then use the most specific window size available that matches the message vector.
 
 There are multiple types of caches:
 For the nontransactional message types, namely `(qry, rpy, pro, bar)`, there are two types of caches. One is per message type, and the other per message type and per message ID. The message ID is the SAID. 
@@ -245,7 +247,7 @@ An example window size entry would be as follows:
 KEY = `MessageType` and VALUE = window size, where the MessageType is replaced with one of the message types:
  `(qry, rpy, pro, bar, xip, exn)`.
 For a message type of `qry`, the actual window size key would be `qry`.
-The key for the corresponding cache table entry would be `qry`.
+The key for the corresponding cache table entry would be `qry.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux` where the second element is the message id. All cache entries include the message ID (SAID) so that the message itself can be looked up from the received message database.
 
 Each message type can be further differentiated with a message ID.
 An example window size entry would be as follows:
@@ -261,9 +263,9 @@ An example window size entry would be as follows:
 KEY = `MessageType.TID`  and VALUE = window size, where the MessageType is replaced with one of the message types:
 `(xip, exn)`.
 For a message type of `xip`, the actual window size key would be `xip.TID`.
-The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ`.
+The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i` where the last element is the message ID.
 For a message type of `exn`, the actual window size key would be `xip.TID`.
-The key for the corresponding cache table entry could be `xip.T.ED77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBV`.
+The key for the corresponding cache table entry could be `xip.T.ED77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBV.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s` where the last element is the message ID.
 
 
 For the transactioned message type (`xip` or `exn`), we can also differentiate by both the transaction ID and message ID.
