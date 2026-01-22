@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.2.2
+v0.3.0
 
 
 ## Forward
@@ -15,14 +15,14 @@ Originally, I solved this decentralized, end-to-end, non-interactive authorizati
 
 ## Interactive vs. Non-interactive Authentication Design
 
-Authentication mechanism broadly may be grouped into two different approaches, these are: interactive and non-interactive approaches. An interactive mechanism requires a set of requests and reponses or challenge responses with challenge response replies for secure authentication. Non-interactive approaches on the other hand pose unique problems because they do not allow a challenge response reply handshake. A request is submitted that is self-authenticating without additional interaction.  The main benefits of non-interactive authentication are scalabilty and path independent end-to-end verifiability. These benefits become more important in decentralized applications that employ zero-trust architectures. (By zero-trust we mean never trust always verify, this means every request is independently authenticated, there are no trusted pre-authenticated communication channels.)
+Authentication mechanisms may be broadly grouped into two approaches: interactive and non-interactive. An interactive mechanism requires a set of requests and responses or challenge responses with challenge response replies for secure authentication. Non-interactive approaches, on the other hand, pose unique problems because they do not allow a challenge-response reply handshake. A self-authenticating request is submitted without additional interaction.  The main benefits of non-interactive authentication are scalability and path-independent end-to-end verifiability. These benefits become more important in decentralized applications that employ zero-trust architectures. (By zero-trust, we mean never trust, always verify. This means every request is independently authenticated, and there are no trusted pre-authenticated communication channels.)
 
-For non-interactive authentication of some request for access, the most accessible core non-interactive mechanism is a non-repudiable digital signature of the request itself made with asymmetric key-pairs. The hard problem for asymmetric digital signatures is key management. The requester must manage private keys. Indeed this problem of requiring the user to manage cryptographic keys, at least historically, was deemed too hard for users which meant that only federated, token based, authentication mechanisms were acceptable. But given that it's now commonly accepted that users are able to manage private keys, which is a core assumption for KERI in general, then the remaining problem for non-interactive authentication using non-repudiable digital signatures is simply replay attack protection. Indeed with KERI the hardest problem of key management, that is, determining current key state given rotations is already solved. 
+For non-interactive authentication of a request for access, the most accessible core mechanism is a non-repudiable digital signature of the request itself, generated with asymmetric key pairs. The hard problem for asymmetric digital signatures is key management. The requester must manage private keys. Indeed, this problem of requiring the user to manage cryptographic keys, at least historically, was deemed too hard for users, which meant that only federated, token-based, authentication mechanisms were acceptable. But given that it's now commonly accepted that users are able to manage private keys, which is a core assumption for KERI in general, then the remaining problem for non-interactive authentication using non-repudiable digital signatures is simply replay attack protection. Indeed, with KERI, the hardest problem of key management, that is, determining the current key state given rotations, is already solved. 
 
-The closest authentication mechanism to what KERI enables is the FIDO2/WebAuthn standard [FIDO2/WebAuthn](https://developers.yubico.com/WebAuthn/WebAuthn_Developer_Guide/Overview.html). The major difference between FIDO2/WebAuthn and KERI is that there is no built-in automated verifiable key rotation mechanism in FID02/WebAuthn. FIDO2/WebAuthn consists of two ceremonies, a registration ceremony and then one or more authentication ceremonies. Upon creation of a key-pair, the user engages in a registration ceremony to register that key pair with a host. This usually involves some MFA procedure that associates the entity controlling the key pair with the public key from the host's perspective. Once registered then individual access may be obtained through an authentication ceremony that typically involves signing the access request with the registered private key.  Unfortunately FIDO2/WebAuthn has no in-stride verifiable key rotation mechanism. Should a user ever need to rotate keys, that user must start over with a new registration ceremony to register the new key pair for that user entity. Whereas with KERI rotation is happens automatically with a rotation event that is verified with the pre-rotated keys.
-So given one already has KERI verified key state, using FIDO2/WebAuthn to authentical replay requests would be going backwards.
+The closest authentication mechanism to what KERI enables is the FIDO2/WebAuthn standard [FIDO2/WebAuthn](https://developers.yubico.com/WebAuthn/WebAuthn_Developer_Guide/Overview.html). The major difference between FIDO2/WebAuthn and KERI is that there is no built-in automated verifiable key rotation mechanism in FID02/WebAuthn. FIDO2/WebAuthn consists of two ceremonies: a registration ceremony and one or more authentication ceremonies. Upon creation of a key-pair, the user engages in a registration ceremony to register that key pair with a host. This usually involves some MFA procedure that associates the entity controlling the key pair with the public key from the host's perspective. Once registered, individual access may be obtained through an authentication ceremony that typically involves signing the access request with the registered private key.  Unfortunately, FIDO2/WebAuthn has no in-stride verifiable key rotation mechanism. Should a user ever need to rotate keys, that user must start over with a new registration ceremony to register the new key pair for that user entity. Whereas with KERI, rotation happens automatically with a rotation event that is verified with the pre-rotated keys.
+So, given one already has a KERI verified key state, using FIDO2/WebAuthn to authenticate replay requests would be going backwards.
 
-Any access control or authorization mechanism based on KERI must still have some additional registration mechansim in order to link  or associate an actual entity as the controller of a given identifier. However, in this case where we are enabling access for the purpose of replaying key event logs, it may not be necessary to link to any external entity. We merely  need authenticate to the controller of the identifier regardless of the actual external entity. Thus authentication can be simply restricted to authenticating as the controller of the identifier via its current key state without requiring a separate registraion step to link to an external controlling entity. With this we can build a base level private authorization policy for a given identifier using a simple authentication mechanism based only on proof of control over the authorized identifier by signing a request or query with the current controlling key pairs of that identifier. This does not preclude an implementation from layering on additional authentication and authorization mechanisms such as external entity associated registration and MFA. But the minimal simple authentication mechanism proposed here is meant to enable this layering without requiring it. 
+Any access control or authorization mechanism based on KERI must still have some additional registration mechanism in order to link or associate an actual entity as the controller of a given identifier. However, in this case, where we are enabling access for the purpose of replaying key event logs, it may not be necessary to link to any external entity. We merely need to authenticate to the controller of the identifier regardless of the actual external entity. Thus, authentication can be simply restricted to authenticating as the controller of the identifier via its current key state without requiring a separate registration step to link to an external controlling entity. With this, we can build a base-level private authorization policy for a given identifier using a simple authentication mechanism based only on proof of control over the authorized identifier by signing a request or query with the current controlling key pairs of that identifier. This does not preclude an implementation from layering on additional authentication and authorization mechanisms, such as external entity associated registration and MFA. But the minimal simple authentication mechanism proposed here is meant to enable this layering without requiring it. 
 
 ## Replay Attack Protection in Non-interactive Authentication
 
@@ -30,7 +30,7 @@ A digital signature made with an assymmetric key pair(s) on a request provides n
 
 The problem is that an attacker may capture the signed request and then resubmit it or replay it from its own host, thereby effectively fooling the requestee into redirecting a copy of the response to the attacker's host in addition to or instead of the original requestor's host. In other words the attacker acts as an imposter. This requires that the attacker intercept the original request and then replay it from a different connection. This is called a replay attack. There are several mechanisms one can employ to protect against this form of replay attack. However the practical choices for non-interactive protection are limited. In general replay attack protection imposes some form of timeliness to any signed request and some form of uniqueness to any signed request.
 
-We are assuming that only the current keys from the current key state may be used for authentication. This requirement imposes one form of timeliness, in that any requests signed with stale keys are automatically invalid. The requestor can ensure that the requestee has its, (the requestor's) latest key state so that it is protected from replay attacks using old stale key signed requests.
+We are assuming that only the current keys from the current key state may be used for authentication. This requirement imposes one form of timeliness, in that any requests signed with stale keys are automatically invalid. The requester can ensure that the requestee has its (the requester's) latest key state so that it is protected from replay attacks using old, stale key-signed requests.
 
 The simplest and most practical non-interactive mechanism for ensuring timeliness and uniqueness is to insert a date-time stamp in the request body. This date time stamp is relative to the date time of the requestee not requestor. There are two protection mechanisms, one loose and one tight. In the loose mechanism the requestee imposes a time window with respect to its date time for any request. The time window is usually some small multiple of  network latency of the connection to the requestor. An imposter must intercept and resubmit the replay attack within that window in order to successfully redirect a response to itself. This is loose protection because the requestor is not guaranteed to be able to detect the attack. The requestee may respond to multiple copies of the same signed request but from different source addresses. In addition to timeliness a tight mechanism imposes a uniqueness constraint on the request timestamps. The requestee does this by keeping a cache of all requests from the same requestor identifier (not host address). All requests in the cache must have monotonically increasing timestamps. The requestee only responds once to any request with a given time stamp and any subsequent requests must have later timestamps. This means that a successful replay attack may be detected because the only way that the attacker gets a reply response is if redirects the one and only one response to that request first to itself before possibly forwarding it on to the requestor (if at all). This redirection is detectable because either the requestee does not get the response at all if it is not forwarded or it gets it via a later redirection from some host that is not the originating requestee. Given that the requestor detects the attack it may then take appropriate measures to avoid future interception of its traffic by the attacker.
 
@@ -155,7 +155,7 @@ This can largely relieve any latency or ephemerality problems with group multi-s
 
 #### Window Calculation
 
-Let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. 
+Let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. A time window is defined by the pair of values (d, l).
 
 Typical values for clock skew are around 10 milliseconds, with the worst case usually 100 milliseconds. If we have two network nodes with really bad network time clock skew, we could set `d` to be an integer multiple of the worst case clock skew of 100 milliseconds, like say 200 or 300 milliseconds. [NTP Clock Skew](https://www.sciencedirect.com/topics/computer-science/network-time-protocol#:~:text=However%2C%20path%20delay%20asymmetry%20is,its%20skew%20below%200.01%20ppm.)  
 
@@ -188,55 +188,105 @@ A given message sourced by a multi-sig AID must be verifiably signed by at least
 
 A new cache is created with the time stamp and message vector, where its time window is determined by the message type or transaction type. The message itself and its attached signatures are added to a partially signed escrow of messages.
 
-If the message is not the first message received for a given timestamp and message vector, but is the same as the cached one, then the message is accepted by full KRAM, and any attached and verified signatures are added to the partially signed escrow for that message. Later receipt of the same message ID, with different but verified member signatures, is not considered a replay attack. The signatures are added to the database in an idempotent manner i.e., if a signature already exists, nothing changes. As long as neither the lagging time window nor the escrow timeout expires while collecting a threshold-satisficing number of signatures, the message will be accepted and moved out of escrow.  When the message type or transaction type window for a given cache entry expires then no more messages can be accepted so the associated escrowed partially signed message if any must also be deleted (pruned).
+If the message is not the first message received for a given timestamp and message vector, but is the same as the cached one, then the message is accepted by full KRAM, and any attached and verified signatures are added to the partially signed escrow for that message. Later receipt of the same message ID, with different but verified member signatures, is not considered a replay attack. The signatures are added to the database in an idempotent manner i.e., if a signature already exists, nothing changes. As long as neither the lagging time window nor the escrow timeout expires while collecting a threshold-satisficing number of signatures, the message will be accepted and moved out of escrow.  When the message or transaction type-based window for a given cache entry expires, then no more messages can be accepted, so the associated escrowed partially signed message, if any, must also be deleted (pruned).
 
 In summary, the full KRAM with multisig support described above should enable both replay attack protection and collection of asynchronous multiple signatures for all non-key-event messages, namely, query, reply, prod, bare, and exchange.
 
 #### Prune Attack and Classified Windows
 
-One possible approach would be for transactioned messages associated with the same Transaction ID could include in the message a field that specifies the window size. This would allow a window size unique to each Transaction ID. However, this would expose the reciever to both a DDOS attack and a window prune replay attack. 
+One possible approach would be for transactioned messages associated with the same Transaction ID could include in the message a field that specifies the window size. This would allow a window size unique to each Transaction ID. However, this would expose the receiver to both a DDOS attack and a window-prune replay attack. 
 
-For example when the sender gets to decide the window size they can create arbitrariy long windows that are never pruned thus DDOSing the memory resources of the receiver. A way to mitigate this would be to always apply a default window size and use the smaller of either the transaction ID supplied window or the default. But then this could create a replay attack vulnerability when a given transaction is pruned when the default window happens to be longer than the transaction ID based message supplied window.  
+For example, when the sender gets to decide the window size, they can create arbitrarily long windows that are never pruned, thus DDoSing the memory resources of the receiver. A way to mitigate this would be to always apply a default window size and use the smaller of the supplied transaction ID window and the default. But then this could create a replay attack vulnerability when a given transaction is pruned, if the default window is longer than the transaction ID-based message-supplied window.  
 
-To clarify when window durations are per transaction ID, not a class of transactions, then when a given transaction of a given ID is not in the cache, either because we have yet to recieve it or because it has been pruned from the cache, then we apply a default window to protect from DDOS when  we need to create a new cache value.  If we apply a default that is longer than the one the transaction itself uses, then when we prune the transaction according to the transaction ID sized window, we will  have a gap where a replay of that transaction is possible.   
+To clarify, when window durations are per messag ID or transaction ID, not a class message or a class of transactions, then when a given messag/transaction of a given ID is not in the cache, either because it has not yet been recieved have or because it has been pruned from the cache, then to protect from DDOS attack, a default window needs to be applied to decide wether or not to accept the message and create a new cache value.  If we apply a default that is longer than the one the message/transaction itself uses, then when the cache is pruned according to the message/transaction ID-sized window, there will be a gap where a replay of that message/transaction is possible.   
 
-So we want to unambiguously classify every message as belonging to a window duration class.  If we can assume that all messages of a given type have the same duration, then the message type is synonymous with the window type. Likewise, if all transactions of a given type have the same window duration, then the transaction type is synonymous with the window type. 
+All messages need, therefore, to be unambiguously classified as belining to to a window duration class.  If we can assume that all messages/transactions of a given type have the same duration, then the message/transaction type is synonymous with the window type (class) and hence duration. 
 
 The way to classify messages of a given type that belong to a given transaction type is to use either the route, `r`  field value, or a field in the route modifier `q` block to determine the window class from which the window size is derived.
 
 #### Time windows and Caches
-A database with the window sizes for each window classes needs to be created. The key or index is a tuple of attributes that define the window class. This may be simply the message type, or for transactioned message types, it may be a tuple of message type, and transaction type.
+A database with the window sizes for each window duration class needs to be created. The key or index is a tuple of attributes that define the window class. This may be simply the message type, or for transactioned message types, it may be a tuple of message type, and transaction type. The value of each entry is the pair (d,l) which defines the window `[t-d-l, t+d]` where t is the current time as seen by the reciever.
 
-For each cache entry use a vector of attributes as the key. In keripy LMDB, we use a tuple to derive the key for a given database entry. So, as long as the tuples are well structured, you can mix and match in the same database. Some entries have more elements in their tuple than others. This just changes the B-tree location. The only place this complicates things is that the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do. We do it in other places.
+For each cache entry, use a vector of attributes as the key. In Keripy LMDB, a tuple is used to derive the key for a given database entry. LMDB is a b-tree that is hierarchically lexocographically stored. This means that as long as the tuples are well structured, different length message vector tuples can be used in the same database. In other words one can structure the branches of the b-tree to hold different length vectors in the same database. Some entries could have more elements in their tuple than others. This just changes the B-tree location. The only place this complicates things is that the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do.
 
-So for those cache entries that need custom window sizes you define a tuple that includes sufficient detail to differentiate them. Like source AID, message type, and for exns, then also transaction type, and then transaction ID. 
+Using the namespace of the b-tree to accomodate all possible vector lengths means that the window sizes can be configurable. One just needs to have a smart algorithm that walks the tree to determining the window size from the database for a given vector (tuple).
 
-Each cache type has a window size that is a member of a window size class. The index to the window size class can be the final element stored with the cache value or can be included in the key space as part of the cache index. 
+For those cache entries that need custom window sizes a tuple is defined for the exact vector. While for defaults of shorter vectors window size are also defined and the algorithm selects the longest (most specific vector) that matches the message and the database.  
 
-In a b tree, essentially anything in the key is also retreivable as a value. One can retrieve whole branches as a collection of values.
+Each cache  has a window size that is taken from the corresponding entry in the window size class database. Storing the actual window size pair (d, l) with the cache and not the index into the associated window size class enables the window size class tree to be dynamically updated at run time no merely config time. Thus an API could be defined that allows run time changes to the window size class database without breaking any in-service caches. New caches will pick up the latest appropriate window size while old caches will hold onto the window size at the time of their creation.
 
-To elaborate, if some transactions of a given type need longer or shorter KRAM cache windows with respect to other transactions of the same type, then we want to add a modifier to transaction types, that is, the window type.  This way, any transaction of a given window class gets the same window size.
+Recall, that in a b tree, essentially anything in the key is also retreivable as a value. One can retrieve whole branches as a collection of values.
 
-So we would have two tables. A lagging window size table. Indexed hierarchically as follows.
-For the non transactioned message types (qry, rpy, pro, bar) we have:
-KEY = MessageType.WindowType and VALUE = window size
-For the transactioned message type, (exn) we have:
-KEY = MessageType.TransactionType.WindowType  and VALUE = window size
+So we can store the window size tuple as either part of the key space for a chache or part of the cache value.
+This is a design choice.  The constraint is that the total key space is limited to 511 bytes (including the sub db name)
 
-The corresponding replay caches have the following structure:
-For non-transactioned message types
+So we would have two tables. A window-size table. Indexed hierarchically as follows.
+Default window size undifferentiated at the lexocographic first entry (maybe a key of `_`).
+Then differentiated window sizes, if any, for all the message types `(qry, rpy, pro, bar, xip, exn)`.  
+Note `xip` and `exn` belong to the same class of messages.
 
-KEY = SourceAID.MessageType.WindowType.MessageID and VALUE=Timestamp
+If a differentiated window size is not in the database, then the undifferentiated default size is used. If a more specific differented window size is not in the database but a less specific but still differentiated window size is in the database then use the most specific window size available that matches the message vecotor.
 
-For transactioned message types
+There are multiple types of caches:
+For the nontransactional message types, namely `(qry, rpy, pro, bar)`, there are two types of caches. One is per message type, and the other per message type and per message ID. The message ID is the SAID. 
+Let the two cache types be:
+`MessageType` and `MessageType`.
+The actual message type, such as `qry`, is substituted for MessageType while the symbol `MID`is used as is (no substitution).
 
-KEY = SourceAID.MessageType.TransactionType.WindowType.TRansactionID.MessageID and VALUE = timestamp 
+For the transactional message type, namely `xip or exn` ther are four types of caches. One is per message type, another is per message type and per message ID, another is per message type and per transaction ID (the SAID of the `xip` message), and the last is per message type, per transaction ID, and per message ID (SAID of the message itself). Each message has a SAID, `d` field and each `exn` message has a prior message SAID, `p` field.   Which means that the SAID of the first message in a multi-message exchange transaction can be used as the Transaction ID when that first message is an `exn` and not a `xip`.  These types can be represented as elements in the key space of the window-size database. `MessageType`, `MessageType.MID`, `MessageType.TID` and `MessageType.TID.MID`.
+The actual message type, such as `xip` or `exn`, is substituted for MessageType while the symbols `MID`, and `TID` are used as is (no substitution).
 
-The TransactionID and MessageID are SAIDs (ie hashes) Each message has a SAID, `d` field  and each exchange message has a prior message SAID, `p` field.   Which means the SAID of the first message in a multi-message exchange transaction can be used as the TransactionID.  
+To clarify, the last elements in the key space for window size will be taken from the cache types above. There can only be one cache type for a given message type. The cache type determines how many elements in the window vector need to be applied to determine a match.  
 
-Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. Why not then use universally unique transaction IDs for replay attack protection?  Unfortunately, we still need a timestamp to know when we can prune any given transaction. Otherwise, we must store all transactions forever in order to prevent replay attacks. The timestamp orders transactions monotonically so that we create the property of "stale" transactions that can both be pruned and not replayed.
+The corresponding cache table key space will have the number of elements associated with the cache type with actual values instead of symbols.  The window size table will use the symbols `MID` and `TID`. There is a potential ambiguity in the cache table database, however, because actual message IDs and transaction IDs are of the same length and the same type of primitive, a SAID. This ambiguity is resolved for the cache table key space by adding an additional symbol `T` as a preceding element whenever a transaction ID is used in the key space. This increases the number of key space elements by 1, resolving the ambiguity.  
 
-In KERI v2, we have a `xip` transaction inception message that normatively defines the first message in a given transaction. The exchange `exn` message then populates its `x` field with this transaction ID. But in v1 we just have to book keep which exchange message was first and verify the other messages by walking the prior hash links back to the first.
+For example, the simplest differentiation would be a Window CacheType that is per-message-type only. 
+An example window size entry would be as follows:
+KEY = `MessageType` and VALUE = window size, where the MessageType is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+For a message type of `qry`, the actual window size key would be `qry`.
+The key for the corresponding cache table entry would be `qry`.
+
+Each message type can be further differentiated with a message ID.
+An example window size entry would be as follows:
+KEY = `MessageType.MID` and VALUE = window size, where the where the MessageType is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+For a message type of `rpy`, the actual window size key would be `rpy.MID`.
+The key for the corresponding cache table entry could be `rpy.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
+For a message type of `xip`, the actual window size key would be `xip.MID`.
+The key for the corresponding cache table entry could be `xip.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
+
+For the transactioned message type (`xip` or `exn`), we can differentiate on the transaction ID.
+An example window size entry would be as follows:
+KEY = `MessageType.TID`  and VALUE = window size, where the MessageType is replaced with one of the message types:
+`(xip, exn)`.
+For a message type of `xip`, the actual window size key would be `xip.TID`.
+The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ`.
+For a message type of `exn`, the actual window size key would be `xip.TID`.
+The key for the corresponding cache table entry could be `xip.T.ED77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBV`.
+
+
+For the transactioned message type (`xip` or `exn`), we can also differentiate by both the transaction ID and message ID.
+An example window size entry would be as follows:
+KEY = `MessageType.TID.MID`  and VALUE = window size, where the MessageType is replaced with one of the message types:
+`(xip, exn)`.
+For a message type of `xip`, the actual window sizekey would be `xip.TID.MID`.
+The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
+For a message type of `exn`, the actual window sizekey would be `xip.TID.MID`.
+`xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
+
+
+For the cache table key examples provided above value of the cache table entry is the following tuple:
+(timestamp, d, l) where `timestamp` is the timestamp field in the received message, `d` is the window clock drift/skew and `l` is the window time lag. Recall that the window is computed as `[t-d-l, t+d]` where `t` is the current time of the receiver of the message (not the timestamp in the message). The `timestamp` in the message is then evaluated relative to the window.
+
+#### Unique Transaction IDs and Reply Attack Protection
+Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. 
+
+One might ask the question then, why not use universally unique transaction IDs themselves for replay attack protection?  Unfortunately, a timestamp is still needed in order to know when any given transaction can be pruned. Otherwise, all transactions must be stored forever in order to prevent replay attacks. The timestamp orders transactions monotonically, creating the property of "stale" transactions that can be pruned and not replayed by merely comparing the timestamp in the message to the corresponding current time window at the receiver.
+
+#### KERI v2 versus v1 Transactions
+
+In KERI v2, the `xip` transaction inception message normatively defines the first message in a given transaction. The exchange `exn` message then populates its `x` field with this transaction ID. But in v1, `exn` only transactions have to be bookkept to determine which exchange message was first, and then determine which other `exn` messages belong to that transaction by walking the prior hash links to the first.
 
 
 
