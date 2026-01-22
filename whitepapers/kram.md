@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.3.0
+v0.3.1
 
 
 ## Forward
@@ -289,22 +289,25 @@ One might ask the question then, why not use universally unique transaction IDs 
 In KERI v2, the `xip` transaction inception message normatively defines the first message in a given transaction. The exchange `exn` message then populates its `x` field with this transaction ID. But in v1, `exn` only transactions have to be bookkept to determine which exchange message was first, and then determine which other `exn` messages belong to that transaction by walking the prior hash links to the first.
 
 
+## Configuration
+
+There are several approaches to configuration. One, the worst, is to hard-code the window size database. A better approach is to use the config HJSON file to specify the window sizes and create a database of window sizes from the configuration. Finally, in addition to the HJSON config file, the window size database can be dynamically updated via a protected (secure) API. This requires that the window size be stored with each cache database entry (as shown above) so that run-time changes in the window sizes do not corrupt existing in-service caches.
 
 
 
 ## Time Resolution and Throughput
 
-In a timeliness cache used for replay attack protection, their is a limit on throughput that is a function of the clock resolution. For KERI exchange messages the clock resolution of the timestamp is is microseconds.  Most modern operating systems support clocks with resolutions in nanoseconds. But microseconds should be good for the forseable future. When they no longer are then we can version KERI to support higher resolution timestamps.
+In a timeliness cache used for replay attack protection, there is a limit on throughput that is a function of the clock resolution. For KERI exchange messages, the clock resolution of the timestamp is microseconds.  Most modern operating systems support clocks with nanosecond resolution. But microseconds should be good for the foreseeable future. When they are no longer viable, we can version KERI to support higher-resolution timestamps.
 
 ### Limitations
 
-Given a microsecond clock there are 1M time slots available per second for monotonically increasing timestamps in a given cache. Each cache entry gets its own 1M per second set of slots. So its inherently parallelizable. 
+Given a microsecond clock, there are 1M time slots available per second for monotonically increasing timestamps in a given cache. Each cache entry gets its own 1M per second set of slots. So its inherently parallelizable. 
 
-Lets say worst case we only have 1 cache entry per source AID for all exchange messages from that source AID. This means that in any given second that Source AID can send at most 1M messages to a given Dest AID.  When it runs out of slots it stops sending and waits for the clock to tick up, and then a new set of slots are created.  If we have a cache entry per transaction, then each transaction gets 1M time slots per second. So highly parallelizable.
+Let's say worst case, we only have 1 cache entry per source AID for all exchange messages from that source AID. This means that in any given second, Source AID can send at most 1M messages to a given Dest AID.  When it runs out of slots, it stops sending and waits for the clock to tick up, and then a new set of slots is created.  If we have a cache entry per transaction, then each transaction gets 1M time slots per second. So highly parallelizable.
 
 Let's be more specific. Recall that the receiver's KRAM acceptance window is `[t-d-l, t+d]`  where `d` is some multiple of the clock skew, and `l` is the lagging window which could on the order of days or weeks. 
 
-So the worst case scenario is that the sender sends enough messages fast enough to fill all the time slots and runs ahead of the leading edge of the window at `t+d`.  This is only going to happen on very high speed networks.  Given there are 1M messages per second and the minimum size of a signed exchange message is about 300 bytes then we have a throughput of 300 MegaBytes per second. Or 2.4 Gigabits per second. So, a high-speed network.
+So the worst case scenario is that the sender sends enough messages fast enough to fill all the time slots and runs ahead of the leading edge of the window at `t+d`.  This is only going to happen on very high-speed networks.  Given there are 1M messages per second and the minimum size of a signed exchange message is about 300 bytes, then we have a throughput of 300 MegaBytes per second. Or 2.4 Gigabits per second. So, a high-speed network.
 
  Let's suppose the worst case, which is that on such a high-speed network, there is zero network latency (every millisecond of network latency effectively provides an extra 1000 time slots because the receiver's clock has incremented by a millisecond after the source message was timestamped and before it was received. On such a high-speed network, a reasonable worst-case clock skew is 10 ms, so we can set `d` to 100 ms.  
 
