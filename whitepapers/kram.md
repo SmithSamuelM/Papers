@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.3.2
+v0.3.3
 
 
 ## Forward
@@ -205,6 +205,8 @@ All messages need, therefore, to be unambiguously classified as belining to to a
 The way to classify messages of a given type that belong to a given transaction type is to use either the route, `r`  field value, or a field in the route modifier `q` block to determine the window class from which the window size is derived.
 
 #### Time windows and Caches
+
+
 A database with the window sizes for each window duration class needs to be created. The key or index is a tuple of attributes that define the window class. This may be simply the message type, or for transactioned message types, it may be a tuple of message type, and transaction type. The value of each entry is the pair (d,l) which defines the window `[t-d-l, t+d]` where t is the current time as seen by the reciever.
 
 For each cache entry, use a vector of attributes as the key. In Keripy LMDB, a tuple is used to derive the key for a given database entry. LMDB is a b-tree that is hierarchically lexocographically stored. This means that as long as the tuples are well structured, different length message vector tuples can be used in the same database. In other words one can structure the branches of the b-tree to hold different length vectors in the same database. Some entries could have more elements in their tuple than others. This just changes the B-tree location. The only place this complicates things is that the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do.
@@ -247,25 +249,32 @@ An example window size entry would be as follows:
 KEY = `MessageType` and VALUE = window size, where the MessageType is replaced with one of the message types:
  `(qry, rpy, pro, bar, xip, exn)`.
 For a message type of `qry`, the actual window size key would be `qry`.
-The key for the corresponding cache table entry would be `qry.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux` where the second element is the message id. All cache entries include the message ID (SAID) so that the message itself can be looked up from the received message database.
+The key for the corresponding cache table entry would be of the form `AID,MessageType,MessageID` 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux` 
+where the first element is the AID of the source, and the last element is the message ID. All cache entries include the message ID (SAID) so that the message itself can be looked up from the received message database.
 
 Each message type can be further differentiated with a message ID.
 An example window size entry would be as follows:
-KEY = `MessageType.MID` and VALUE = window size, where the where the MessageType is replaced with one of the message types:
+KEY = `MessageType.MID` and VALUE = window size, where the MessageType is replaced with one of the message types:
  `(qry, rpy, pro, bar, xip, exn)`.
 For a message type of `rpy`, the actual window size key would be `rpy.MID`.
-The key for the corresponding cache table entry could be `rpy.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.rpy.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
 For a message type of `xip`, the actual window size key would be `xip.MID`.
-The key for the corresponding cache table entry could be `xip.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
 
 For the transactioned message type (`xip` or `exn`), we can differentiate on the transaction ID.
 An example window size entry would be as follows:
 KEY = `MessageType.TID`  and VALUE = window size, where the MessageType is replaced with one of the message types:
 `(xip, exn)`.
 For a message type of `xip`, the actual window size key would be `xip.TID`.
-The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i` where the last element is the message ID.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i` 
+where the last element is the message ID.
 For a message type of `exn`, the actual window size key would be `xip.TID`.
-The key for the corresponding cache table entry could be `xip.T.ED77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBV.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s` where the last element is the message ID.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.T.ED77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBV.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s` where the last element is the message ID.
 
 
 For the transactioned message type (`xip` or `exn`), we can also differentiate by both the transaction ID and message ID.
@@ -273,13 +282,15 @@ An example window size entry would be as follows:
 KEY = `MessageType.TID.MID`  and VALUE = window size, where the MessageType is replaced with one of the message types:
 `(xip, exn)`.
 For a message type of `xip`, the actual window sizekey would be `xip.TID.MID`.
-The key for the corresponding cache table entry could be `xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
 For a message type of `exn`, the actual window sizekey would be `xip.TID.MID`.
-`xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
+The key for the corresponding cache table entry could be 
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.T.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
 
 
 For the cache table key examples provided above value of the cache table entry is the following tuple:
-(timestamp, d, l) where `timestamp` is the timestamp field in the received message, `d` is the window clock drift/skew and `l` is the window time lag. Recall that the window is computed as `[t-d-l, t+d]` where `t` is the current time of the receiver of the message (not the timestamp in the message). The `timestamp` in the message is then evaluated relative to the window.
+(timestamp, d, l, c) where `timestamp` is the timestamp field in the received message, `d` is the window clock drift/skew, and `l` is the window time lag. Recall that the window is computed as `[t-d-l, t+d]` where `t` is the current time of the receiver of the message (not the timestamp in the message), and c is the CacheType of the form `xip.TID.MID`. The `timestamp` in the message is then evaluated relative to the window.
 
 #### Unique Transaction IDs and Reply Attack Protection
 Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. 
@@ -300,6 +311,7 @@ There are several approaches to configuration. One, the worst, is to hard-code t
 ## Time Resolution and Throughput
 
 In a timeliness cache used for replay attack protection, there is a limit on throughput that is a function of the clock resolution. For KERI exchange messages, the clock resolution of the timestamp is microseconds.  Most modern operating systems support clocks with nanosecond resolution. But microseconds should be good for the foreseeable future. When they are no longer viable, we can version KERI to support higher-resolution timestamps.
+Need to investigate if cache replacement logic works given run time configuration of window sizes table.
 
 ### Limitations
 
