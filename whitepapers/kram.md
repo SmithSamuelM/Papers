@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.3.4
+v0.4.0
 
 
 ## Forward
@@ -115,9 +115,8 @@ Because each EXN includes the SAID of the prior EXN in the transaction, and the 
 
 The transaction itself is ordered and self-synchronizing.
 
-## Summary
 
-### Simple KRAM
+## Simple KRAM
 Simple kram uses a short time window relative to the host (i.e the host clock is determinative). All signed client requests must include a timestamp field that lies within the window else they are dropped. This does not require any host cache. A replay attack is only possible inside the time window synchronized to the host clock. A short time window minimizes the opportunity for replay attack. But simple kram may be problematic for multi-sig where the time to collect signatures is longer than the time window. This is what is currently implemented in keripy.
 
 Concisely, simple KRAM works by including in the over-the-wire message a timestamp referenced to the network time clock of the recipient. Network time means time synchronized to well-known ubiquitous network time servers. 
@@ -130,7 +129,7 @@ However, simple KRAM may be problematic for multi-sig AIDs for several reasons, 
 
 
 
-### Full KRAM
+## Full KRAM
 
 Full kram uses monotonic timed caches. The least complicated version of full KRAM caches the last request from any client inside a sliding time window. A new request must both have a later datetime than the cached request and must be inside the host time window. Requests that move outside the sliding time window may be safely deleted thereby pruning the cache. The timed cache can be made more granular by caching a request per message type for a given client or even more granular by caching messages with a specific time window for the message type for a given client or even more granular by caching messages for a given transaction ID or a given message ID for a given transaction ID for a given transaction type for a transactioned message type for a given client.   Essentially, creating an expiration datetime as the request datetime plus the host configured timewindow for all instances of a given message at a given stage in a transaction of a given type. The monotonicity of the cached requests protects against replay attacks. The time window bounds the size of the cache. Given that the window size is determined by the transaction type, one could also have a cache per transaction ID. The default window size cannot be per-transaction ID or per-message ID, as this enables a cache-prune-based replay attack on the pruned transaction ID or message ID cache.
 
@@ -153,7 +152,7 @@ Importantly, the lagging time window for releasing cached timestamps can be quit
 
 This can largely relieve any latency or ephemerality problems with group multi-sig AID-signed over-the-wire messages. Especially if the cache is granular, i.e. per the vector (AID, message type, transaction type, transaction ID, message ID). This way, if a given exchange message is signed with a given timestamp by one member of the group and then not fully signed by a threshold number of other members of the group until days later (assuming the lagging window is days in duration), it could still be accepted by Full Kram. 
 
-#### Window Calculation
+### Window Calculation
 
 Let `t` represent the current time seen by the recipient, let `d` represent clock drift and skew, let `l` represent the lag duration. Then the full KRAM window would be the interval `[t-d-l, t+d]`.  The timestamp of the received message must lie within that window. A time window is defined by the pair of values (d, l).
 
@@ -164,11 +163,11 @@ So a value for d would be some integer multiple of 10 milliseconds, say `d = .1`
 The clock's resolution determines how many messages can be received in order in any timeframe before the sender must block to avoid running past the leading edge of the receiver's time window. The timestamp in KERI exchange messages uses a microsecond resolution, which supports up to 1 million messages per second, each with a unique monotonically increasing time stamp per timeliness cache entry. This is discussed in more detail below in the section labeled time resolution. 
 
 
-#### Cache Rules
+### Cache Rules
 
 When a message is received, the first filter checks whether its timestamp falls within the window interval. If not, the message is dropped. The next filter checks whether a cache entry already exists for the message cache vector, which is some subset of the elements:
 
- `[source AID, message type, transaction type, transaction ID, message ID]`. 
+ `[source AID, message type, route, exchange ID, message ID]`. 
  
 If so, then it checks to see if the timestamp of the received message cache vector is earlier than that of the cached message vector; if so, drop the received message. If the timestamp is the same as a cached message message vector, then verify the attached signature. If verified, then accept (idempotently for the message vector) and process any other attachments. 
 
@@ -178,7 +177,7 @@ In addition to the on-demand message vector receive filtering, scan the cache pe
 
 The rules for updating caches change for multi-sig as defined in the next section.
 
-#### Full Kram MultiSig
+### Full Kram MultiSig
 
 The full KRAM approach can be modified to work with group multi-sig by adding a partially signed message escrow that works in conjunction with the KRAM cache. This is described as follows:
 
@@ -192,7 +191,7 @@ If the message is not the first message received for a given timestamp and messa
 
 In summary, the full KRAM with multisig support described above should enable both replay attack protection and collection of asynchronous multiple signatures for all non-key-event messages, namely, query, reply, prod, bare, and exchange.
 
-#### Prune Attack and Classified Windows
+### Prune Attack and Classified Windows
 
 One possible approach would be for transactioned messages associated with the same Transaction ID could include in the message a field that specifies the window size. This would allow a window size unique to each Transaction ID. However, this would expose the receiver to both a DDOS attack and a window-prune replay attack. 
 
@@ -204,156 +203,213 @@ All messages need, therefore, to be unambiguously classified as belining to to a
 
 The way to classify messages of a given type that belong to a given transaction type is to use either the route, `r`  field value, or a field in the route modifier `q` block to determine the window class from which the window size is derived.
 
-#### Time windows and Caches
+### Time windows and Caches
 
+A database with the window sizes for each window duration class needs to be created. The key or index is a tuple of attributes that define the window class.  The value of each entry is the pair (d,l) which defines the window `[t-d-l, t+d]` where t is the current time as seen by the receiver. 
 
-A database with the window sizes for each window duration class needs to be created. The key or index is a tuple of attributes that define the window class. This may be simply the message type, or for transactioned message types, it may be a tuple of message type, and transaction type. The value of each entry is the pair (d,l) which defines the window `[t-d-l, t+d]` where t is the current time as seen by the reciever.
-
-For each cache entry, use a vector of attributes as the key. In Keripy LMDB, a tuple is used to derive the key for a given database entry. LMDB is a b-tree that is hierarchically lexocographically stored. This means that as long as the tuples are well structured, different length message vector tuples can be used in the same database. In other words one can structure the branches of the b-tree to hold different length vectors in the same database. Some entries could have more elements in their tuple than others. This just changes the B-tree location. The only place this complicates things is that the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do.
-
-Using the namespace of the b-tree to accomodate all possible vector lengths means that the window sizes can be configurable. One just needs to have a smart algorithm that walks the tree to determining the window size from the database for a given vector (tuple).
-
-For those cache entries that need custom window sizes a tuple is defined for the exact vector. While for defaults of shorter vectors window size are also defined and the algorithm selects the longest (most specific vector) that matches the message and the database.  
-
-Each cache  has a window size that is taken from the corresponding entry in the window size class database. Storing the actual window size pair (d, l) with the cache and not the index into the associated window size class enables the window size class tree to be dynamically updated at run time no merely config time. Thus an API could be defined that allows run time changes to the window size class database without breaking any in-service caches. New caches will pick up the latest appropriate window size while old caches will hold onto the window size at the time of their creation.
-
-Recall, that in a b tree, essentially anything in the key is also retreivable as a value. One can retrieve whole branches as a collection of values.
-
-So we can store the window size tuple as either part of the key space for a chache or part of the cache value.
-This is a design choice.  The constraint is that the total key space is limited to 511 bytes (including the sub db name)
-
-So we would have two tables. A window-size table and a cache table. Each table is indexed hierarchically.
-
-
-The window size table has a default window size that is undifferentiated as the lexocographic first entry (maybe a key of `_`).
-The window size table may include differentiated window sizes, if any, for all the message types `(qry, rpy, pro, bar, xip, exn)`.  The two message types `xip` and `exn` belong to a special class of transactional messages where a set of messages belongs to a transaction.
-
-If a differentiated window size is not in the database, then the undifferentiated default size is used. If a more specific differentiated window size is not in the database, but a less specific but still differentiated window size is in the database, then use the most specific window size available that matches the message vector.
-
-There are multiple types of caches:
-For the non-transactional message types, namely `(qry, rpy, pro, bar)`, there are four cache types. One is per message type, another is per message type and per message ID, another is per message type and per route,  and the last is per message type, per route, and per message ID. 
-
-The cache types for non-exchange transaction message types can be represented as follows:
-`MessageType`, `MessageType.MID`, `MessageType.R.Route`, and `MessageType.R.Route.MID`.
-
-The actual message type, as specified in the `t` field (e.g., `qry`), is substituted for the MessageType element.
-The symbol `R` is used as is, i.e., there is no substitution. The purpose of the `R` symbol is disambiguate between cache types that have routes and those that do not. This makes the number of cache elements unique for the cache types that have routes.
-The actual route string value as specified in the`r` field, such as `open/sesame`, is substituted for the Route element. 
-The symbol `MID` is used as is, i.e., there is no substitution. This indicates that the cache database index is to differentiate by the message ID. All cache entry keys in the cache database include a message ID element, but only cache entries with a window type of `MID` differentiate caches based on message ID.
-
-For exchange transaction message types, namely `xip` and `exn`, there are eight cache types. One is per message type, another is per message type and per message ID, another is per message type and per route, another is per message type and per exchange ID,  another is per message type, per route, and per message ID, another is per message type, per XID, and per message ID, another is per message type, per route, and per exchange ID, and the last is per message type, per route, per exchange transaction ID, and per message ID.
-
-The message type comes from the message type, `t` field in the message, the route from the route `r` field in the message. The message ID comes from the SAID `d` field in the message. The exchange transaction ID comes from the `d` field of an `xip` message or from the `x` field of an `exn` message.  The exchange messages in a given transaction, as initiated by an `xip` message, all have the same `x` field value.
-
-Version 1 of KERI does not have `xip` messages so the transaction Id comes from the SAID `d` field of the first `exn` message in an exchange transaction. Each `exn` has a prior message SAID, `p` field. When that value of the prior `p` field is empty, then that `exn` is either the first and only message in the transaction. Each subsequent `exn` sets its `p` field value to the value of the SAID `d` field of the prior message. This chains the `exn` in a given exchange transaction together.  In other words, the SAID of the first `exn` message in a multi-message exchange transaction that does not start with a `xip` message can be used as the exchange ID.  
-
-The cache types for transactional message types can be represented as follows:
-`MessageType`, `MessageType.MID`, `MessageType.R.Route`, `MessageType.X.ExchangeID`, `MessageType.R.Route.MID`. `MessageType.X.ExchangeID.MID`, `MessageType.R.route.X.ExchangeID`, and `MessageType.R.route.X.ExchangeID.MID`
-
-The actual message type, as specified in the `t` field (e.g., `qry`), is substituted for the MessageType element.
-The symbol `R` is used as is, i.e., there is no substitution. The purpose of the `R` symbol is disambiguate between cache types that have routes and those that do not. This makes the number of cache elements unique for the cache types that have routes.
-The actual route string value as specified in the`r` field, such as `open/sesame`, is substituted for the Route element. 
-The symbol `X` is used as is, i.e., there is no substitution. The purpose of the `X` symbol is disambiguate between cache types that have exchange IDs and those that do not. This makes the number of cache elements unique for the cache types that have exchange IDs.
-The actual exchange ID, as given by the SAID `d` field of `xip` or the first `exn` message of an exchange transaction, is substituted for the ExchangeID element.
-The symbol `MID` is used as is, i.e., there is no substitution. This indicates that the cache database index is to differentiate by the message ID. All cache entry keys in the cache database include a message ID element, but only cache entries with a window type of `MID` differentiate caches based on message ID.
-
-The elements in the corresponding cache table key space will always start with the source AID. The rest of the elements will be in order as indicated by the cache type, but with actual values where appropriate as defined above.  
-
-The window size table will use the symbols `MID` for message ID and `XID` for exchange ID. 
-
-#### Examples
-
-For example, the simplest differentiation would be a Window CacheType that is per-message-type only. 
-An example window size entry would be as follows:
-KEY = `MessageType` and VALUE = window size duple with values for drift/skew and lag.  The variable MessageType is replaced with one of the message types:
- `(qry, rpy, pro, bar, xip, exn)`.
-For a message type of `qry`, the actual window size key would be `qry`.
-The key for the corresponding cache table entry would be of the form `AID.MessageType.MessageID` 
-With real values substituted in this gives:
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux` 
-where the first element is the AID of the source, and the last element is the message ID. All cache entries include the message ID (SAID) as the last element so that the message itself can be looked up from the received message database. But only chaches with window size types that explicitly include the symbol `MID` actually have a cache entry per message ID.
-
-Each message type can be further differentiated by a message ID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.MID` and VALUE = window size, where the MessageType is replaced with one of the message types:
- `(qry, rpy, pro, bar, xip, exn)`.
-For a message type of `rpy`, the actual window size key would be `rpy.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.rpy.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
-For a message type of `xip`, the actual window size key would be `xip.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
-
-Each message type can be further differentiated by a route as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.R.Route` and VALUE = window size, where the MessageType is replaced with one of the message types:
- `(qry, rpy, pro, bar, xip, exn)` and the Route is replaced with the actual route value like `open/sesame`
-For a message type of `rpy`, the actual window size key would be `rpy.R.open/sesame`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.rpy.R.opensesame.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
-For a message type of `xip`, the actual window size key would be `xip.R.open/sesame`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.R.opensesame.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
-
-Each message type can be further differentiated by a route and message ID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.R.Route.MID` and VALUE = window size, where the MessageType is replaced with one of the message types:
- `(qry, rpy, pro, bar, xip, exn)` and the Route is replaced with the actual route value like `open/sesame`
-For a message type of `rpy`, the actual window size key would be `rpy.R.open/sesame.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.rpy.R.opensesame.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux`.
-For a message type of `xip`, the actual window size key would be `xip.R.open/sesame.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.R.opensesame.EMYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_`.
-
-The transactioned message types `xip` and `exn` can also be differentiated by the exchange ID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.X.ExchangeID`  and VALUE = window size, where the MessageType is replaced with one of the message types `xip` or `exn`, and the ExchangeID is replaced with the actual exchange ID.
-For a message type of `xip`, the actual window size key would be `xip.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i` 
-where the last element is the message ID.
-For a message type of `exn`, the actual window size key would be `xip.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s` where the last element is the message ID.
-
-
-The transactioned message types `xip` and `exn` can also be differentiated by both the exchange ID and message ID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.X.ExchangeID.MID`  and VALUE = window size, where the MessageType is replaced with one of the message types `xip` or `exn`, and the ExchangeID is replaced with the actual exchange ID
-For a message type of `xip`, the actual window sizekey would be `xip.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
-For a message type of `exn`, the actual window sizekey would be `exn.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.exn.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
-
-The transactioned message types `xip` and `exn` can further be differentiated by the route, and the exchange ID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.R.route.X.ExchangeID`  and VALUE = window size, where the MessageType is replaced with one of the message types `xip` or `exn`, the Route is replace with the actual route, such as, `open/sesame`, and the ExchangeID is replaced with the actual exchange ID
-For a message type of `xip`, the actual window sizekey would be `xip.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
-For a message type of `exn`, the actual window sizekey would be `exn.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.exn.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
-
-The transactioned message types `xip` and `exn` can further be differentiated by the route, the exchange ID, and the MID as follows:
-An example window size entry would be as follows:
-KEY = `MessageType.R.route.X.ExchangeID.MID`  and VALUE = window size, where the MessageType is replaced with one of the message types `xip` or `exn`, the Route is replace with the actual route, such as, `open/sesame`, and the ExchangeID is replaced with the actual exchange ID
-For a message type of `xip`, the actual window sizekey would be `xip.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.xip.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3i`.
-For a message type of `exn`, the actual window sizekey would be `exn.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.MID`.
-The key for the corresponding cache table entry could be 
-`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.exn.R.open/sesame.X.EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ.EL-uxLC5L3iAVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2s`.
-
-#### Cache Entry Values
-
-For the cache table examples provided above, value of the cache table entry is the following tuple:
-(timestamp, d, l, c) where `timestamp` is the timestamp field in the received message, `d` is the window clock drift/skew, `l` is the window time lag, and c is one of the CacheTypes described above. For example, a cache type that differentiates on message type, route, and MID would be `xip.R.open/sesame.MID`.
+Another database of `timeliness` caches of messages needs to be created. Each cache entry's key is a vector of attributes corresponding to the cache type. These are described in more detail below. The value of each cache entry is the tuple (`messageID`, `timestamp`, `d`, `l`) where:
+`messageID` is the SAID `d` field of the cached message,
+`timestamp` is the timestamp field in the cached message, 
+`d` is the window clock drift/skew  in milliseconds from the window size database at the time of cache creation,
+`l` is the window time-lag/latency in milliseconds from the window size database at the time of cache creation.
 
 Recall that the window is computed as `[t-d-l, t+d]` where `t` is the current time of the receiver of the message (not the timestamp in the message).  The `timestamp` in the message is then evaluated relative to the window.
+
+As explained above, each cache entry value includes the window size that was taken from the corresponding entry in the window size class database at the time of cache creation. Storing the actual window size pair (d, l) in the cache, rather than the index into the associated window size class, enables the window size class tree to be dynamically updated at run time, not merely at config time. Thus, an API could be defined that allows run-time changes to the window size class database without breaking any in-service caches. Messages that generate new caches will pick up the latest appropriate window size, while messages that belong to old caches that are not yet expired will use the window size stored with the cache as assigned at the time of cache creation.
+
+#### B-Tree KeySpace
+LMDB is a B-tree that is hierarchically lexocographically stored. In Keripy LMDB, a tuple may be used to derive the key for a given database entry. This means that as long as the tuples are well structured, different-length message vector tuples can be used in the same database. In other words, one can structure the branches of the B-tree to hold vectors of different lengths in the same database. Some entries could have more elements in their tuple than others. This just changes the B-tree location. The only place this complicates things is that the pruning of the cache has to walk the tree to find all the entries. Which again is not hard to do.
+Recall that in a B tree, essentially anything in the key is also retrievable as a value. One can retrieve whole branches as a collection of values. Thus, any data can be stored either part of the key or as part of the value.
+This is a design choice.  The constraint is that the total key space is limited to 511 bytes (including the sub database name).
+
+Using the B-tree's namespace to accommodate all possible vector lengths allows the keys for both window sizes and cache entries to be configurable. One just needs a smart algorithm that walks each database's keyspace tree to determine the closest match in the database's keyspace for a given vector (tuple).
+
+#### Table Key Spaces and Matching Rules
+
+Recall that there are two tables. A window-size table and a cache table. Each table is indexed hierarchically.
+
+Both window size and cache entry matching follow a "most specific" matching rule. The entry key that matches more fully (specifically) the applicable elements of the message vector `[source AID, message type, route, exchange ID, message ID]` takes priority.
+
+The window size table has a default window size that is undifferentiated and is the lexicographically ordered last entry in the table.  This matches if no other more specific (differentiated) window size matches the message vector, i.e., it is the default window size.
+
+Besides the undifferentiated window-size entry, the window-size table may include differentiated window-size entries. The differentiation is based on hierarchical combinations of values taken from the message vector,
+`[source AID, message type, route, exchange ID, message ID]`.  Only the message types `xip` and `exn` can have an exchange ID as part of their message vector. To elaborate, the matching rule matches against the most specific (most differentiated) window size key entry.
+
+The cache keyspace tuple is derived from the window-size keyspace tuple, with appropriate values from the message vector substituted for symbolic elements in the window-size keyspace tuple.  The window-size key defines the cache type or class. The cache key defines a cache instance of a given cache type. All members of a cache type share the same window size as stored as part of the cache value. 
+
+The elements in the keyspace of a corresponding cache table entry will always start with the source AID. The remaining elements will be in the order indicated by the cache-type taken from the window-size/cache-type table keyspace, but with actual values from the message vector substituted where appropriate, as defined above.  
+
+To reiterate, the various window-size/cache-types are created from combinations of elements of the message vector, `[source AID, message type, route, exchange ID, message ID]`. For example, the least specific form of window-size/cache-type differentiation is based solely on the message type. The message type may be one of `(qry, rpy, pro, bar, xip, exn)`.  
+
+##### Non Exchange Cache Types
+For the non-exchange message types, namely `(qry, rpy, pro, bar)`, there are four possible window-size/cache-type entries. One is per message type,  another is per message type and per route,  another is per message type and per message ID, and the last is per message type, per route, and per message ID. 
+
+In the key space for the window size table the window-size/cache-types for non-exchange message types can be represented as follows:
+`MessageType`, `MessageType.R.Route`, `MessageType.M.MID`, and `MessageType.R.Route.M.MID`.
+
+The actual message type, as specified in the `t` field (e.g., `qry`), is substituted for the MessageType element.
+
+The symbol `R` is used as is, i.e., there is no substitution. The purpose of the `R` symbol is to disambiguate between cache types that match on routes and those that do not. The `R` symbol indicates that the following element is a route.
+The actual route string value as specified in the message `r` field, such as `open/sesame`, is substituted for the Route element. 
+
+The symbol `M` is used as is, i.e., there is no substitution. The purpose of the `M` symbol is to disambiguate between cache types that match on message IDs and those that do not. The `M` symbol indicates that the following element is a message ID.
+The symbol `MID` is used as is, i.e., there is no substitution. This indicates that the cache database index is differentiated by message ID. When deriving the key space for the cache table entries, the symbol `MID` is replaced with the actual messageID from the SAID `d` field of the message.
+
+##### Exchange Cache Types
+
+For exchange transaction message types, namely `xip` and `exn`, there are four more cache types. To clarify, all four of the non-exchange cache types above also apply to the exchange message types, but exchange message types have four more possible window-size/cache-type entries.  
+
+The eight are as follows: One is per message type, another is per message type and per route, another is per message type and per exchange ID,  another is per message type and per message ID, another is per message type, per route, and per message ID,  another is per message type, per route, and per exchange ID, another is per message type, per exchange ID, and per message ID, and the last is per message type, per route, per exchange ID, and per message ID.
+
+The cache types for exchange message types can be represented as follows:
+`MessageType`,  `MessageType.R.Route`, , `MessageType.M.MID`,  `MessageType.R.Route.M.MID`. `MessageType.X.XID`, `MessageType.R.route.X.XID`, `MessageType.X.XID.M.MID`, and `MessageType.R.route.X.XID.M.MID`
+
+The actual message type, as specified in the `t` field (e.g., `xip`), is substituted for the MessageType element.
+
+The symbol `R` is used as is, i.e., there is no substitution. The purpose of the `R` symbol is to disambiguate between cache types that match on routes and those that do not. The `R` symbol indicates that the following element is a route.
+The actual route string value as specified in the message `r` field, such as `open/sesame`, is substituted for the Route element. 
+
+The symbol `X` is used as is, i.e., there is no substitution. The purpose of the `X` symbol is to disambiguate between cache types that match on exchange IDs and those that do not. The `M` symbol indicates that the following element is an exchange ID.
+The symbol `XID` is used as is, i.e., there is no substitution. This indicates that the associated cache database index is differentiated by exchange ID. When deriving the key space for the cache table entries, the symbol `XID` is replaced with the actual exchangeID taken from the message. The field that provides the `XID` value depends on how the exchange is constructed (see below).
+
+The symbol `M` is used as is, i.e., there is no substitution. The purpose of the `M` symbol is to disambiguate between cache types that match on message IDs and those that do not. The `M` symbol indicates that the following element is a message ID.
+The symbol `MID` is used as is, i.e., there is no substitution. This indicates that the cache database index is differentiated by message ID. When deriving the key space for the cache table entries, the symbol `MID` is replaced with the actual messageID from the SAID `d` field of the message.
+
+
+Version 1 of KERI does not have `xip` messages, so the exchange ID used to replace the `XID` symbol comes from the SAID `d` field of the first `exn` message in an exchange transaction. Each `exn` has a prior message SAID, `p` field. When the value of the prior `p` field is empty, then that `exn` is either the first or the only message in the transaction. When not the only message in an exchange, each subsequent `exn` sets its `p` field value to the value of the SAID `d` field of the prior message. This chains the `exn` messages in a given exchange transaction together.  In other words, the SAID `d` field of the first `exn` message in a multi-message exchange transaction that does not start with a `xip` message can be used as the exchange ID.  
+
+
+#### Examples
+In all examples, the value of every window-size/cache-type entry is a tuple of the form  (`d`, `l`) where `d` is the drift/skew and `l` is the lag/latency expressed in milliseconds. Suppose, for example, 
+`(d, l) = (100, 2000)`.
+Likewise, in all examples, the value of each cache entry is a tuple of the form (`messageID`, `timestamp`, `d`, `l`) where:
+`messageID` is the SAID `d` field of the cached message,
+`timestamp` is the timestamp field in the cached message, 
+`d` is the window clock drift/skew  in milliseconds from the window size database at the time of cache creation,
+`l` is the window time-lag/latency in milliseconds from the window size database at the time of cache creation.
+Suppose, for example:
+
+```
+(messageID, timestamp, d, l)  = 
+('ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux', '2020-08-22T17:50:09.988921-01:00', 100, 2000)
+```
+Moreover, in all examples, the first element of the key of each cache table entry is the AID of the source (sender) of the cached message, such as 
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry'
+```
+
+##### MessageType
+An example of the window size and cache table keys for cache-type `MessageType` is as follows:
+Window Size: 
+The variable `MessageType` is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+For a message type of 'qry', the actual window size key would be: 'qry'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType`.
+With real values substituted the actual cache key would be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry'
+``` 
+
+##### MessageType and Route
+An example of the window size and cache table keys for cache-type `MessageType.R.Route` is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+The variable `Route` is replaced with an actual route.
+For a message type of 'qry',  and a route of 'open/sesame', the actual window size key would be: 'qry'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.R.Route`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.R.open/sesame'
+```
+
+##### MessageType and MessageID
+An example of the window size and cache table keys for cache-type `MessageType.M.MID` is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+For a message type of 'qry' the actual window size key would be: 'qry.M.MID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.M.MessageID`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.M.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+```
+
+##### MessageType, Route, and MessageID
+An example of the window size and cache table keys for cache-type `MessageType.R.Route.M.MID` is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(qry, rpy, pro, bar, xip, exn)`.
+The variable `Route` is replaced with an actual route.
+For a message type of 'qry',  and a route of 'open/sesame', the actual window size key would be:
+'qry.R.open/sesame.M.MID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.R.Route.M.MessageID`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.R.open/sesame.M.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+``` 
+
+##### MessageType and ExchangeID
+An example of the window size and cache table keys for cache-type `MessageType.X.XID`  is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(xip, exn)`.
+For a message type of 'xip', the actual window size key would be:
+'xip.X.XID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.X.ExchangeID`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG'
+``` 
+
+##### MessageType, Route, and ExchangeID
+An example of the window size and cache table keys for cache-type `MessageType.X.XID`  is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(xip, exn)`.
+The variable `Route` is replaced with an actual route.
+For a message type of 'xip',  and a route of 'open/sesame', the actual window size key would be:
+'xip.R.open/sesame.X.XID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.R.Route.X.ExchangeID`.
+With real values substituted, the actual cache key could be:
+```
+`ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.R.open/sesame.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG'
+``` 
+
+##### MessageType, ExchangeID, and MessageID
+An example of the window size and cache table keys for cache-type `MessageType.X.XID.M.MID`  is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(xip, exn)`.
+For a message type of 'xip' the actual window size key would be:
+'xip.X.XID.M.MID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.R.Route.X.ExchangeID`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.M.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+``` 
+
+##### MessageType, Route, ExchangeID, and MessageID
+An example of the window size and cache table keys for cache-type `MessageType.R.Route.X.XID.M.MID`  is as follows:
+Window Size:
+The variable `MessageType` is replaced with one of the message types:
+ `(xip, exn)`.
+ The variable `Route` is replaced with an actual route.
+For a message type of 'xip',  and a route of 'open/sesame', the actual window size key would be:
+'xip.R.open/sesame.X.XID.M.MID'.
+Cache:
+The key for the corresponding cache table entry is represented as `AID.MessageType.R.Route.X.ExchangeID.M.MessageID`.
+With real values substituted, the actual cache key could be:
+```
+'ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.qry.R.open/sesame.X.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.M.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+```
 
 #### Unique Transaction IDs and Reply Attack Protection
 Putting a salty nonce in the modifier `q` block of the first exchange message of a transaction makes the transaction ID universally unique even when all the other fields are the same. 
@@ -369,6 +425,8 @@ In KERI v2, the `xip` transaction inception message normatively defines the firs
 
 There are several approaches to configuration. One, the worst, is to hard-code the window size database. A better approach is to use the config HJSON file to specify the window sizes and create a database of window sizes from the configuration. Finally, in addition to the HJSON config file, the window size database can be dynamically updated via a protected (secure) API. This requires that the window size be stored with each cache database entry (as shown above) so that run-time changes in the window sizes do not corrupt existing in-service caches.
 
+One possible solution is to add two more tables. One that indexes cache entries by ExchangeID and the other that indexes cache entries by MessageId. Then, whenever a new message is received first, if the message is an exchange message type, the ExchangeID table is checked for an existing cache entry for that message. If so then that message is evaluated against the cached window. If not, then the MessageID table is checked for an existing cache entry for that message ID. If so, then the message is evaluated against the cached window. If neither of the above is satisfied, then the window size key table is searched for a matching cache type, and then the existing caches are searched for a matching cache type. If not found, then a new cache window is created from the window cache table. This ensures that dynamic changes to window-size table entries do not interfere with existing, but unexpired, caches. This also avoids walking the window size key space to determine the most specific match unless there is no preexisting cache for a preexisting exchange cache or preexisting message cache.
+there
 
 
 ## Time Resolution and Throughput
