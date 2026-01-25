@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.4.1
+v0.5.0
 
 
 ## Forward
@@ -518,4 +518,326 @@ A variant of the two-level method with simple KRAM is to use a pre-protocol to c
 
 
 
+## Redesign of Full KRAM with Multisig Support
 
+The redesign aims to cleanly separate message authentication types to better align with the timeliness cache duration constraints. The authentication types are attached signature single key, attached signature(s) multi-key, and attached anchoring seal reference.
+
+The separation between single-key and multi-key is determined by the cardinality of the current key list for the sender AID, not by the threshold satisfaction of the attached signature(s). If the cardinality (i.e., the number of keys in the key list) is 1, then it's a single-key list. If it's greater than 1, then it's a multi-key. Single-key never has to wait to collect additional signatures to meet a threshold. Multi-key may have to wait to collect additional signatures. The waiting case for multi-key is determined by the actual attached signatures and the threshold. This is important because threshold satisfication requires verifying the attached signatures first, which is a much heavier operation than merely counting the elements in the key list.
+
+A further separation of concern for authentication type is between attached signatures and attached anchoring seal references. When the authentication is via an attached anchoring seal reference, there is no need to wait to collect signatures. The message single-key or multi-key has already been authenticated by its anchoring seal in the sender's KEL. Therefore, an attached anchoring-seal-reference authenticated message cache is more similar to, if not identical to, an attached signature single-sig cache, regardless of the key list cardinality.
+
+Exchange transactioned messages benefit from a two-level cache window scheme. The inner window length is per message ID and is based on the authentication type (seal reference, single-key, multi-key). The outer window length is per exchange ID and usually spans multiple inner window lengths. Messages with exchange IDs are cached and pruned using logic that considers both windows.
+
+This redesign of KRAM assumes v2 KERI. This means that transactioned `exn` messages must have a non-empty value in their exchange ID `x` field.  The v1 KERI `exn` message does not have an `x` field, so must be treated as non-transactioned from the standpoint of KRAM even when it has a non-empty prior `p` field value.
+
+With multiple caches of different types, finding the appropriate cache can be complicated and, hence, time- and throughput-expensive (not storage).  One way to mitigate this is to use database tables that index all cached messages by message ID or by a combination of exchange ID and message ID. This way, matching a received message ID (SAID) or a combined exchange ID (SAID) with a message ID (SAID) to an existing cache keyed by SAID(s) may use a fast LMDB tree comparison to find the match. 
+
+Moreover, when caches are independent to a given message ID, i.e. no cache includes messages with different message IDs then due the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space the sending of messages with different message IDs in order to avoid the shared timeliness cache from dropping as a replay inadvertent out-of-order asynchronous messages due differnt network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without having to synchronize sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The tradeoff is that the lower limit of storage required for full KRAM is higher. One can't configure full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
+
+The redesign of KRAM assumes that, for a message to be fully authenticated by KRAM, the required event must already be available in a copy of the sender's KEL held by the receiver. To clarify, the appropriate event from the sender's KEL must have already been received to immediately determine the key state for attached signature-authenticated messages, or to determine the latest event holding the anchoring seal for attached anchoring-seal-authenticated messages. This is a reasonable constraint. Contrast escrowing the event versus dropping the event when the KEL itself or the appropriate event holding the required authentication information has not yet been received. In either case, repair requires generating a cue to notify the receiver to retrieve the latest version of the KEL. In most cases, the time required to notify and then retrieve the KEL exceeds the KRAM message window, resulting in the message being dropped, even after the KEL is retrieved. Which makes moot the use of the escrow. A new message with a new datetime stamp must be generated regardless. Therefore, the most practical approach is to drop the message and create a cue that notifies the receiver that the appropriate KEL or KEL event needs to be obtained from the sender.  This is a change from the current `eventing` logic for processing messages, which escrows messages when the KEL or KEL event is unavailable. There is also a bug in the escrow logic that can result in a loop that always reescrows. Consequently, the logic needs to be refactored, regardless of the case.
+
+This redesign also assumes a refactor of `eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
+
+In general, an attacker who intercepts a message can delete the attached authentication (signature(s) or seal). This will cause the message to be dropped. The protection against this sort of attack is to send the message over an encrypted transport. The attacker may still be able to interrupt the encrypted message transport as a whole, but not individual KERI messages. 
+
+Another potential DDoS attack would be for the attacker to intercept a message with attached signatures(s) and then also attach a bogus anchoring seal reference in an attempt to either have the packet dropped or at least increase the processing resources for all messages. Increasing the processing logic is called an amplification DDoS attack. In this case, the processing logic can prevent the message from being dropped by accepting it whenever either of the attached authenticators is valid. The least expensive check should take priority to mitigate the amplification attack. This is described below.
+
+
+### Timeliness Cache Window Representation
+
+The message ID based timeliness cache windows have the following form:
+`[rdt-d-l, rdt+d]` where:
+`rdt` is the current universal datetime of the receiver.
+`d` is the network time server clock drift/skew in milliseconds. Typically 10 - 100 ms.
+`l` is the lag due to network latency in milliseconds. Typically 100 - 5000 ms.
+
+The `mdt` value is taken from the message datetime stamp, `dt` field. The `mdt` value is compared against the bounds of the timeliness window to determine whether the stamp falls within it. This is true when: 
+`rdt-d-l <= mdt <= rdt+d`.
+
+Appropriate date-and-time math is used to combine millisecond time deltas with universal datetimes.
+
+The exchange ID-based timeliness windows have the following form:
+`[xdt, xdt+xl]` where:
+`xdt` is the message datetime stamp `dt` field value of the `xip` message that starts a transaction. 
+`xl` is the lag value for the associated exchange transaction cache.
+
+The datetime stamp of a received message, `mdt`, that belongs to an exchange transaction, i.e., has the same exchange ID as the `xip` message that started the transaction, is compared against the bounds of the exchange transaction timeliness cache to determine whether it lies within that window. This is true when:
+`xdt <= mdt <= xdt+xl`
+
+Appropriate date-and-time math is used to combine millisecond time deltas with universal datetimes.
+
+### Authentication Types
+
+This section explains the distinctions between authentication types in more detail.
+
+#### Anchoring Seal Reference Authenticated
+
+An anchoring seal reference authenticated message is one with an attached seal reference. Authentication requires finding the associated seal in the referenced event in the Sender's KEL. It does not require waiting to collect signatures, even if the sender's current key state is multi-key.
+
+
+#### Single-key Authenticated
+
+A single-key-authenticated message is one with a single attached signature whose sender AID's current key state has only one signing key. This would be the case when either the AID is nontransferable or the AID key list contains only one entry. This means there can never be a case where such a single-key-authenticated message needs to wait for additional signatures from other members of a multi-key group. 
+
+
+#### Multi-key Authenticated
+
+A multi-key authenticated message is one with one or more attached signatures whose sender AID's current key state has more than one signing key in its key list. This is only possible for transferable AIDs. Notably, an AID whose current key list contains more than one key might still have a threshold that actually requires only one signature. But this requires applying the threshold logic to the supplied signature to determine whether the actual signatures attached to the key list satisfy the threshold, not just the cardinality. Threshold satisfaction requires verifying the attached signatures, which is a much heavier operation than merely counting the elements in the key list.
+
+### Both Anchoring Seal Reference and Signature Authenticated
+
+A message authenticated with both an attached anchoring seal reference and one or more signatures is a special case. 
+This must be resolved to determine which case to use, not both. In general, validating a seal reference is less costly than verifying a signature. Most of the seal reference validation involves means finding the reference digest against a seal list of digests. Whereas signature verification is a cryptographic, processing-heavy operation. Consequently, when both are present, the seal reference is checked first. If valid, then the signature(s) are dropped, and the message is treated as one with an attached anchoring seal reference authenticator. When the seal reference is invalid, then the signature(s) are verified. If at least one signature verifies, then based on the cardinality of the key list, the message is treated as either a single-key authenticator or a multi-key authenticator.
+
+
+### Databases
+
+The following LMDB databases are used by KRAM. Additional details may be provided in other sections.
+
+#### Cache-type database
+
+Each cache-type database entry key is an expression that matches a cache-type expression. 
+
+Each database entry value provides the window-size parameters for that cache-type.  These are represented by the window size tuple described below.
+
+##### Window Size Tuple
+
+The values in the window size table are a tuple of the following form:
+`(d, sl, ll, xl)` where:
+`d` is the network time server clock drift/skew in milliseconds.
+`sl` is the lag used for cache windows of attached-seal-reference or attached-signature-single-key authenticated messages. The `sl` stands for "short lag" because there is no need to wait for additional signatures to be collected.
+`ll` is the lag used for cache windows of attached-signature-multi-key authenticated messages. The `ll` stands for "long lag" because additional time is needed to collect signatures from multiple signers for multi-key authenticated messages. The value of `ll` may be much greater than `sl`. It may be minutes, hours, days, or weeks.
+`xl` is the lag used for cache windows of exchange transactions that include all exchange messages with the same exchange ID. The `xl` stands for "exchange lag" because extra time is needed for all messages in an exchange transaction. Exchange messages without an exchange ID are not considered part of a transaction, so are not included in any exchange transaction window cache. The value of `xl` may be much greater than `ll`. Typically, `xl` would be some multiple of `ll`.
+
+When evaluating a cache window, the value for `l` in the cache window expression is taken from one of `l`, `sl`, or `xl` in the cache window tuple value, based on the appropriate evaluation logic for the message ID and/or exchange  ID.
+
+The following constraints must be applied:
+`0 <= d`
+`0 < sl <= ll <= xl`
+
+For example `(d, sl, ll, xl)` could instantiated as:
+```
+(100, 2000, 7200000, 172800000)
+```
+
+#### Message Cache Database
+
+Each cache database entry key is the dot-separated composition of the sender AID and the message ID taken from the SAID `d` field value of the message. This is represented as  `AID.MID`. 
+For example, `AID.MID` could be instantiated as: 
+```
+ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux
+```
+
+The value of this database is a tuple of the following form:
+`(mdt, d, ml)` where:
+`mdt` is the cached message datetime stamp `dt` field value.
+`d` is the network time server clock drift/skew in milliseconds taken from the cache-type table at the time of cache creation.
+`ml` is the lag used for MessageID-based cache window calculations. The value of `ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+
+For example `(mdt, d, ml)` could be instantiated as:
+```
+(2020-08-22T17:50:09.988921-01:00, 100, 2000)
+```
+
+#### Transactioned Message Cache Database
+
+Each cache database entry key is the dot-separated composition of sender AID, the exchange ID taken from the SAID `d` field of `xip` messages or the `x` field of `exn` messages, and the message ID taken from the `d` field of the `xip` or `exn` message. This is represented as  `AID.XID.MID`.   
+For example, `AID.XID.MID` could be instantiated as:
+```
+ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux
+```
+
+The value of this database is a tuple of the following form:
+`(mdt, xdt, d, ml, xl)` where:
+`mdt` is the cached message datetime stamp `dt` field value.
+`xdt` is the cached exchange transaction starting message datetime stamp `dt` field value. The starting message is the `xip` message. The starting message cache must have `xdt == mdt`. All the following `exn` messages with the same exchange ID as the starting `xip` must have `xdt <= mdt`.
+`d` is the network time server clock drift/skew in milliseconds taken from the cache-type table at the time of cache creation.
+`ml` is the lag used for MessageID-based cache window calculations (see above). The value of `ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for `ExchangeID.MessageID` cache windows with an attached-signature-multi-key authenticator. 
+`xl` is the lag used for s for `ExchangeID.MessageID` cache window calculations (see above). The value of `xl` is taken from the `xl` element value from the cache-type table at the time of cache creation. This value is used for exchange transaction windows that include all messages with the same exchange ID. 
+
+For example `(mdt, xdt, d, ml, xl)` could be instantiated as:
+```
+(2020-08-22T17:50:09.988921-01:00, 2020-08-22T17:50:9.000000-01:00, 100, 2000, 3600000)
+```
+
+#### Partially Signed Multi-Key Message Database
+
+This database is keyed by the message's (`AID.MID`). Each value is the associated message. This holds multi-key authenticated messages that have not yet collected enough verified signatures to satisfy its threshold. Recall that for a multi-key authenticator, a sufficient number of verified signatures from the key list must be provided to authenticate. This is where signatures are collected over time from multiple instances of a given multi-key-authenticated message. Once the threshold is satisfied, the message with attached signatures is forwarded for additional processing, and its entry in this database is removed.
+
+#### Partially Signed Multi-Key Signature Database
+
+This database is keyed by the message's (`AID.MID`). Each value is a list of verified signatures on a multi-key message that has not yet collected enough verified signatures to satisfy its threshold. Recall that for a multi-key authenticator, a sufficient number of verified signatures from the key list must be provided to authenticate. This is where signatures are collected over time from multiple instances of a given multi-key-authenticated message. Once the threshold is satisfied, the message with attached signatures is forwarded for additional processing, and its entry in this database is removed.
+
+#### Partially Signed Multi-Key Sender Key State Database
+
+This database is keyed by the message's (`AID.MID`). Each value is the tuple `(sn, SAID)` taken from the establishment event used to provide the key state used to sign the first appearance of the message, where `sn` is the sequence number of that event and `SAID` is the SAID of that event. This database stores a reference to the establishment event in the sender's KEL that provided the key state used to sign the first appearance of the associated message ID. Because the sender's key state may change during signature collection, the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later key state. Once the key state changes, any subsequent instances of the message will be dropped. Once the signature threshold is satisfied, the message with attached signatures is forwarded for additional processing, and its entry in this database is removed.
+
+
+#### Partially Signed Multi-Key Attachment Databases
+
+These databases are keyed by the message's (`AID.MID`). Each value or values is a non-authenticator attachment. These databases collect non-authenticator attachments in the same way that the verified multi-key signature database collects signature authenticator attachments.  Once the message is accepted as authenticated, it is forwarded for additional processing along with its attachments from its entries in these databases, and those entries are removed.
+
+#### Pruned Message Database
+
+The pruned message cache stores all pruned messages from all the message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pml` for "pruned message lag. This value must satisfy `0 < sl <= ll <= pml`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages to be replayed. Once a message is pruned from the pruned message database, it is either discarded or added to an archival log of accepted messages.
+
+The key and value are the same as the message-ID-based cache that supplied the pruned message.
+
+#### Pruned Transactioned Message Database
+
+The pruned transactioned message cache stores all pruned messages from all the exchange-ID-message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pxl` for "pruned xchange lag. This value must satisfy `0 < sl <= ll <= xl <= pxl`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages from a pruned transaction to be replayed. Once a transaction with its messages is pruned from the pruned transactioned message database, it is either discarded or added to an archival log of accepted messages.
+
+The key and value are the same as the exchange-ID-message-ID-based cache that supplied the pruned transactioned messages.
+ 
+### KRAM Processing Logic
+The initial stage of processing depends on information in the message itself. This is to maximize the ability to quickly drop messages. The information available in the messages is the sender id, `i` field, the message ID, SAID `d` field, the route, `r` field,  the exchange ID, SAID `d` field for exchange message type `xip`, and the exchange ID, `x` field for exchange message type `exn`.
+
+The first step is to match the message against the existing caches in either a message-ID-based cache database or an exchange-ID-message-ID cache database.
+
+Note, messages with the same message ID must have the same datetime stamp, because the message ID SAID is a digest computed over the datetime stamp field. Therefore, when processing a new message relative to a cached message with the same message ID, there is no need to check the datetime stamp, because if the cache has not yet been pruned based on the message-ID window size, the datetime stamp must lie within the window. Likewise for exchange-ID-based windows. If the message is found within the cache, there is no need to check the datetime stamp, because if the cache has not yet been pruned based on the exchange ID window size, the datetime stamp must lie within the window.
+
+#### Transactional Exchange Messages
+For messages that do not have an exchange ID (this includes `exn` messages with an empty `x` field value): 
+* The message is checked against the pruned message-ID-based cache database. If found, the message is dropped.
+* The message is checked against the message-ID-based cache database. If found,  the following logic is applied:
+
+##### Existing message-ID-cache processing logic.
+
+* When an existing cache is found for the (`AID.MID`): 
+    Determine the authentication type (resolve the special case of "both attached" as described above)
+    - When the authenticator is either an attached seal or a single-key signature:
+        + drop the message because it's idempotent relative to the existing cache and exit.
+    - Otherwise (authenticator is an attached multi-key signature(s):
+        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + look up the existing verified signatures for that message ID from the verified signature database.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases. 
+* Otherwise, perform new cache logic below:
+
+##### New cache logic when no existing cache is found for the (`AID.MID`):
+
+*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
+* Determine the authentication type (resolve the special case of "both attached")
+    - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
+        Check the timeliness window where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `sl` from the cache-type tuple (short lag).
+        `mdt` is the message datetime `dt` field.
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+    - When the message authenticator is an attached-seal-reference.
+        Look up the referenced event and validate the seal. 
+        + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + When otherwise invalid, drop the message and exit.
+        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Accept the message by forwarding it along with its validated seal reference and other attachments for further message-specific processing and exit.
+    - When the message authenticator is an attached-signature-single-key. 
+        Look up the referenced event and verify the attached signature.
+        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + When otherwise unverifiable, drop the message and exit.
+        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Accept the message by forwarding it along with its verified signature and any other attachments for further message-specific processing and exit. 
+    - When the message authenticator is an attached-signature-multi-key.
+        Check the timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `mdt` is the message datetime `dt` field.
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+    - When the message authenticator is an attached-signature-multi-key.
+        Look up the referenced event and verify the attached signatures.
+        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + Verify the attached signatures. 
+        + When at least one signature is verified, create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Store the sn and SAID of the latest sender establishment event in the partially signed sender key state database. Note that the sender's key state may change while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit.
+        Otherwise (the threshold is not satisfied, but at least one signature verifies). 
+        + Add the message to the partially signed multi-key message database for this (`AID.MID`).
+        + Add the verified signatures to the partially signed verified signature database for this (`AID.MID`). 
+        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database for this (`AID.MID`).
+        + Add any non-authenticator attachments to the appropriate partially signed attachment databases for this (`AID.MID`).
+
+
+#### Transactional Exchange Messages
+For `xip` messages and `exn` messages that have a non-empty `x` field value:
+* The message is checked against the pruned exchange-ID-message-ID-based cache database. If found, the message is dropped and exit.
+* The message is checked against the exchange-ID-message-ID-based cache database. If found,  the following logic is applied:
+
+##### Existing exchange-ID-message-ID-cache processing logic.
+* When an existing cache is found for the (`AID.XID.MID`): 
+    Determine the authentication type (resolve the special case of "both attached" as described above)
+    - When the authenticator is either an attached seal or a single-key signature:
+        + drop the message because it's idempotent relative to the existing cache and exit.
+    - Otherwise (authenticator is an attached multi-key signature(s):
+        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + look up the existing verified signatures for that message ID from the verified signature database.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases.
+* Otherwise, perform new cache logic below:
+
+
+##### New cache logic when no existing cache is found for the (`AID.XID.MID`):
+*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
+* Determine the authentication type (resolve the special case of "both attached")
+    - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
+        Check the timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `sl` from the cache-type tuple (short lag).
+        `xl` is set to `xl` from the cache-type tuple (exchange lag).
+        `mdt` is the message datetime `dt` field.
+        `xdt` is the exchange starting datetime. 
+        `rdt` is the current receiver's datetime stamp.
+        + When the message type, `t` field is `xip`, set `xdt` to its datetime `dt` field.
+        + Otherwise, fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
+        + When not `[xdt, xdt+xl]`, drop the message and exit.
+    - When the message authenticator is an attached-seal-reference.
+        Look up the referenced event and validate the seal. 
+        + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + When otherwise invalid, drop the message and exit.
+        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Accept the message by forwarding it along with its validated seal reference and other attachments for further message-specific processing and exit.
+    - When the message authenticator is an attached-signature-single-key. 
+        Look up the referenced event and verify the attached signature.
+        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + When otherwise unverifiable, drop the message and exit.
+        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Accept the message by forwarding it along with its verified signature and any other attachments for further message-specific processing and exit. 
+    - When the message authenticator is an attached-signature-multi-key.
+        Check the timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `xl` is set to `xl` from the cache-type tuple (exchange lag).
+        `mdt` is the message datetime `dt` field.
+        `xdt` is the exchange starting datetime. 
+        `rdt` is the current receiver's datetime stamp.
+        + When the message type, `t` field is `xip`, set `xdt` to its datetime `dt` field.
+        + Otherwise, fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
+        + When not `[xdt, xdt+xl]`, drop the message and exit.
+    - When the message authenticator is an attached-signature-multi-key.
+        Look up the referenced event and verify the attached signatures.
+        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + Verify the attached signatures. 
+        + When at least one signature is verified, create a new cache entry with (`AID.XID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Store the sn and SAID of the latest sender establishment event in the partially signed sender key state database. Note that the sender's key state may change while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit.
+        Otherwise (the threshold is not satisfied, but at least one signature verifies). 
+        + Add the message to the partially signed multi-key message database for this (`AID.MID`).
+        + Add the verified signatures to the partially signed verified signature database for this (`AID.MID`). 
+        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database for this (`AID.MID`).
+        + Add any non-authenticator attachments to the appropriate partially signed attachment databases for this (`AID.MID`).
+
+
+#### Pruning logic.
+Periodically check the message-ID pruned cache database. Delete or archive cache entries where `rdt-d-pml <= mdt <= rdt+d` is not true. Recall that `pml` is the prune cache lag value.
+Periodically check the exchange-ID pruned cache database. Delete or archive cache entries where `[xdt, xdt+pxl]` is not true. Recall that `xml` is the prune cache exchange lag value.
+Periodically check the message-ID cache database. Move to the message-ID pruned cache database cache entries where `rdt-d-ml <= mdt <= rdt+d` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+Periodically check the exchange-ID pruned cache database. Delete or archive any cache entries where `[xdt, xdt+xl]` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+
+
+### Exchange Transactions
+
+The window for exchange ID-associated messages (same exchange transaction) may be much longer than any given message window. May want to keep an exchange ID-based window open longer, even though individual message windows have closed. But not indefinitely, which happens if there is no exchange ID-based window. Want to set a maximum time limit on how long an exchange can be open? This protects against a replay of a transaction that starts after the window closes, since the time stamps would be too old to fit in a new window. Message ID windows are to collect signatures. Exchange ID windows are to collect messages.
