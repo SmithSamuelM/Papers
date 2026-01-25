@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.5.0
+v0.5.1
 
 
 ## Forward
@@ -596,7 +596,12 @@ The following LMDB databases are used by KRAM. Additional details may be provide
 
 #### Cache-type database
 
-Each cache-type database entry key is an expression that matches a cache-type expression. 
+Each cache-type database entry key is an expression that matches a cache-type expression. The allowed expressions are:
+`default`  where the actual key is lexicographically the last in the LMDB tree. This is a catchall when no other expressions match.
+`MessageType` where `MessageType` is replaced with one of `qry`, `rpy`, `pro`, `bar`, `xip`, `exn`
+`MessageType.R.Route` where `MessageType` is replaced with one of `qry`, `rpy`, `pro`, `bar`, `xip`, `exn` and `Route` is replaced with a valid route expression such as `open/sesame`
+
+The message type `xip` automatically creates an exchange transactioned cache. When the message type `exn` has a non-empty `x` field, then it is automatically added to an exchange transactioned cache.
 
 Each database entry value provides the window-size parameters for that cache-type.  These are represented by the window size tuple described below.
 
@@ -790,7 +795,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         `xdt` is the exchange starting datetime. 
         `rdt` is the current receiver's datetime stamp.
         + When the message type, `t` field is `xip`, set `xdt` to its datetime `dt` field.
-        + Otherwise, fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value
+        + When the message type, `t` field is `exn`, then use its `x` field value to fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value. When no existing cache entry is found, then drop the event and exit.
         + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
         + When not `[xdt, xdt+xl]`, drop the message and exit.
     - When the message authenticator is an attached-seal-reference.
