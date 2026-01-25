@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.5.1
+v0.5.2
 
 
 ## Forward
@@ -534,6 +534,8 @@ With multiple caches of different types, finding the appropriate cache can be co
 
 Moreover, when caches are independent to a given message ID, i.e. no cache includes messages with different message IDs then due the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space the sending of messages with different message IDs in order to avoid the shared timeliness cache from dropping as a replay inadvertent out-of-order asynchronous messages due differnt network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without having to synchronize sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The tradeoff is that the lower limit of storage required for full KRAM is higher. One can't configure full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
 
+Having both a regular cache for active messages and exchanges and a pruned cache for already pruned messages and exchanges enables the regular cache to be much smaller and easier to optimize for performance. The regular cache can have both a write-through and a read-through in the memory cache. Whereas the pruned cache only benefits from a read-through cache.
+
 The redesign of KRAM assumes that, for a message to be fully authenticated by KRAM, the required event must already be available in a copy of the sender's KEL held by the receiver. To clarify, the appropriate event from the sender's KEL must have already been received to immediately determine the key state for attached signature-authenticated messages, or to determine the latest event holding the anchoring seal for attached anchoring-seal-authenticated messages. This is a reasonable constraint. Contrast escrowing the event versus dropping the event when the KEL itself or the appropriate event holding the required authentication information has not yet been received. In either case, repair requires generating a cue to notify the receiver to retrieve the latest version of the KEL. In most cases, the time required to notify and then retrieve the KEL exceeds the KRAM message window, resulting in the message being dropped, even after the KEL is retrieved. Which makes moot the use of the escrow. A new message with a new datetime stamp must be generated regardless. Therefore, the most practical approach is to drop the message and create a cue that notifies the receiver that the appropriate KEL or KEL event needs to be obtained from the sender.  This is a change from the current `eventing` logic for processing messages, which escrows messages when the KEL or KEL event is unavailable. There is also a bug in the escrow logic that can result in a loop that always reescrows. Consequently, the logic needs to be refactored, regardless of the case.
 
 This redesign also assumes a refactor of `eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
@@ -588,6 +590,10 @@ A multi-key authenticated message is one with one or more attached signatures wh
 
 A message authenticated with both an attached anchoring seal reference and one or more signatures is a special case. 
 This must be resolved to determine which case to use, not both. In general, validating a seal reference is less costly than verifying a signature. Most of the seal reference validation involves means finding the reference digest against a seal list of digests. Whereas signature verification is a cryptographic, processing-heavy operation. Consequently, when both are present, the seal reference is checked first. If valid, then the signature(s) are dropped, and the message is treated as one with an attached anchoring seal reference authenticator. When the seal reference is invalid, then the signature(s) are verified. If at least one signature verifies, then based on the cardinality of the key list, the message is treated as either a single-key authenticator or a multi-key authenticator.
+
+### Exchange Transactions
+
+Message ID windows are to collect signatures. Exchange ID windows are to collect messages that belong to the same exchange transaction. The window for exchange ID-associated messages (messages with the same exchange ID) may be much longer than any given message window to account for the fact that a transaction may not advance until a message is authenticated. If there were no exchange ID-based window, then a new message belonging to an exchange could happen indefinitely, and the memory consumed by the exchange cache could never be released. Setting a maximum time limit on how long an exchange can remain open protects against replaying a transaction that starts after the window closes, since the timestamps would be too old to fit in a new window. 
 
 
 ### Databases
@@ -843,6 +849,3 @@ Periodically check the message-ID cache database. Move to the message-ID pruned 
 Periodically check the exchange-ID pruned cache database. Delete or archive any cache entries where `[xdt, xdt+xl]` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
 
 
-### Exchange Transactions
-
-The window for exchange ID-associated messages (same exchange transaction) may be much longer than any given message window. May want to keep an exchange ID-based window open longer, even though individual message windows have closed. But not indefinitely, which happens if there is no exchange ID-based window. Want to set a maximum time limit on how long an exchange can be open? This protects against a replay of a transaction that starts after the window closes, since the time stamps would be too old to fit in a new window. Message ID windows are to collect signatures. Exchange ID windows are to collect messages.
