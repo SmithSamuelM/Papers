@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.5.2
+v0.6.0
 
 
 ## Forward
@@ -530,15 +530,20 @@ Exchange transactioned messages benefit from a two-level cache window scheme. Th
 
 This redesign of KRAM assumes v2 KERI. This means that transactioned `exn` messages must have a non-empty value in their exchange ID `x` field.  The v1 KERI `exn` message does not have an `x` field, so must be treated as non-transactioned from the standpoint of KRAM even when it has a non-empty prior `p` field value.
 
-With multiple caches of different types, finding the appropriate cache can be complicated and, hence, time- and throughput-expensive (not storage).  One way to mitigate this is to use database tables that index all cached messages by message ID or by a combination of exchange ID and message ID. This way, matching a received message ID (SAID) or a combined exchange ID (SAID) with a message ID (SAID) to an existing cache keyed by SAID(s) may use a fast LMDB tree comparison to find the match. 
+With multiple caches of different types, finding the appropriate cache can be complicated and, hence, time- and throughput-expensive (not storage).  One way to mitigate this is to use database tables that index all cached messages by message ID or by a combination of exchange ID and message ID. This way, matching a received message ID (SAID) or a combined exchange ID (SAID) with a message ID (SAID) to an existing cache keyed by SAID(s) may use a fast LMDB tree comparison to find the match. The tradeoff is that there is more storage required for caches. Messages with different IDs do not share a cache.
 
-Moreover, when caches are independent to a given message ID, i.e. no cache includes messages with different message IDs then due the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space the sending of messages with different message IDs in order to avoid the shared timeliness cache from dropping as a replay inadvertent out-of-order asynchronous messages due differnt network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without having to synchronize sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The tradeoff is that the lower limit of storage required for full KRAM is higher. One can't configure full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
+Moreover, when caches are not shared between different message IDs, then because of the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space out the sending of messages with different message IDs in order to avoid inadvertent out-of-order asynchronous messages from different network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without requiring synchronization for sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The tradeoff is that the lower limit of storage required for full KRAM is higher. One can't configure a full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
 
-Having both a regular cache for active messages and exchanges and a pruned cache for already pruned messages and exchanges enables the regular cache to be much smaller and easier to optimize for performance. The regular cache can have both a write-through and a read-through in the memory cache. Whereas the pruned cache only benefits from a read-through cache.
+This redesign using different time lags or windows for accepting a message into the cache and pruning a message from a cache. The prune window is set to a larger value. This allows dynamic increases to the accepting window cache lag without exposing a gap in time for a replay attack. Having a window for acceptance that is shorter than the window for pruning enables the acceptance window to be smaller and easier to optimize for performance. It minimizes the number of messages that ever make it into the pruning cache in the first place while allowing dynamic configuration of the acceptance window sizes. As long as the prune window is guaranteed to be longer than the accept window the prune window size can be increased dynamically without opening up a gap-replay attack. This is because any replay of messages already accepted must still pass the accept window first.
+
+
+While this approach protects against gap-replay attacks when the acceptance window is increased, it does not protect against gap-first-play attacks. A gap-first-play attack could occur when a message is not accepted because it lies outside the acceptance window, so it is never seen or cached by the receiver. But if the acceptance window is subsequently lengthened so that the message could be accepted, then it could be resubmitted by an attacker as a first play. Suppose that the original sender noticed that its first attempt at sending the message was not responded to by the receiver. The Sender might believe that the message was not accepted, potentially because it was too late and lay outside the receiver's acceptance window. Therefore, the sender creates a new version of the same message content but with a new datetime and a new message ID. The sender then sends this message, which is accepted. The sender may be affected adversely by a first play of the earlier version of the message due to a successful gap-first-play attack. This may be because the effect of the first play later may be the same (double access) because the messages only differ in the datetime and message ID. The way to mitigate gap-first-play attacks is to delay the requested increase in the acceptance window size until after time has expired equal to the delta between the old acceptance window and the new, longer one, `delta = new - old`. This ensures that any potential gap-first-play message timestamps will have already exceeded the new longer window. 
+
+A dynamic change that increases both the accept window size and the prune window size may also create a gap-replay attack vulnerability. If the new accept window is longer than the old prune window, then messages that have already been pruned due to the old prune window may be replayed and reaccepted without detection. The constraint on the accept window size is that it must always be less than or equal to the prune window size. But when increasing both the accept and prune window sizes at the same time, the new accept window could be longer than the old prune window.  To protect against this, whenever an accept window and a prune window are both to be changed, the accept window must not be increased beyond the old prune window until after the delta between the old and new prune window has expired, `delta = new - old`. The new longer prune window can be immediately applied, but the new longer accept window cannot be applied until after the delta prune has expired. This way, any potential replay messages will have already timed out of the new, longer prune window, which ensures they will have also timed out of the new, longer accept window, so they will not be able to fit in the gap.
 
 The redesign of KRAM assumes that, for a message to be fully authenticated by KRAM, the required event must already be available in a copy of the sender's KEL held by the receiver. To clarify, the appropriate event from the sender's KEL must have already been received to immediately determine the key state for attached signature-authenticated messages, or to determine the latest event holding the anchoring seal for attached anchoring-seal-authenticated messages. This is a reasonable constraint. Contrast escrowing the event versus dropping the event when the KEL itself or the appropriate event holding the required authentication information has not yet been received. In either case, repair requires generating a cue to notify the receiver to retrieve the latest version of the KEL. In most cases, the time required to notify and then retrieve the KEL exceeds the KRAM message window, resulting in the message being dropped, even after the KEL is retrieved. Which makes moot the use of the escrow. A new message with a new datetime stamp must be generated regardless. Therefore, the most practical approach is to drop the message and create a cue that notifies the receiver that the appropriate KEL or KEL event needs to be obtained from the sender.  This is a change from the current `eventing` logic for processing messages, which escrows messages when the KEL or KEL event is unavailable. There is also a bug in the escrow logic that can result in a loop that always reescrows. Consequently, the logic needs to be refactored, regardless of the case.
 
-This redesign also assumes a refactor of `eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
+This redesign also assumes a refactor of various process message methods of Kevery in `core.eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
 
 In general, an attacker who intercepts a message can delete the attached authentication (signature(s) or seal). This will cause the message to be dropped. The protection against this sort of attack is to send the message over an encrypted transport. The attacker may still be able to interrupt the encrypted message transport as a whole, but not individual KERI messages. 
 
@@ -553,7 +558,7 @@ The message ID based timeliness cache windows have the following form:
 `d` is the network time server clock drift/skew in milliseconds. Typically 10 - 100 ms.
 `l` is the lag due to network latency in milliseconds. Typically 100 - 5000 ms.
 
-The `mdt` value is taken from the message datetime stamp, `dt` field. The `mdt` value is compared against the bounds of the timeliness window to determine whether the stamp falls within it. This is true when: 
+When a message is received its `dt` field value provides the message datetime `mdt` value. The `mdt` value is compared against the bounds of the timeliness window to determine whether the message's datetime stamp falls within it. This is true when: 
 `rdt-d-l <= mdt <= rdt+d`.
 
 Appropriate date-and-time math is used to combine millisecond time deltas with universal datetimes.
@@ -602,6 +607,8 @@ The following LMDB databases are used by KRAM. Additional details may be provide
 
 #### Cache-type database
 
+##### Cache-type Key
+
 Each cache-type database entry key is an expression that matches a cache-type expression. The allowed expressions are:
 `default`  where the actual key is lexicographically the last in the LMDB tree. This is a catchall when no other expressions match.
 `MessageType` where `MessageType` is replaced with one of `qry`, `rpy`, `pro`, `bar`, `xip`, `exn`
@@ -611,64 +618,81 @@ The message type `xip` automatically creates an exchange transactioned cache. Wh
 
 Each database entry value provides the window-size parameters for that cache-type.  These are represented by the window size tuple described below.
 
-##### Window Size Tuple
+##### Cache-type Value
 
-The values in the window size table are a tuple of the following form:
-`(d, sl, ll, xl)` where:
+Each value in the cache-type database is the set the window size parameters as a tuple of the following form:
+`(d, sl, ll, xl, psl, pll, pxl)` where:
 `d` is the network time server clock drift/skew in milliseconds.
-`sl` is the lag used for cache windows of attached-seal-reference or attached-signature-single-key authenticated messages. The `sl` stands for "short lag" because there is no need to wait for additional signatures to be collected.
-`ll` is the lag used for cache windows of attached-signature-multi-key authenticated messages. The `ll` stands for "long lag" because additional time is needed to collect signatures from multiple signers for multi-key authenticated messages. The value of `ll` may be much greater than `sl`. It may be minutes, hours, days, or weeks.
-`xl` is the lag used for cache windows of exchange transactions that include all exchange messages with the same exchange ID. The `xl` stands for "exchange lag" because extra time is needed for all messages in an exchange transaction. Exchange messages without an exchange ID are not considered part of a transaction, so are not included in any exchange transaction window cache. The value of `xl` may be much greater than `ll`. Typically, `xl` would be some multiple of `ll`.
+`sl` is the short lag in milliseconds used for cache windows of attached-seal-reference or attached-signature-single-key authenticated messages. A short lag is required because there is no need to wait for additional signatures to be collected. Typically, the `sl` is at most a multiple of the network latency, no more than a few seconds.
+`ll` is the long lag in milliseconds used for cache windows of attached-signature-multi-key authenticated messages. A long lag is required to collect signatures from multiple signers for multi-key-authenticated messages. The value of `ll` may be much greater than or equal to  `sl`. Typically, it is some multiple of `sl`. It may be minutes, hours, days, or weeks.
+`xl` is the exchange lag used for the cache window size of exchange transactions that include all exchange messages with the same exchange ID. The exchange lag is requried to allow extra time for all messages in an exchange transaction. Messages without an exchange ID are not considered part of a transaction; this includes `exn` messages with an empty `x` field, so they are not included in the exchange transaction window cache. The value of `xl` must be greater than or equal to `ll`. Typically, `xl` would be some multiple of `ll`.
+`psl` is the prune short lag in milliseconds used as the prune cache window size of attached-seal-reference or attached-signature-single-key authenticated messages. The value of `psl` must be greater than or equal to `sl`
+`pll` is the prune long lag in milliseconds used as the prune cache windows size of attached-signature-multi-key authenticated messages. The value of `pll` must be greater than or equal to `ll`. 
+`pxl` is the prune exchange lag in milliseconds used as the prune cache window size exchange transactions that include all exchange messages with the same exchange ID. The value of `pxl` must be greater than or equal to `xl`. 
 
-When evaluating a cache window, the value for `l` in the cache window expression is taken from one of `l`, `sl`, or `xl` in the cache window tuple value, based on the appropriate evaluation logic for the message ID and/or exchange  ID.
-
-The following constraints must be applied:
+The following constraints must be satisfied:
 `0 <= d`
 `0 < sl <= ll <= xl`
+`0 < sl <= psl`
+`0 < ll <= pll`
+`0 < xl <= pxl`
 
-For example `(d, sl, ll, xl)` could instantiated as:
+For example `(d, sl, ll, xl, psl, pll, pxl)` could instantiated as:
 ```
-(100, 2000, 7200000, 172800000)
+(100, 2000, 7200000, 172800000, 3600000, 172800000, 691200000)
 ```
 
 #### Message Cache Database
 
-Each cache database entry key is the dot-separated composition of the sender AID and the message ID taken from the SAID `d` field value of the message. This is represented as  `AID.MID`. 
+Each cache database entry key is the dot-separated composition of the sender AID and the message ID taken from the SAID `d` field value of the message. This is represented as  `AID.MID`. Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID.
+
 For example, `AID.MID` could be instantiated as: 
 ```
 ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux
 ```
 
-The value of this database is a tuple of the following form:
-`(mdt, d, ml)` where:
+When creating a new cache, the value stored is a tuple of the form, `(mdt, d, ml, pml, xl, pxl)` where:
 `mdt` is the cached message datetime stamp `dt` field value.
 `d` is the network time server clock drift/skew in milliseconds taken from the cache-type table at the time of cache creation.
-`ml` is the lag used for MessageID-based cache window calculations. The value of `ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+`ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+`pml` is either `psl` or `pll`, taken from the cache-type database tuple at the time of cache creation. The value of `psl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `pll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+`xl` is set to `xl` from the cache-type database value. It is not a function of the message authenticator type.
+`pxl` is set to `pxl` from the cache-type database value. It is not a function of the message authenticator type.
 
-For example `(mdt, d, ml)` could be instantiated as:
+For example `(mdt, d, ml, pml, xl, pxl)` could be instantiated as:
 ```
-(2020-08-22T17:50:09.988921-01:00, 100, 2000)
+(2020-08-22T17:50:09.988921-01:00, 100, 2000, 3600000, 172800000, 691200000)
 ```
+
+When evaluating the accept cache window expression `[rdt-d-l, rdt+d]` (see above), the `l` value is taken from the `ml` value stored in the cache.
+When evaluating the prune cache window expression `[rdt-d-l, rdt+d]` (see above), the `l` value is taken from the `pml` value stored in the cache.
+When evaluating the exchange accept cache window expression `[xdt, xdt+xl]` (see above), the `xl` value is taken from the `xl` value stored in the cache.
+When evaluating the exchange prune cache window expression `[xdt, xdt+xl]` (see above), the `xl` value is taken from the `pxl` value stored in the cache
+
 
 #### Transactioned Message Cache Database
 
-Each cache database entry key is the dot-separated composition of sender AID, the exchange ID taken from the SAID `d` field of `xip` messages or the `x` field of `exn` messages, and the message ID taken from the `d` field of the `xip` or `exn` message. This is represented as  `AID.XID.MID`.   
+Each cache database entry key is the dot-separated composition of sender AID, the exchange ID taken from the SAID `d` field of `xip` messages or the `x` field of `exn` messages, and the message ID taken from the `d` field of the `xip` or `exn` message. This is represented as  `AID.XID.MID`.  Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID. Including the `XID` indicates that its an exchange transaction cache entry.
+
+ 
 For example, `AID.XID.MID` could be instantiated as:
 ```
 ECUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGG.EGCUQgqQBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYG.ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux
 ```
 
 The value of this database is a tuple of the following form:
-`(mdt, xdt, d, ml, xl)` where:
+`(mdt, xdt, d, ml, pml, xl, pxl)` where:
 `mdt` is the cached message datetime stamp `dt` field value.
 `xdt` is the cached exchange transaction starting message datetime stamp `dt` field value. The starting message is the `xip` message. The starting message cache must have `xdt == mdt`. All the following `exn` messages with the same exchange ID as the starting `xip` must have `xdt <= mdt`.
 `d` is the network time server clock drift/skew in milliseconds taken from the cache-type table at the time of cache creation.
-`ml` is the lag used for MessageID-based cache window calculations (see above). The value of `ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for `ExchangeID.MessageID` cache windows with an attached-signature-multi-key authenticator. 
-`xl` is the lag used for s for `ExchangeID.MessageID` cache window calculations (see above). The value of `xl` is taken from the `xl` element value from the cache-type table at the time of cache creation. This value is used for exchange transaction windows that include all messages with the same exchange ID. 
+`ml` is either `sl` or `ll`, taken from the cache-type database tuple at the time of cache creation. The value of `sl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `ll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+`pml` is either `psl` or `pll`, taken from the cache-type database tuple at the time of cache creation. The value of `psl` is used when the cache is for messages with either an attached-seal-reference or an attached-signature-single-key authenticator. The value of `pll` is used when the cache is for ExchangeID.MessagID cache windows with an attached-signature-multi-key authenticator. 
+`xl` is set to `xl` from the cache-type database value. It is not a function of the message authenticator type.
+`pxl` is set to `pxl` from the cache-type database value. It is not a function of the message authenticator type.
 
-For example `(mdt, xdt, d, ml, xl)` could be instantiated as:
+For example `(mdt, xdt, d, ml, pml, xl, pxl)` could be instantiated as:
 ```
-(2020-08-22T17:50:09.988921-01:00, 2020-08-22T17:50:9.000000-01:00, 100, 2000, 3600000)
+(2020-08-22T17:50:09.988921-01:00, 2020-08-22T17:50:9.000000-01:00, 100, 2000, 3600000, 172800000, 691200000)
 ```
 
 #### Partially Signed Multi-Key Message Database
@@ -687,18 +711,6 @@ This database is keyed by the message's (`AID.MID`). Each value is the tuple `(s
 #### Partially Signed Multi-Key Attachment Databases
 
 These databases are keyed by the message's (`AID.MID`). Each value or values is a non-authenticator attachment. These databases collect non-authenticator attachments in the same way that the verified multi-key signature database collects signature authenticator attachments.  Once the message is accepted as authenticated, it is forwarded for additional processing along with its attachments from its entries in these databases, and those entries are removed.
-
-#### Pruned Message Database
-
-The pruned message cache stores all pruned messages from all the message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pml` for "pruned message lag. This value must satisfy `0 < sl <= ll <= pml`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages to be replayed. Once a message is pruned from the pruned message database, it is either discarded or added to an archival log of accepted messages.
-
-The key and value are the same as the message-ID-based cache that supplied the pruned message.
-
-#### Pruned Transactioned Message Database
-
-The pruned transactioned message cache stores all pruned messages from all the exchange-ID-message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pxl` for "pruned xchange lag. This value must satisfy `0 < sl <= ll <= xl <= pxl`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages from a pruned transaction to be replayed. Once a transaction with its messages is pruned from the pruned transactioned message database, it is either discarded or added to an archival log of accepted messages.
-
-The key and value are the same as the exchange-ID-message-ID-based cache that supplied the pruned transactioned messages.
  
 ### KRAM Processing Logic
 The initial stage of processing depends on information in the message itself. This is to maximize the ability to quickly drop messages. The information available in the messages is the sender id, `i` field, the message ID, SAID `d` field, the route, `r` field,  the exchange ID, SAID `d` field for exchange message type `xip`, and the exchange ID, `x` field for exchange message type `exn`.
@@ -707,9 +719,8 @@ The first step is to match the message against the existing caches in either a m
 
 Note, messages with the same message ID must have the same datetime stamp, because the message ID SAID is a digest computed over the datetime stamp field. Therefore, when processing a new message relative to a cached message with the same message ID, there is no need to check the datetime stamp, because if the cache has not yet been pruned based on the message-ID window size, the datetime stamp must lie within the window. Likewise for exchange-ID-based windows. If the message is found within the cache, there is no need to check the datetime stamp, because if the cache has not yet been pruned based on the exchange ID window size, the datetime stamp must lie within the window.
 
-#### Transactional Exchange Messages
+#### Non-Transactional Exchange Messages
 For messages that do not have an exchange ID (this includes `exn` messages with an empty `x` field value): 
-* The message is checked against the pruned message-ID-based cache database. If found, the message is dropped.
 * The message is checked against the message-ID-based cache database. If found,  the following logic is applied:
 
 ##### Existing message-ID-cache processing logic.
@@ -731,7 +742,7 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
 *  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
 * Determine the authentication type (resolve the special case of "both attached")
     - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
-        Check the timeliness window where: 
+        Check the accept timeliness window where: 
         `d` is taken from the cache-type tuple. 
         `ml` is set to `sl` from the cache-type tuple (short lag).
         `mdt` is the message datetime `dt` field.
@@ -750,7 +761,7 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
         + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
         + Accept the message by forwarding it along with its verified signature and any other attachments for further message-specific processing and exit. 
     - When the message authenticator is an attached-signature-multi-key.
-        Check the timeliness windows where: 
+        Check the accept timeliness windows where: 
         `d` is taken from the cache-type tuple. 
         `ml` is set to `ll` from the cache-type tuple (long lag).
         `mdt` is the message datetime `dt` field.
@@ -772,8 +783,7 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
 
 #### Transactional Exchange Messages
 For `xip` messages and `exn` messages that have a non-empty `x` field value:
-* The message is checked against the pruned exchange-ID-message-ID-based cache database. If found, the message is dropped and exit.
-* The message is checked against the exchange-ID-message-ID-based cache database. If found,  the following logic is applied:
+* The message is checked against the exchange-ID-message-ID-based cache database for a matching message. If found,  the following logic is applied:
 
 ##### Existing exchange-ID-message-ID-cache processing logic.
 * When an existing cache is found for the (`AID.XID.MID`): 
@@ -793,7 +803,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
 *  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
 * Determine the authentication type (resolve the special case of "both attached")
     - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
-        Check the timeliness windows where: 
+        Check the accept timeliness windows where: 
         `d` is taken from the cache-type tuple. 
         `ml` is set to `sl` from the cache-type tuple (short lag).
         `xl` is set to `xl` from the cache-type tuple (exchange lag).
@@ -817,7 +827,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
         + Accept the message by forwarding it along with its verified signature and any other attachments for further message-specific processing and exit. 
     - When the message authenticator is an attached-signature-multi-key.
-        Check the timeliness windows where: 
+        Check the accept timeliness windows where: 
         `d` is taken from the cache-type tuple. 
         `ml` is set to `ll` from the cache-type tuple (long lag).
         `xl` is set to `xl` from the cache-type tuple (exchange lag).
@@ -843,9 +853,34 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
 
 
 #### Pruning logic.
+
+Periodically check the message-ID cache database using the prune message lag value for expired messages. Delete or archive cache entries where `rdt-d-pml <= mdt <= rdt+d` is not true. Recall that `pml` is the prune cache lag value. Those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+
+Periodically check the exchange-ID cache database using the prune-exchange-lag value for expired exchanges. Delete or archive any cache entries (all messages associated with the exchange) where `[xdt, xdt+xl]` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+
+
+## Obsolete
+
+
+#### Pruned Message Database
+
+The pruned message cache stores all pruned messages from all the message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pml` for "pruned message lag. This value must satisfy `0 < sl <= ll <= pml`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages to be replayed. Once a message is pruned from the pruned message database, it is either discarded or added to an archival log of accepted messages.
+
+The key and value are the same as the message-ID-based cache that supplied the pruned message.
+
+#### Pruned Transactioned Message Database
+
+The pruned transactioned message cache stores all pruned messages from all the exchange-ID-message-ID-based message caches. These pruned messages are stored in the pruned message cache database using a fixed timeliness window. This window has a lag value represented as `pxl` for "pruned xchange lag. This value must satisfy `0 < sl <= ll <= xl <= pxl`. The purpose of this cache is to protect against replay attacks that result when window sizes are dynamically increased via a configuration that leaves a gap, allowing previously pruned messages from a pruned transaction to be replayed. Once a transaction with its messages is pruned from the pruned transactioned message database, it is either discarded or added to an archival log of accepted messages.
+
+The key and value are the same as the exchange-ID-message-ID-based cache that supplied the pruned transactioned messages.
+
+
+#### Pruning Logic
+
 Periodically check the message-ID pruned cache database. Delete or archive cache entries where `rdt-d-pml <= mdt <= rdt+d` is not true. Recall that `pml` is the prune cache lag value.
-Periodically check the exchange-ID pruned cache database. Delete or archive cache entries where `[xdt, xdt+pxl]` is not true. Recall that `xml` is the prune cache exchange lag value.
+
 Periodically check the message-ID cache database. Move to the message-ID pruned cache database cache entries where `rdt-d-ml <= mdt <= rdt+d` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+
 Periodically check the exchange-ID pruned cache database. Delete or archive any cache entries where `[xdt, xdt+xl]` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
 
 
