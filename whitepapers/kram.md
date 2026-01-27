@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.6.1
+v0.6.2
 
 
 ## Forward
@@ -734,8 +734,15 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
     - When the authenticator is either an attached seal or a single-key signature:
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
+        + Check the accept timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `mdt` is the message datetime `dt` field.
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+        + Lookup the sender key state.
         + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
-        + look up the existing verified signatures for that message ID from the verified signature database.
+        + Lookup the existing verified signatures for that message ID from the verified signature database.
         + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
         + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
         + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases. 
@@ -795,6 +802,16 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
     - When the authenticator is either an attached seal or a single-key signature:
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
+        + Check the accept timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `xl` is set to `xl` from the cache-type tuple (exchange lag).
+        `mdt` is the message datetime `dt` field.
+        `xdt` is the exchange starting datetime. 
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+        + Fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value 
+        + When not `[xdt, xdt+xl]`, drop the message and exit.
         + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
         + look up the existing verified signatures for that message ID from the verified signature database.
         + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
@@ -838,9 +855,9 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         `mdt` is the message datetime `dt` field.
         `xdt` is the exchange starting datetime. 
         `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
         + When the message type, `t` field is `xip`, set `xdt` to its datetime `dt` field.
         + Otherwise, fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value
-        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
         + When not `[xdt, xdt+xl]`, drop the message and exit.
     - When the message authenticator is an attached-signature-multi-key.
         Look up the referenced event and verify the attached signatures.
