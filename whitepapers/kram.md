@@ -1,15 +1,20 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.7.0
+v0.7.1
 
 
 ## Full KRAM with Multisig Support
 
+### Authentication Types
 The redesign aims to cleanly separate message authentication types to better align with the timeliness cache duration constraints. The authentication types are attached signature single key, attached signature(s) multi-key, and attached anchoring seal reference.
 
 The separation between single-key and multi-key is determined by the cardinality of the current key list for the sender AID, not by the threshold satisfaction of the attached signature(s). If the cardinality (i.e., the number of keys in the key list) is 1, then it's a single-key list. If it's greater than 1, then it's a multi-key. Single-key never has to wait to collect additional signatures to meet a threshold. Multi-key may have to wait to collect additional signatures. The waiting case for multi-key is determined by the actual attached signatures and the threshold. This is important because threshold satisfication requires verifying the attached signatures first, which is a much heavier operation than merely counting the elements in the key list.
 
 A further separation of concern for authentication type is between attached signatures and attached anchoring seal references. When the authentication is via an attached anchoring seal reference, there is no need to wait to collect signatures. The message single-key or multi-key has already been authenticated by its anchoring seal in the sender's KEL. Therefore, an attached anchoring-seal-reference authenticated message cache is more similar to, if not identical to, an attached signature single-sig cache, regardless of the key list cardinality.
+
+
+
+### Cache per Message-ID or per Exchange-ID and Message-ID
 
 Exchange transactioned messages benefit from a two-level cache window scheme. The inner window length is per message ID and is based on the authentication type (seal reference, single-key, multi-key). The outer window length is per exchange ID and usually spans multiple inner window lengths. Messages with exchange IDs are cached and pruned using logic that considers both windows.
 
@@ -17,21 +22,21 @@ This redesign of KRAM assumes v2 KERI. This means that transactioned `exn` messa
 
 With multiple caches of different types, finding the appropriate cache can be complicated and, hence, time- and throughput-expensive (not storage).  One way to mitigate this is to use database tables that index all cached messages by message ID or by a combination of exchange ID and message ID. This way, matching a received message ID (SAID) or a combined exchange ID (SAID) with a message ID (SAID) to an existing cache keyed by SAID(s) may use a fast LMDB tree comparison to find the match. The trade-off is that more storage is required for caches. Messages with different IDs do not share a cache.
 
-Moreover, when caches are not shared between different message IDs, then, because of the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space out the sending of messages with different message IDs in order to avoid inadvertent out-of-order asynchronous messages from different network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without requiring synchronization for sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The tradeoff is that the lower limit of storage required for full KRAM is higher. One can't configure a full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
+Moreover, when caches are not shared between different message IDs, then, because of the universally unique property of SAIDs, the sender does not have to synchronize the sending of messages or space out the sending of messages with different message IDs in order to avoid inadvertent out-of-order asynchronous messages from different network delay paths. Message-ID-based caching also enables the same sender AID to be used across multiple devices without requiring synchronization for sending. Different datetime for a message means a different message ID (SAID) and, hence, a different timeliness cache. The trade-off is that the lower storage limit required for full KRAM is higher. One can't configure a full KRAM to reduce storage requirements by sharing caches across multiple message IDs. The only configurable storage minimization is the cache window size, which determines how long to hold onto caches before deleting or archiving them.
 
-This redesign uses different time lags or windows for accepting a message into the cache and pruning a message from the cache. The prune window is set to a larger value. This allows dynamic increases to the accepting window cache lag without exposing a gap in time for a replay attack. Having a window for acceptance that is shorter than the window for pruning also enables the acceptance window to be smaller and easier to optimize for performance. It minimizes the number of messages that ever make it into the pruning cache in the first place while allowing dynamic configuration of the acceptance window sizes. As long as the prune window is guaranteed to be longer than the accept window, the prune window size can be increased dynamically without opening up a gap-replay attack. This is because any replay of messages already accepted must still pass the accept window first.
+### Accept and Prune Window Lag Values to Enable Dynamic Configuration of Cache-types
 
-While this approach protects against gap-replay attacks when the acceptance window is increased, it does not protect against gap-first-play attacks. A gap-first-play attack could occur when a message is not accepted because it lies outside the acceptance window, so it is never seen or cached by the receiver. But if the acceptance window is subsequently lengthened so that the message could be accepted, then it could be resubmitted by an attacker as a first play. Suppose that the original sender noticed that its first attempt at sending the message was not responded to by the receiver. The Sender might believe the message was not accepted, perhaps because it arrived too late and fell outside the receiver's acceptance window. Therefore, the sender creates a new version of the same message content but with a new datetime and a new message ID. The sender then sends this message, which is accepted. The sender may be affected adversely by a first play of the earlier version of the message due to a successful gap-first-play attack. This may be because the effect of the first play later may be the same (double access) because the messages only differ in the datetime and message ID. The way to mitigate gap-first-play attacks is to delay the requested increase in the acceptance window size until after time has expired equal to the delta between the old acceptance window and the new, longer one, `delta = new - old`. This ensures that any potential gap-first-play message timestamps will have already exceeded the new longer window. 
+This redesign allows different time-lag values (windows) for accepting a message into the cache and pruning it from the cache. The prune lag must be greater than or equal to the accept lag. Typically, the two values are equal. Allowing the prune lag to be greater for a period of time enables increases in the accept lag without exposing the host (receiver). This allows dynamic increases to the accepting window cache lag without exposing a gap in time for a replay or first-play attack (see below). 
 
-A dynamic change that increases both the accept and prune window sizes may also create a gap-replay attack vulnerability. If the new accept window is longer than the old prune window, then messages that have already been pruned due to the old prune window may be replayed and reaccepted without detection. The constraint on the accept window size is that it must always be less than or equal to the prune window size. But when increasing both the accept and prune window sizes at the same time, the new accept window could be longer than the old prune window.  To protect against this, whenever an accept window and a prune window are both to be changed, the accept window must not be increased beyond the old prune window until after the delta between the old accept window and the new accept window has expired, `delta = new - old`. The new, longer prune window must be applied immediately, but the new, longer accept window cannot be applied until after the delta accept has expired. This way, any potential replay messages that had been deleted from the old shorter prune window will have already timed out before they could be accepted into the new longer accept window. The gap will have been closed. Increasing the prune window immediately collects any accepted messages, preventing them from being replayed while waiting for the delta to expire. 
+A gap replay attack may occur as follows: A message is accepted and then eventually pruned thus deleting its cache. The accept window lag is then increased. The already pruned message could then be replayed successfully if its datetime stamp is within the new, longer accept window. Protection against such a gap replay attack requires a staged, coordinated two-step change to the prune and accept window lags. This is described in detail in the section on cache-type database dynamic configuration.
 
-Decreasing the accept and prune windows does not expose a replay gap as long as the prune window is always at least as large as the accept window.  
+A gap-first-play attack could occur when a message is not accepted because it lies outside the acceptance window, so it is never seen or cached by the receiver. But if the acceptance window is later extended so the message can be accepted, an attacker could resubmit it as a first play. Suppose that the original sender noticed that its first attempt at sending the message was not responded to by the receiver. The Sender might believe the message was not accepted, perhaps because it arrived too late and fell outside the receiver's acceptance window. Therefore, the sender creates a new version of the same message content but with a new datetime and a new message ID. The sender then sends this message, which is accepted. The sender may be affected adversely by a first play of the earlier version of the message due to a successful gap-first-play attack. This may be because the effect of the first play later may be the same (double access) because the messages only differ in the datetime and message ID. Protection against such a gap first-play attack requires the same staged, coordinated two-step change to the prune and accept window lags as a gap replay attack. This is described in detail in the section on cache-type database dynamic configuration.
 
-When adding new cache-types, the accept window delta logic must be applied to the worst case of any existing windows so as not to expose gaps due to coverage changes induced by cache-type granularity changes. This may require some effort to calculate the worst case. For example, when adding a new cache-type for a route for a given message type, the worst case would be to calculate the accept window delta against the shortest accept window for any cache-type of the same message type that has a shorter accept window than the new cache type. Messages that may have been accepted by a cache-type with a subset of the new route for no route at all (but the same message type) may now be accepted by the new cache-type but with a longer window. This could create a gap-first-play attack vulnerability.
-
+### Assumption of KEL availability
 
 The redesign of KRAM assumes that, for a message to be fully authenticated by KRAM, the required event must already be available in a copy of the sender's KEL held by the receiver. To clarify, the appropriate event from the sender's KEL must have already been received to immediately determine the key state for attached signature-authenticated messages, or to determine the latest event holding the anchoring seal for attached anchoring-seal-authenticated messages. This is a reasonable constraint. Contrast escrowing the event versus dropping the event when the KEL itself or the appropriate event holding the required authentication information has not yet been received. In either case, repair requires generating a cue to notify the receiver to retrieve the latest version of the KEL. In most cases, the time required to notify and then retrieve the KEL exceeds the KRAM message window, resulting in the message being dropped, even after the KEL is retrieved. Which makes moot the use of the escrow. A new message with a new datetime stamp must be generated regardless. Therefore, the most practical approach is to drop the message and create a cue that notifies the receiver that the appropriate KEL or KEL event needs to be obtained from the sender.  This is a change from the current `eventing` logic for processing messages, which escrows messages when the KEL or KEL event is unavailable. There is also a bug in the escrow logic that can result in a loop that always reescrows. Consequently, the logic needs to be refactored, regardless of the case.
 
+### Refactor of Message Processing
 This redesign also assumes a refactor of various process message methods of Kevery in `core.eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
 
 In general, an attacker who intercepts a message can delete the attached authentication (signature(s) or seal). This will cause the message to be dropped. The protection against this sort of attack is to send the message over an encrypted transport. The attacker may still be able to interrupt the encrypted message transport as a whole, but not individual KERI messages. 
@@ -109,15 +114,15 @@ Each database entry value provides the window-size parameters for that cache-typ
 
 ##### Cache-type Value
 
-Each value in the cache-type database is the set the window size parameters as a tuple of the following form:
+Each value in the cache-type database is a set of window size parameters as a tuple of the following form:
 `(d, sl, ll, xl, psl, pll, pxl)` where:
 `d` is the network time server clock drift/skew in milliseconds.
 `sl` is the short lag in milliseconds used for cache windows of attached-seal-reference or attached-signature-single-key authenticated messages. A short lag is required because there is no need to wait for additional signatures to be collected. Typically, the `sl` is at most a multiple of the network latency, no more than a few seconds.
 `ll` is the long lag in milliseconds used for cache windows of attached-signature-multi-key authenticated messages. A long lag is required to collect signatures from multiple signers for multi-key-authenticated messages. The value of `ll` may be much greater than or equal to  `sl`. Typically, it is some multiple of `sl`. It may be minutes, hours, days, or weeks.
 `xl` is the exchange lag used for the cache window size of exchange transactions that include all exchange messages with the same exchange ID. The exchange lag is requried to allow extra time for all messages in an exchange transaction. Messages without an exchange ID are not considered part of a transaction; this includes `exn` messages with an empty `x` field, so they are not included in the exchange transaction window cache. The value of `xl` must be greater than or equal to `ll`. Typically, `xl` would be some multiple of `ll`.
-`psl` is the prune short lag in milliseconds used as the prune cache window size of attached-seal-reference or attached-signature-single-key authenticated messages. The value of `psl` must be greater than or equal to `sl`
-`pll` is the prune long lag in milliseconds used as the prune cache windows size of attached-signature-multi-key authenticated messages. The value of `pll` must be greater than or equal to `ll`. 
-`pxl` is the prune exchange lag in milliseconds used as the prune cache window size exchange transactions that include all exchange messages with the same exchange ID. The value of `pxl` must be greater than or equal to `xl`. 
+`psl` is the prune short lag in milliseconds used as the prune cache window size of attached-seal-reference or attached-signature-single-key authenticated messages. The value of `psl` must be greater than or equal to `sl`. Typically, `psl` is equal to `sl`. The only case where `psl` must be greater then `sl` is when `sl` must be increased such that it might expose a gap replay or first-play attack (see the section below on dynamic configuration of window size parameters).
+`pll` is the prune long lag in milliseconds used as the prune cache windows size of attached-signature-multi-key authenticated messages. The value of `pll` must be greater than or equal to `ll`. Typically, `pll` is equal to `ll`. The only case where `pll` must be greater than `ll` is when `ll` must be increased such that it might expose a gap replay or first-play attack (see the section below on dynamic configuration of window size parameters).
+`pxl` is the prune exchange lag in milliseconds used as the prune cache window size exchange transactions that include all exchange messages with the same exchange ID. The value of `pxl` must be greater than or equal to `xl`. Typically, `pxl` is equal to `xl`. The only case where `pxl` must be greater than `xl` is when `xl` must be increased such that it might expose a gap replay or first-play attack (see the section below on dynamic configuration of window size parameters).
 
 The following constraints must be satisfied:
 `0 <= d`
@@ -128,12 +133,12 @@ The following constraints must be satisfied:
 
 For example `(d, sl, ll, xl, psl, pll, pxl)` could instantiated as:
 ```
-(100, 2000, 7200000, 172800000, 3600000, 172800000, 691200000)
+(100, 2000, 7200000, 172800000, 2000, 7200000, 172800000)
 ```
 
 #### Message Cache Database
 
-Each cache database entry key is the dot-separated composition of the sender AID and the message ID taken from the SAID `d` field value of the message. This is represented as  `AID.MID`. Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID.
+Each cache database entry key is the dot-separated composition of the sender AID and the message ID taken from the SAID `d` field value of the message. This is represented as  `AID.MID`. Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID. Message cache entry values, once created, are static for the lifetime of the cache, i.e., until it is pruned and hence deleted from the cache database.
 
 For example, `AID.MID` could be instantiated as: 
 ```
@@ -161,7 +166,7 @@ When evaluating the exchange prune cache window expression `[xdt, xdt+xl]` (see 
 
 #### Transactioned Message Cache Database
 
-Each cache database entry key is the dot-separated composition of sender AID, the exchange ID taken from the SAID `d` field of `xip` messages or the `x` field of `exn` messages, and the message ID taken from the `d` field of the `xip` or `exn` message. This is represented as  `AID.XID.MID`.  Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID. Including the `XID` indicates that its an exchange transaction cache entry.
+Each cache database entry key is the dot-separated composition of sender AID, the exchange ID taken from the SAID `d` field of `xip` messages or the `x` field of `exn` messages, and the message ID taken from the `d` field of the `xip` or `exn` message. This is represented as  `AID.XID.MID`.  Including the sender `AID` in the key enables convenient lookup and analysis of cache window usage based on sender AID. Including the `XID` indicates that its an exchange transaction cache entry. Transactioned message cache entry values, once created, are static for the lifetime of the cache, i.e., until it is pruned and hence deleted from the cache database.
 
  
 For example, `AID.XID.MID` could be instantiated as:
@@ -181,7 +186,7 @@ The value of this database is a tuple of the following form:
 
 For example `(mdt, xdt, d, ml, pml, xl, pxl)` could be instantiated as:
 ```
-(2020-08-22T17:50:09.988921-01:00, 2020-08-22T17:50:9.000000-01:00, 100, 2000, 3600000, 172800000, 691200000)
+(2020-08-22T17:50:09.988921-01:00, 2020-08-22T17:50:9.000000-01:00, 100, 2000, 2000, 172800000, 172800000)
 ```
 
 #### Partially Signed Multi-Key Message Database
@@ -219,12 +224,6 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
     - When the authenticator is either an attached seal or a single-key signature:
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
-        + Check the accept timeliness windows where: 
-        `d` is taken from the cache-type tuple. 
-        `ml` is set to `ll` from the cache-type tuple (long lag).
-        `mdt` is the message datetime `dt` field.
-        `rdt` is the current receiver's datetime stamp.
-        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
         + Lookup the sender key state.
         + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
         + Lookup the existing verified signatures for that message ID from the verified signature database.
@@ -289,18 +288,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
     - When the authenticator is either an attached seal or a single-key signature:
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
-        + Check the accept timeliness windows where: 
-        `d` is taken from the cache-type tuple. 
-        `ml` is set to `ll` from the cache-type tuple (long lag).
-        `pml` is set to `pll` from the cache-type tuple (long lag).
-        `xl` is set to `xl` from the cache-type tuple (exchange lag).
-        `pxl` is set to `pxl` from the cache-type tuple (exchange lag).
-        `mdt` is the message datetime `dt` field.
-        `xdt` is the exchange starting datetime. 
-        `rdt` is the current receiver's datetime stamp.
-        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
-        + Fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value 
-        + When not `[xdt, xdt+xl]`, drop the message and exit.
+        + Lookup the sender key state
         + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
         + look up the existing verified signatures for that message ID from the verified signature database.
         + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
@@ -371,6 +359,19 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
 Periodically check the message-ID cache database using the prune message lag value for expired messages. Delete or archive cache entries where `rdt-d-pml <= mdt <= rdt+d` is not true. Recall that `pml` is the prune cache lag value. Those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
 
 Periodically check the exchange-ID cache database using the prune-exchange-lag value for expired exchanges. Delete or archive any cache entries (all messages associated with the exchange) where `[xdt, xdt+xl]` is not true. For those messages that have extant entries in associated partially signed databases, remove those entries from all such databases. This means the multi-key-authenticated message window expired before the message was fully signed.
+
+#### Changing the Cache-type Database
+
+Recall that changes to the window lag values apply only to cache-type database entries used to create new caches. Existing caches in both the message-ID cache database and the exchange-ID-message-ID database can not be changed. Existing cache lag values remain fixed throughout the cache lifetime; each entry is eventually pruned and hence deleted from the cache database.
+
+While a KRAM host (receiver) is running service endpoints for KERI routed messages, namely `qry`, `rpy`, `pro`, `bar`, `xip` and `exn`, configuration changes to the contents of the cache-type database risk exposing the host to either gap attacks (replay or first-play) as described above. To protect against such attacks, a two-stage approach to the configuration changes may be required. Configuration changes can be grouped into one of three cases. The first is a decrease in the window size of an existing cache. The second is an increase in the window size of an existing cache. The third is a change to the granularity of cache types, either by increasing or decreasing the number of cache types or by changing the granularity of route paths. 
+
+The first case is trivial. Typically, the accept window and prune lag value are kept the same. These may both be decreased together immediately. The accept lag may also be reduced more than the prune lag while still satisfying the inequality. To clarify, decreasing the lag value for a given entry in the cache-type database does not require any special process. As long as the inequality constraints across lag values are satisfied, decreasing a lag value does not expose the host to a gap attack, and the change can be applied immediately to any new caches created as a result of the decrease. 
+
+The second case requires a timed, staged two-step approach to increasing any lag value in the cache-type database. Typically, the accept window and prune window lag value are kept the same. Suppose a configuration change aims to increase both to new values. Let `delta = new - old` represent the net increase in lag value for both. To protect against both gap replay and gap first-play attacks, the prune lag is immediately increased to the new value. The accept window lag is not increased to the new value until the delta time has expired. This requires that changes be synchronized, so that any given change must complete (taking delta time to complete) before a new change can be applied.  Suppose instead that the old accept lag is less than the old prune lag. The new accept lag may be increased up to the same value as the old prune without requiring any increase in the prune lag. The increase in the accept lag value must still wait for the delta time to expire before being applied (where delta = new accept lag - old accept lag).  Finally, suppose that the old accept lag is less than the old prune lag. But the new accept lag is greater than the old prune lag. In this case, the prune lag must be immediately increased to some value greater than or equal to the new accept lag. The increase in the acceptance lag value must wait for a delta time to expire before being applied. The increase in the accept lag value must still wait for the delta time to expire (where delta = new accept lag - old accept lag). 
+
+The last case is the most complicated and requires analyzing all window sizes for all cache entries before and after the change to determine whether any change could result in a gap replay or a gap first-play attack. This logic has yet to be worked out. To elaborate, when adding new cache-types, the accept window delta logic must be applied to the worst case of any existing windows so as not to expose gaps due to coverage changes induced by cache-type granularity changes. This may require some effort to calculate the worst case. For example, when adding a new cache type for a route for a given message type, the worst case would be to calculate the accept window delta against the shortest accept window for any cache type of the same message type that has a shorter accept window than the new cache type. Messages that may not have been accepted by a cache-type with a subset of the new route or by no route at all (but the same message type) may now be accepted by the new cache-type, but with a longer window. This could create a gap attack vulnerability.
+
 
 
 
@@ -888,6 +889,65 @@ A variant of the two-level method with simple KRAM is to use a pre-protocol to c
 
 
 ## Obsolete
+
+
+### Gap replay and first-play attacks
+This redesign uses different time lags or windows for accepting a message into the cache and pruning a message from the cache. The prune window is set to a larger value. This allows dynamic increases to the accepting window cache lag without exposing a gap in time for a replay attack. Having a window for acceptance that is shorter than the window for pruning also enables the acceptance window to be smaller and easier to optimize for performance. It minimizes the number of messages that ever make it into the pruning cache in the first place while allowing dynamic configuration of the acceptance window sizes. As long as the prune window is guaranteed to be longer than the accept window, the prune window size can be increased dynamically without opening up a gap-replay attack. This is because any replay of messages already accepted must still pass the accept window first.
+
+While this approach protects against gap-replay attacks when the acceptance window is increased, it does not protect against gap-first-play attacks. A gap-first-play attack could occur when a message is not accepted because it lies outside the acceptance window, so it is never seen or cached by the receiver. But if the acceptance window is subsequently lengthened so that the message could be accepted, then it could be resubmitted by an attacker as a first play. Suppose that the original sender noticed that its first attempt at sending the message was not responded to by the receiver. The Sender might believe the message was not accepted, perhaps because it arrived too late and fell outside the receiver's acceptance window. Therefore, the sender creates a new version of the same message content but with a new datetime and a new message ID. The sender then sends this message, which is accepted. The sender may be affected adversely by a first play of the earlier version of the message due to a successful gap-first-play attack. This may be because the effect of the first play later may be the same (double access) because the messages only differ in the datetime and message ID. The way to mitigate gap-first-play attacks is to delay the requested increase in the acceptance window size until after time has expired equal to the delta between the old acceptance window and the new, longer one, `delta = new - old`. This ensures that any potential gap-first-play message timestamps will have already exceeded the new longer window. 
+
+A dynamic change that increases both the accept and prune window sizes may also create a gap-replay attack vulnerability. If the new accept window is longer than the old prune window, then messages that have already been pruned due to the old prune window may be replayed and reaccepted without detection. The constraint on the accept window size is that it must always be less than or equal to the prune window size. But when increasing both the accept and prune window sizes at the same time, the new accept window could be longer than the old prune window.  To protect against this, whenever an accept window and a prune window are both to be changed, the accept window must not be increased beyond the old prune window until after the delta between the old accept window and the new accept window has expired, `delta = new - old`. The new, longer prune window must be applied immediately, but the new, longer accept window cannot be applied until after the delta accept has expired. This way, any potential replay messages that had been deleted from the old shorter prune window will have already timed out before they could be accepted into the new longer accept window. The gap will have been closed. Increasing the prune window immediately collects any accepted messages, preventing them from being replayed while waiting for the delta to expire. 
+
+Decreasing the accept and prune windows does not expose a replay gap as long as the prune window is always at least as large as the accept window.  
+
+When adding new cache-types, the accept window delta logic must be applied to the worst case of any existing windows so as not to expose gaps due to coverage changes induced by cache-type granularity changes. This may require some effort to calculate the worst case. For example, when adding a new cache-type for a route for a given message type, the worst case would be to calculate the accept window delta against the shortest accept window for any cache-type of the same message type that has a shorter accept window than the new cache type. Messages that may have been accepted by a cache-type with a subset of the new route for no route at all (but the same message type) may now be accepted by the new cache-type but with a longer window. This could create a gap-first-play attack vulnerability.
+
+##### Existing message-ID-cache processing logic.
+
+* When an existing cache is found for the (`AID.MID`): 
+    Determine the authentication type (resolve the special case of "both attached" as described above)
+    - When the authenticator is either an attached seal or a single-key signature:
+        + drop the message because it's idempotent relative to the existing cache and exit.
+    - Otherwise (authenticator is an attached multi-key signature(s):
+        + Check the accept timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `mdt` is the message datetime `dt` field.
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+        + Lookup the sender key state.
+        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + Lookup the existing verified signatures for that message ID from the verified signature database.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases. 
+* Otherwise, perform new cache logic below:
+
+##### Existing exchange-ID-message-ID-cache processing logic.
+* When an existing cache is found for the (`AID.XID.MID`): 
+    Determine the authentication type (resolve the special case of "both attached" as described above)
+    - When the authenticator is either an attached seal or a single-key signature:
+        + drop the message because it's idempotent relative to the existing cache and exit.
+    - Otherwise (authenticator is an attached multi-key signature(s):
+        + Check the accept timeliness windows where: 
+        `d` is taken from the cache-type tuple. 
+        `ml` is set to `ll` from the cache-type tuple (long lag).
+        `pml` is set to `pll` from the cache-type tuple (long lag).
+        `xl` is set to `xl` from the cache-type tuple (exchange lag).
+        `pxl` is set to `pxl` from the cache-type tuple (exchange lag).
+        `mdt` is the message datetime `dt` field.
+        `xdt` is the exchange starting datetime. 
+        `rdt` is the current receiver's datetime stamp.
+        + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
+        + Fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value 
+        + When not `[xdt, xdt+xl]`, drop the message and exit.
+        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + look up the existing verified signatures for that message ID from the verified signature database.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases.
+* Otherwise, perform new cache logic below:
+
 
 
 #### Pruned Message Database
