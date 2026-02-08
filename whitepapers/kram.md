@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.7.1
+v0.7.2
 
 
 ## Full KRAM with Multisig Support
@@ -37,16 +37,58 @@ A gap-first-play attack could occur when a message is not accepted because it li
 The redesign of KRAM assumes that, for a message to be fully authenticated by KRAM, the required event must already be available in a copy of the sender's KEL held by the receiver. To clarify, the appropriate event from the sender's KEL must have already been received to immediately determine the key state for attached signature-authenticated messages, or to determine the latest event holding the anchoring seal for attached anchoring-seal-authenticated messages. This is a reasonable constraint. Contrast escrowing the event versus dropping the event when the KEL itself or the appropriate event holding the required authentication information has not yet been received. In either case, repair requires generating a cue to notify the receiver to retrieve the latest version of the KEL. In most cases, the time required to notify and then retrieve the KEL exceeds the KRAM message window, resulting in the message being dropped, even after the KEL is retrieved. Which makes moot the use of the escrow. A new message with a new datetime stamp must be generated regardless. Therefore, the most practical approach is to drop the message and create a cue that notifies the receiver that the appropriate KEL or KEL event needs to be obtained from the sender.  This is a change from the current `eventing` logic for processing messages, which escrows messages when the KEL or KEL event is unavailable. There is also a bug in the escrow logic that can result in a loop that always reescrows. Consequently, the logic needs to be refactored, regardless of the case.
 
 ### Refactor of Message Processing
-This redesign also assumes a refactor of various process message methods of Kevery in `core.eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based admit or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic.
+This redesign also assumes a refactor of various process message methods of Kevery in `core.eventing` so that all non-event message types, namely `(qry, rpy, pro, bar, xip, exn)`, are processed by the parser with a single call to a new Kevery method called `processMsg`. At the very top of `processMsg`, the logic for AID-based allow or deny logic should be consolidated for all non-key event message types. Immediately following that, the KRAM logic should be applied to all non-key event message types. Only when a message leaves KRAM should it split into message-specific processing logic. KRAM support is provided via a kramming.py module in keri.core.kramming. In kramming is defined the Kramer class which provides KRAM functionality.
 
-In general, an attacker who intercepts a message can delete the attached authentication (signature(s) or seal). This will cause the message to be dropped. The protection against this sort of attack is to send the message over an encrypted transport. The attacker may still be able to interrupt the encrypted message transport as a whole, but not individual KERI messages. 
+In general, an attacker who intercepts a message can strip off the attached authentication (signature(s) or seal) and forward it to the host. This will cause the message to be dropped by the host. This is a weak form of DDoS attack. Weak because a signature presence check is low-cost. A stronger DDoS is to strip and reattach invalid signatures. This is more expensive to check. Another related DDoS attack would be for the attacker to intercept a message with attached signatures(s) and then also attach a bogus anchoring seal reference in an attempt to either have the packet dropped or at least increase the processing resources for all messages. Increasing the processing logic is called an amplification DDoS attack. In this case, the processing logic can prevent the message from being dropped by accepting it whenever either of the attached authenticators is valid. The least expensive check should take priority to mitigate the amplification attack. This is described below.
 
-Another potential DDoS attack would be for the attacker to intercept a message with attached signatures(s) and then also attach a bogus anchoring seal reference in an attempt to either have the packet dropped or at least increase the processing resources for all messages. Increasing the processing logic is called an amplification DDoS attack. In this case, the processing logic can prevent the message from being dropped by accepting it whenever either of the attached authenticators is valid. The least expensive check should take priority to mitigate the amplification attack. This is described below.
+One protection against these types of DDoS attacks is to send the message over an encrypted transport. The attacker may still be able to interrupt the encrypted message transport as a whole, but not individual KERI messages. 
+
+#### Kram Configuration
+To support backward compatibility and message-type-route combinations that do not benefit from or conflict with KRAM, KRAM processing must be configurable. The configuration is via a dictionary labeled `kram` in the config HJSON file.
+At configuration time, this dictionary is injected into the Kramer class as a default for any Kramer instances.
+
+This dictionary has two fields labeled `enabled` and `denials`. The `enabled` field value is a Boolean; `True` means KRAM is globally enabled, `False` means KRAM is globally disabled.  The `denials` field value is a list of three tuples. The first element of each tuple is a version tuple of the form (major, minor), where major and minor are integers. This is the `KERI` protocol version given by each message's version string. The second element of each tuple is a message-type string. Namely one of `qry`, `rpy`, `pro`, `bar`, `xip`, `exn`. The third element of each tuple is a route prefix string. The empty string, `''`, is an allowed value. The `denials` list acts like a set of explicit firewall denial rules.  The rules (cases) in the list are applied to each message to determine whether KRAM applies. A match means disable (deny) KRAM processing for that message. Absence of a match means enable (allow) KRAM processing for that message. 
+
+Each message is processing by Kramer using the Kramer.intake(msg) method
+At the top of Kramer.intake(msg) is the denial logic. This method returns the message if the message has passed KRAM and None if the message is either dropped or as not yet passed KRAM. In the case where KRAM is disabled for a given message then the message is immediately deemed to have passed KRAM. 
+
+
+The matching logic is as follows:
+```
+if self.enabled:  # value of the configured KRAM enabled flag
+    for vrsn, ilk, route in denials:
+        if msg.version == vrsn and msg.ilk == ilk and msg.route.startswith(route):
+            return msg  # KRAM disabled for this message
+    
+    return self.kramit(msg)  # kramit is the method that implements KRAM
+return msg  # KRAM disabled for all messages
+```
+
+When the route string in the denial tuple is empty, then all routes for that version and message type will have KRAM disabled. 
+
+The denials processing logic can be made more performant by compacting the denials list tuples into a list of strings of the following form, `Mmm.iii.route` where:
+`M` is a field consisting of the one-character base64 encoding of the major version number of the denied message,
+`mm` is a field consisting of the two-character base64 encoding of the minor version number of the denied message,
+`iii` is the three-character ilk (message-type) of the denied message type,
+`route` is the route string value of the denied message route.
+
+In addition, there needs to be either a new Kramer method called `.denial(msg)` or a new `denial` property on each msg that returns the properly formatted denial string for the associated message. With the compacted denials list of denial strings and a denial method or property that returns a denial string for each method, the processing logic becomes:
+
+```
+if self.enabled:  # value of the configured KRAM enabled flag
+    for d in denials:
+        if self.denial(msg).startswith(d):
+            return msg  # KRAM disabled (denied) for this message
+    
+    return self.kramit(msg)  # apply KRAM to this message kramit is the method that implements KRAM
+return msg  # KRAM disabled for all messages 
+```
+
 
 
 ### Timeliness Cache Window Representation
 
-The message ID based timeliness cache windows have the following form:
+The message-ID based timeliness cache windows have the following form:
 `[rdt-d-l, rdt+d]` where:
 `rdt` is the current universal datetime of the receiver.
 `d` is the network time server clock drift/skew in milliseconds. Typically 10 - 100 ms.
