@@ -307,7 +307,7 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
 
 ##### New cache logic when no existing cache is found for the (`AID.MID`):
 
-*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
+*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route)`. The value of this entry provides the default window-size parameters for a new cache window.
 * Determine the authentication type (resolve the special case of "both attached")
     - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
         Check the accept timeliness window where: 
@@ -317,7 +317,7 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
         `mdt` is the message datetime `dt` field.
         `rdt` is the current receiver's datetime stamp.
         + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
-    - When the message authenticator is an attached-seal-reference.
+    - When the message authenticator is an attached-seal-reference and the seal has not yet been validated from the initial auth type determination.
         Look up the referenced event and validate the seal. 
         + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise invalid, drop the message and exit.
@@ -371,7 +371,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
 
 
 ##### New cache logic when no existing cache is found for the (`AID.XID.MID`):
-*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route, MessageID)`. The value of this entry provides the default window-size parameters for a new cache window.
+*  Fetch the most specific matching entry from the cache-type database. The most specific entry is the key that matches the most elements from the message vector `(MessageType, Route)`. The value of this entry provides the default window-size parameters for a new cache window.
 * Determine the authentication type (resolve the special case of "both attached")
     - When the message authenticator is an attached-seal-reference or attached-signature-single-key. 
         Check the accept timeliness windows where: 
@@ -387,7 +387,7 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         + When the message type, `t` field is `exn`, then use its `x` field value to fetch any existing cache entry with a matching `AID.XID` and copy its `xdt` value. When no existing cache entry is found, then drop the event and exit.
         + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit.  
         + When not `[xdt, xdt+xl]`, drop the message and exit.
-    - When the message authenticator is an attached-seal-reference.
+    - When the message authenticator is an attached-seal-reference and the seal has not yet been validated from the initial auth type determination.
         Look up the referenced event and validate the seal. 
         + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise invalid, drop the message and exit.
@@ -872,7 +872,10 @@ There are several approaches to configuration. One, the worst, is to hard-code t
 
 One possible solution is to add two more tables. One that indexes cache entries by ExchangeID and the other that indexes cache entries by MessageId. Then, whenever a new message is received first, if the message is an exchange message type, the ExchangeID table is checked for an existing cache entry for that message. If so then that message is evaluated against the cached window. If not, then the MessageID table is checked for an existing cache entry for that message ID. If so, then the message is evaluated against the cached window. If neither of the above is satisfied, then the window size key table is searched for a matching cache type, and then the existing caches are searched for a matching cache type. If not found, then a new cache window is created from the window cache table. This ensures that dynamic changes to window-size table entries do not interfere with existing, but unexpired, caches. This also avoids walking the window size key space to determine the most specific match unless there is no preexisting cache for a preexisting exchange cache or preexisting message cache.
 
-I actually think that it will be really hard to do dynamic window sizes becaue any time an oder shorter window size is replaced with a longer window any messages or transactions that were pruned against the shorter window will be replayable against the new longer window. So changing window sizes for a given cache type must always account for the case that the window size is lengthened. which means the long window size can't be used until a delay of the delta between the old window size and the new. But once that delta has expired then the new window size can be employed. After ruminating on this last night in my waking dream mode, I think it's worth a refactor. The idea of configuratble windows sizes whose length is longer than the time frame of reconfiguration opens the possibility of gaps into which a replay attack may fall.  After thinking about several different solution approaches I think a revised approach to what is described above is justified. One of the problems is that we added a lot of flexibility to allow resource tuning that may be overkill. And that is complicating the logic for dynamic window sizes. I also think that maybe we don't really need so much flexibility, A lot of the flexibility was to allow some hosts to minimize resources expended for KRAM caches.  But for those, a simpler, less flexible subset might be sufficient, and then for everyone else, the assumption that resources are not so constrained would allow a simpler but way more robust approach to full KRAM with multi-key (multi-sig).  Moreover, in hindsight, I think single-key and multi-key controlled identifiers are sufficiently different that a different logic split would benefit. I woke up with a good idea of an refactored approach but need a couple of hours or so to write it out. So if you don't mind holding off working on this until Monday I should have a revised proposal ready by then. Clearly, the problem of both changing window sizes and changing the specificity of message classes that a given window size applies to makes the logic of protecting from gaps that can be replay attacks much harder logically than I had anticipated.  So generalizing to a simpler approach that may use more resources but can avoid the complexity seems fruitful.
+I actually think that it will be really hard to do dynamic window sizes becaue any time an oder shorter window size is replaced with a longer window any messages or transactions that were pruned against the shorter window will be replayable against the new longer window. So changing window sizes for a given cache type must always account for the case that the window size is lengthened. which means the long window size can't be used until a delay of the delta between the old window size and the new. But once that delta has expired then the new window size can be employed. 
+
+
+After ruminating on this last night in my waking dream mode, I think it's worth a refactor. The idea of configuratble windows sizes whose length is longer than the time frame of reconfiguration opens the possibility of gaps into which a replay attack may fall.  After thinking about several different solution approaches I think a revised approach to what is described above is justified. One of the problems is that we added a lot of flexibility to allow resource tuning that may be overkill. And that is complicating the logic for dynamic window sizes. I also think that maybe we don't really need so much flexibility, A lot of the flexibility was to allow some hosts to minimize resources expended for KRAM caches.  But for those, a simpler, less flexible subset might be sufficient, and then for everyone else, the assumption that resources are not so constrained would allow a simpler but way more robust approach to full KRAM with multi-key (multi-sig).  Moreover, in hindsight, I think single-key and multi-key controlled identifiers are sufficiently different that a different logic split would benefit. I woke up with a good idea of an refactored approach but need a couple of hours or so to write it out. So if you don't mind holding off working on this until Monday I should have a revised proposal ready by then. Clearly, the problem of both changing window sizes and changing the specificity of message classes that a given window size applies to makes the logic of protecting from gaps that can be replay attacks much harder logically than I had anticipated.  So generalizing to a simpler approach that may use more resources but can avoid the complexity seems fruitful.
 
 
 ## Time Resolution and Throughput
