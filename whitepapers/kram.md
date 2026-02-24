@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.7.4
+v0.7.5  
 
 
 ## Full KRAM with Multisig Support
@@ -74,7 +74,7 @@ The denials processing logic can be made more performant by compacting the denia
 `iii` is the three-character ilk (message-type) of the denied message type,
 `route` is the route string value of the denied message route.
 
-With this compact form, the value of the `iii` field could also be the empty string. This allows compact disablement of KRAM for all messages of a given protocol version.
+With this compact form, the value of either or both of the  `iii`  and `route` fields could be the empty string. This allows compact disablement of KRAM for all messages of a given protocol version regardless of message type or all routes of a given message type
 
 In addition to the compacted denials list, there needs to be either a new Kramer method called `.denial(msg)` or a new `denial` property on each msg that returns the properly formatted denial string for the associated message. The combination of a compacted denial list of strings and a denial method or property that returns a denial string for each method, the processing logic becomes:
 
@@ -97,6 +97,7 @@ For example, consider the following configuration:
     "denials":
     [
         ((1,0), "", ""),
+        ((2,0), "pro", ""),
         ((2,0), "rpy", "/end")
     ]
 }
@@ -104,11 +105,16 @@ For example, consider the following configuration:
 which produces the following compact `denials` list:
 ```
 [
-    "BAA..",
+    "BAA.",
+    "CAA.pro.",
     "CAA.rpy./end"
 ]
 ```
-The first element disables KRAM for all KERI version 1.0 messages. The second element disables KRAM for all version 2.0 `rpy` messages whose route starts with `/end`. All other messages from the set `qry`, `rpy`, `pro`, `bar`, `xip`, `exn` are processed by KRAM.
+The first element disables KRAM for all KERI version 1.0 messages. 
+The second element disables KRAM for all version 2.0 `pro` messages.
+The third element disables KRAM for all version 2.0 `rpy` messages whose route starts with `/end`. 
+All other messages from the set `qry`,  `bar`, `xip`, `exn` are processed by KRAM. And all `rpy` messages whose
+route is not `/end` are processed by Kram.
 
 
 ### Timeliness Cache Window Representation
