@@ -1,6 +1,6 @@
 # Keri Request Authentication Mechanism  (KRAM)
 
-v0.7.5  
+v0.7.6  
 
 
 ## Full KRAM with Multisig Support
@@ -298,11 +298,13 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
         + Lookup the sender key state.
-        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + Check the saved sender keystate in the partially signed keystate database. When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place. Note that the sender's key state may have changed while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
         + Lookup the existing verified signatures for that message ID from the verified signature database.
-        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database using key `AID.MID` when the cache was first created.
         + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
-        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases. 
+        + Once the new signatures are added, then verify the signature set against the multi-key signing threshold. Should the full set of verified signatures satisfy the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments. 
+        + In the event that the message and its attachments are forwarded, the partially signed database entries will remain until the prune window closes, upon which all the partially signed database entries will be deleted. This allows signatures to continue to be collected even after the threshold is reached. In some cases. It is desirable to know all who signed, not just the first who meet the threshold. The message processing can look back and discover additional signatures up to the time the prune window closes.
+        
 * Otherwise, perform new cache logic below:
 
 ##### New cache logic when no existing cache is found for the (`AID.MID`):
@@ -318,13 +320,13 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
         `rdt` is the current receiver's datetime stamp.
         + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
     - When the message authenticator is an attached-seal-reference.
-        Look up the referenced event and validate the seal. 
+        Look up the referenced event in the sender's KEL and validate the seal. 
         + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise invalid, drop the message and exit.
         + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
         + Accept the message by forwarding it along with its validated seal reference and other attachments for further message-specific processing and exit.
     - When the message authenticator is an attached-signature-single-key. 
-        Look up the referenced event and verify the attached signature.
+        Look up the Sender's current keystate for transferable AID or use the AID as a public key, for non-transferable AID, and verify the attached signature.
         + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise unverifiable, drop the message and exit.
         + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
@@ -338,18 +340,16 @@ For messages that do not have an exchange ID (this includes `exn` messages with 
         `rdt` is the current receiver's datetime stamp.
         + When not `rdt-d-ml <= mdt <= rdt+d`, drop the message and exit. 
     - When the message authenticator is an attached-signature-multi-key.
-        Look up the referenced event and verify the attached signatures.
-        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
-        + Verify the attached signatures. 
+        Look up the Sender's current key state and verify the attached signatures.
+        + When unverifiable because the keystate (KEL) is not found, cue a notification to go retrieve the current keystate. Drop the message and exit.
+        + Verify the attached signatures against the current keystate.         
         + When at least one signature is verified, create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
-        + Store the sn and SAID of the latest sender establishment event in the partially signed sender key state database. Note that the sender's key state may change while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
-        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit.
-        Otherwise (the threshold is not satisfied, but at least one signature verifies). 
-        + Add the message to the partially signed multi-key message database for this (`AID.MID`).
+        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database for this (`AID.MID`). 
+        + Add the message to the partially signed multi-key message database for this (`AID.MID`). 
         + Add the verified signatures to the partially signed verified signature database for this (`AID.MID`). 
-        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database for this (`AID.MID`).
-        + Add any non-authenticator attachments to the appropriate partially signed attachment databases for this (`AID.MID`).
-
+        + Add any non-authenticator attachments to the appropriate partially signed attachment databases for this (`AID.MID`).        
+        + Should the attached and verified set of signatures satisfy the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit. 
+        + In the event that the message and its attachments are forwarded, the partially signed database entries will remain until the prune window closes, upon which all the partially signed database entries will be deleted. This allows signatures to continue to be collected even after the threshold is reached. In some cases. It is desirable to know all who signed, not just the first who meet the threshold. The message processing can look back and discover additional signatures up to the time the prune window closes.
 
 #### Transactional Exchange Messages
 For `xip` messages and `exn` messages that have a non-empty `x` field value:
@@ -362,11 +362,11 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         + drop the message because it's idempotent relative to the existing cache and exit.
     - Otherwise (authenticator is an attached multi-key signature(s):
         + Lookup the sender key state
-        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place.
+        + When a change in the sender key state is detected by comparing the partially signed sender keystate database with the current keystate KEL for the sender, then drop the event and exit. This prevents the message from ever being validated while keeping the timeliness cache in place. Note that the sender's key state may have changed while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
         + look up the existing verified signatures for that message ID from the verified signature database.
-        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
+        + Idempotently add any newly verified signatures to the partially signed verified signature database, using the key (`AID.XID.MID`). To do this, first perform a set intersection to remove any already-verified signatures attached to the message. Attempt to verify any remaining attached signatures. Add all remaining verified signatures to the verified signature database. This will collect signatures until the cache timeliness window expires. Note that the message itself will have already been added to the partially signed message database when the cache was first created.
         + Add idempotently any non-signature attachments to the associated partially signed attachment databases using key (`AID.MID`). 
-        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.MID`) from the verified signature and non-authenticator attachment databases.
+        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it for further message-specific processing along with its verified signatures and other attachments, and remove all associated entries for this key (`AID.XID.MID`) from the verified signature and non-authenticator attachment databases.
 * Otherwise, perform new cache logic below:
 
 
@@ -391,13 +391,13 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         Look up the referenced event and validate the seal. 
         + When unvalidatable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise invalid, drop the message and exit.
-        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Create a new cache entry with (`AID.XID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
         + Accept the message by forwarding it along with its validated seal reference and other attachments for further message-specific processing and exit.
     - When the message authenticator is an attached-signature-single-key. 
         Look up the referenced event and verify the attached signature.
         + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + When otherwise unverifiable, drop the message and exit.
-        + Create a new cache entry with (`AID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
+        + Create a new cache entry with (`AID.XID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
         + Accept the message by forwarding it along with its verified signature and any other attachments for further message-specific processing and exit. 
     - When the message authenticator is an attached-signature-multi-key.
         Check the accept timeliness windows where: 
@@ -415,17 +415,17 @@ For `xip` messages and `exn` messages that have a non-empty `x` field value:
         + When not `[xdt, xdt+xl]`, drop the message and exit.
     - When the message authenticator is an attached-signature-multi-key.
         Look up the referenced event and verify the attached signatures.
-        + When unverifiable because the KEL or Key event is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
+        + When unverifiable because the current keystate (KEL) is not found, cue a notification to go retrieve the KEL or Key event. Drop the message and exit.
         + Verify the attached signatures. 
         + When at least one signature is verified, create a new cache entry with (`AID.XID.MID`) as the key and the window parameters from the matching cache-type database as the value. 
-        + Store the sn and SAID of the latest sender establishment event in the partially signed sender key state database. Note that the sender's key state may change while collecting signatures; the signature threshold satisfaction logic must account for this. Any previously verified signatures from an old key state are no longer verifiable against a later keystate.
-        + When the full set of verified signatures satisfies the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit.
-        Otherwise (the threshold is not satisfied, but at least one signature verifies). 
-        + Add the message to the partially signed multi-key message database for this (`AID.MID`).
-        + Add the verified signatures to the partially signed verified signature database for this (`AID.MID`). 
-        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database for this (`AID.MID`).
+        + Add a reference to the latest establishment event of the sender used to sign the message `(sn, SAID)` to the partially signed sender key state database keyed by `AID.MID`.
+        + Add the message in the partially signed multi-key message database keyed by `AID.MID`.
+        + Add the verified signatures to the partially signed verified signature database keyed by `AID.MID`. 
         + Add any non-authenticator attachments to the appropriate partially signed attachment databases for this (`AID.MID`).
-
+        + Should the full set of verified signatures satisfy the threshold, accept the message by forwarding it along with its verified signatures and any other non-authenticator attachments for further message-specific processing and exit.
+        + In the event that the message and its attachments are forwarded, the partially signed database entries will remain until the prune window closes, upon which all the partially signed database entries will be deleted. This allows signatures to continue to be collected even after the threshold is reached. In some cases. It is desirable to know all who signed, not just the first who meet the threshold. The message processing can look back and discover additional signatures up to the time the prune window closes.
+ 
+        
 
 #### Pruning logic.
 
@@ -437,7 +437,7 @@ Periodically check the exchange-ID cache database using the prune-exchange-lag v
 
 Recall that changes to the window lag values apply only to cache-type database entries used to create new caches. Existing caches in both the message-ID cache database and the exchange-ID-message-ID database can not be changed. Existing cache lag values remain fixed throughout the cache lifetime; each entry is eventually pruned and hence deleted from the cache database.
 
-While a KRAM host (receiver) is running service endpoints for KERI routed messages, namely `qry`, `rpy`, `pro`, `bar`, `xip` and `exn`, configuration changes to the contents of the cache-type database risk exposing the host to either gap attacks (replay or first-play) as described above. To protect against such attacks, a two-stage approach to the configuration changes may be required. Configuration changes can be grouped into one of three cases. The first is a decrease in the window size of an existing cache. The second is an increase in the window size of an existing cache. The third is a change to the granularity of cache types, either by increasing or decreasing the number of cache types or by changing the granularity of route paths. 
+While a KRAM host (receiver) is running service endpoints for KERI routed messages, namely `qry`, `rpy`, `pro`, `bar`, `xip`, and `exn`, configuration changes to the contents of the cache-type database risk exposing the host to either gap attacks (replay or first-play) as described above. To protect against such attacks, a two-stage approach to the configuration changes may be required. Configuration changes can be grouped into one of three cases. The first is a decrease in the window size of an existing cache. The second is an increase in the window size of an existing cache. The third is a change to the granularity of cache types, either by increasing or decreasing the number of cache types or by changing the granularity of route paths. 
 
 The first case is trivial. Typically, the accept window and prune lag value are kept the same. These may both be decreased together immediately. The accept lag may also be reduced more than the prune lag while still satisfying the inequality. To clarify, decreasing the lag value for a given entry in the cache-type database does not require any special process. As long as the inequality constraints across lag values are satisfied, decreasing a lag value does not expose the host to a gap attack, and the change can be applied immediately to any new caches created as a result of the decrease. 
 
