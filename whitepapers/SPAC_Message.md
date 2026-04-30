@@ -1480,7 +1480,7 @@ The RFA SAID field is calculated using the SAID protocol (which substitutes dumm
 
 ### Pad Payload
 
-Packet size as well as the time-of-departure (TOD) and the time-of-arrival (TOD) at the final destination can be used as correlatable metadata by a surveillor to correlate source and final destination of routed packets. While the pad field in the SPAC payloads enables a given source to pad all packets to the same length to minimize correlation on packet size it does not protect against TOD and TOA metadata correlation. 
+Packet size as well as the time-of-departure (TOD) and the time-of-arrival (TOA) at the final destination can be used as correlatable metadata by a surveillor to correlate source and final destination of routed packets. While the pad field in the SPAC payloads enables a given source to pad all packets to the same length to minimize correlation on packet size it does not protect against TOD and TOA metadata correlation. 
 
 One way to minimize TOD/TOA correlation is to whiten the stream of packets by injecting pad packets so that there is a uniform distribution of packets over time. When a source does not have any material data to send, it may send a steady stream of pad packets instead, so that a correlator always sees a uniform time distribution of packets. The `PAD` packet payload starts with the standard three fields for payloads and adds a final field that is a pad field. The pad field is described above.
 
