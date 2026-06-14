@@ -1,6 +1,6 @@
 # Revocation
 
-V0.3 2026/06/13
+V0.4 2026/06/13
 
 ## Overview
 
@@ -95,6 +95,27 @@ For example, for the issuer, with anchored issuances as the proof mechanism, sig
 
 The main concern with anchored issuances is potentially increased correlatability via those anchors. Bulk issuance, however, can solve that problem with much less complexity than the reissuance required to solve the signature ephemerality problem induced by bare attached signatures. Whereas reissuance requires multiplying at scale the number of interactions between both Issuers and Holders, and between Issuers and Verifiers. Often, the only cost-effective way to manage these continuing interactions is to use issuer-managed wallets with continuous online push or pull connections. Managed wallets lead to vendor lock-in and reduced portability, not to mention increased fragility of continuous connectivity. Managed wallets reduce effective citizen control over their digital identities. In contrast, bulk issuance uses a one-time bulk interaction between the Issuer and Holder. Contextualized presentation of members of the bulk issued set are distributed across interactions between holders and verifiers with no net increase in total interactions over single issuance.
 
+### Proofing Applied to Revocation Registries
+
+The same security strengths and weaknesses of shared secrets, bare attached signatures, and anchors in verifiable data structures as authenticity proof mechanisms for issuances apply equally when that issuance is a revocation registry for other issuances.  The bare attached signature attached to a bitstring status has an ephemeral time extent. That status must itself be revoked and replaced whenever the signing keys used to issue the bitstring status are rotated. This then requires a secure mechanism for publishing the key state used to verify any bare attached signature. This looks like a public key registry. The governance of such a registry must now be managed.
+
+When that governance is shared, a new set of security problems arises. An attacker might have more success attacking the bitstring status signing infrastructure than the original verifiable credential issuer signing infrastructure.
+
+While on the surface, something like a bitstring status seems simple, real-world security around that status is not. The same set of problems must be solved. These include solving the ephemerality problem caused by short-lived cryptographic keys.
+
+Notwithstanding, the security complexity of bare attached signatures used to authenticate a bitstring status registry for revocation of issuances (entitlements, credentials, etc). A bitstring encodes the status of all issuances into a single data structure. This co-mingles the governance. This requires that any special cases be pre-determined before issuing the bitstring. Non-binary states require multiple bits in the bitstring. These have to be defined at the origin of any issuance that uses the bitstring. This imposes a rigidity on its management. 
+
+The principal advantage of a bitstring status is its compactness. But compactness at the expense of security or governance complexity may not be a good trade.
+
+ACDCs use independent registries, one per issuance. The registries are vacuous at creation; they are not bound to any specific issuance. The registries themselves are cryptographically verifiable, append-only, hashed-chained data structures that are perpetually verifiable because each entry (event) in a given registry is anchored in the KEL (key event log) of the Issuer of that registry. Each registry has a universally unique identifier, the SAID (hash) of its inception event. Therefore, an attacker must compromise the Issuer's key state to compromise a registry. All the protection that KERI provides around a KEL is therefore inherited by any registry anchored in that KEL. 
+
+A Registrar is simply a service that serves up registries. It's a database server where each data entry is a perpetually verifiable, append-only log of ACDC state, which log includes, at a minimum, issuance and, when revocable, revocation. Because a registry maintains state, via events in a log that could be used for any stateful transaction involving the associated ACDC, the associated log is called a transaction event log (TEL). A registry maintains a TEL for an ACDC. A Registrar serves up a database of registries.
+
+A registry is how an ACDC is issued. ACDCs are not signed; they are bound (anchored) to a registry, which in turn is bound (anchored) to a KEL. 
+
+Because registry creation is vacuous and mutually independent, there is no co-mingling of state between registries. The actual transaction states that a given registry maintains for its associated ACDC can be determined at the time of the ACDC's issuance, not at the time of the registry's inception. The ACDC is bound at some event after the inception event. 
+
+While each ACDC issuer initially controls its own registries for the ACDCs it issues, that control can be transferred via a transfer event in the registry.  This secure flexibility provides benefits for real-world SEDI applications that justify the increased storage requirements of a registry database over those of a more compact bitstring representation.
 
 
 ## Digital Identity System Goals
