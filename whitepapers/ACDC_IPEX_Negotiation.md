@@ -117,12 +117,14 @@ This leads me to believe that we need to find a high-stakes use case where the I
 
 
 ## Diagrams
-
+### Blinded State Registry
 ![Blinded State Registry](media/17841393245934.jpg)
 
-
+### Anchored IPEX Exchange Transaction Simple
 ![Anchored Exchange Transaction](media/17841393711052.jpg)
 
+### Detailed Anchored IPEX Exchange Transaction
 ![Detailed Anchored Exchange Transaction](media/17841394443807.jpg)
 
+### Detailed Anchored IPEX Exchange Transaction with Presentation Registry
 ![Presentation Registry Anchored Exchange Transaction](media/17841394794090.jpg)
