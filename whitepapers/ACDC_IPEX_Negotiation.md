@@ -80,6 +80,51 @@ When the ACDC disclosure includes a bespoke ACDC, the applicant won't necessaril
 The paths shown use the "/' delimeter but for CESR compatibility we could use the CESR Pathing BASE64 compatible path delimeter "-".     Or if we  do a little work to name the path list  field normatively we could have the tooling auto convert from "/" delimited paths to more compact "-" delimited paths when using CESR serialization of the exchange message.
  Or we allow either delimeter and just inject and extract the path as a tuple for reasoning so we are delimiter independent at the reasoning level..
  
+###  Pather for pathing
+
+I agree that using the existing Pather makes the most sense. This does impose some subtle constraints on the serialization. Currently, pather is used in attachments to reason about the message to which the path is attached. The pathed material group code in the attachment tells the parser to interpret the encoded string as a path.
+
+For generic exchange messages, field values that are strings do not know how to use pather serialization unless we make them special fields. So where we convert to a Pather is relevant. There are some choices and so more discussion before hardening is warranted.
+
+Another related option not mentioned so far is which block in an exchange should request disclosure paths in an Apply go in. There is a query block and an attribute block. By design, there are two blocks so that the exchange (as well as the other message types, query and reply) can more easily model ReST endpoint logic to minimize the impedance mismatch for building KERI APIs. 
+
+If one thinks of an http verb with a URL with path and query string and verb message body, the modeling is as follows. The route field in the exchange holds the path from the URL. The query block holds the query string as a field map, and the attribute block holds the verb message body.
+
+So we can put disclosure request information in the apply in three places, the route, the query block, and the attribute block
+
+The route prefix is /apply, but one could overload that and use /apply/schemasaid.
+One could define a field in the query block to put a dictionary of paths
+One could define a field in the apply block to put a dictionary of paths.
+
+Because the vLEI did not employ graduated disclosure, there was no need to go to any lengths to define this stuff, but now we are discussing the syntax for negotiating over graduated disclosure and its worthwhile now  to expose these subtleties
+
+### Reasoning with graphs vs reasoning with schema
+
+The multi-ACDC dict is keyed by schema SAID ({"EABCDED": [...], "EBQRSTR": [...]}). That can't disambiguate a chain that contains two credentials of the same schema — two same-type creds collapse to one key. Since you already note the applicant can't know the actual ACDC SAIDs, keying by the edge/node label in the requester's own apply-schema (which the applicant does control) might be the more robust handle for chained disclosure.
+You are right the simple example does not account for a chain with repeated schema. So we need to be more thoughtful in how we define it.
+
+This opens up a bigger question, and your reference to the “apply-schema” itself brings in a related issue. This is an area where I have spent some significant effort. The W3C community wants to reason using knowledge graphs. A schema is a type of knowledge graph. A chained graph of ACDCs is also a type of knowledge graph. ACDCs can be modeled with labeled property graphs, which are also a type of knowledge graph.
+
+The core insight for me is not whether we have the ability to reason about or with knowledge graphs, but what type of reasoning we are doing, and whether we should constrain the type of reasoning in a layering of concerns so as to better address the concerns at each layer. Knowledge graphs, as widely used in that community, do not, have as first-order design properties, any security, authenticity, verifiability, confidentiality, or privacy properties as layered concerns. They only model semantics, meaning. These non-semantic concepts are rarely employed, and when they are, they are bolt-ons to the standard knowledge graph.  I found the W3C approach of attempting to bolt on security to RDF graph expansions a pathological mess (excuse my strong language). What knowledge graphs are meant to do is reason about the semantics of what is in the graph, not reason about authenticity or correlatability as a precursor to what goes in a graph in the first place. These are different types of reasoning.
+
+One of the prime motivations for ACDCs was to invert that layering. To build mechanisms for security, confidentiality, and correlation resistance in layers that are employed before the semantic reasoning happens.
+
+So disclosure is reasoning about exposure. What parts to expose when. Not what those parts mean once they are exposed. So, to better separate concerns along a layering approach, my intuition is we should minimize the role the schema plays in this layer of reasoning, that is the what to expose layer. This is accomplished by using schema as type, i.e., the SAID of the schema, and the schema validation validates the type. This contraindicates using bespoke schema as the way to indicate exposure. And using schema to indicate exposure is more complicated because pathing in schema is disjoint and requires deep knowledge of the schema semantics to reason about exposure paths.
+
+Reasoning about exposure of elements of a graph when those graph elements are expandable or  collapsable or compactifiable is reasoning about the graph structure not the semantics of the information contained in the graph structure. In this case, graduated disclosure, it seems to me we can reason about graph structure using a simplified expression of the graph, not the most complex expression of the graph (JSON Schema). So we should think about what the minimally sufficient means are for reasoning about graph structure not the most expressive means (JSON schema) for that graph structure we have available.
+
+So if we think of an ordered dictionary as a graph, we can model a graph of ACDCs with a dictionary (associative array or field map; we already model the guts of each acdc with a dictionary), so we can extend that by modeling the full graph of ACDCs with an expanded dictionary. This allows us to use a pathing language that is as simple as we can make it. A path is a tuple of labels which can be compactly serialized to a string with a path delimiter.
+
+It has to include a way to path along a chain of ACDCs not merely into an ACDC. As you point out, with the overly simple example I provided of a path list. But we could use an ordered path list to represent a branch in an ACDC chain (only one possible branch) or include the full edge labeling path from the leaf ACDC back up the tree when not a simple chain (one branch). We can have relative to ACDC paths and absolute paths that are paths through the aCDC graph.
+
+The edge labels in the path enable one to explicitly trace which edge leads to which ACDC schema SAID and then path down into that ACDC to the disclosed leaf.
+
+The insight is correct: a request to disclose that uses a path to a leaf implies a closure of all that must be disclosed in order to disclose the leaf, but no more. So compacted sibling branches stay compacted. But then we need a compact way of requesting full expansion, so I used the trailing “/“ to indicate that. This provides a compact way of saying expand all branches below this node.
+
+A path to a leaf implies that the nodes along that path must be diclosed but not sibling branches and no branches below the node holding the leaf, but all leaves in the same node.  This is unambiguously implied by a leaf path.
+
+Whereas a node path (trailing "/") already indicates more than a leaf. So we can let that indicate an expansion of the node and all children nodes but no sibling branches. I think this is reasonable. If we need siblinge branches then we specify a path to the sibling leaf or node.  The node path rule means if I want the whole graph then I specify a node path to the root node of the tree. If I want a subgraph then the node path to the top node of the sub graph.  If I only want specific leaves and this implies the nodes to get to the leaf then I use a leaf path. The leaf path is a scalpel the node path is a hammer.
+
  
  ## Clarifications
  
@@ -110,6 +155,9 @@ The SerderACDC class has two relevant properties that provide the issuer AID as 
     assert acdc.issuee.qb64 == BOB
 ```
 
+
+
+
 ### Presentation Registries
 However, there is some discussion about how to manage presentation registries. Should they be optional on a citizen by citizen basis. Or even a bulk issuance set member basis.  A presentation registry enables the Issuee to detect impersonation fraud of a compromise of its signing keys, so high stakes presentations want to to use a presentation registry, which requires that the "rd" field be populated at the time of issuance to force the verifier to verify the presentation against the presentation registry controlled by the issuee.    
 
@@ -128,3 +176,30 @@ This leads me to believe that we need to find a high-stakes use case where the I
 
 ### Detailed Anchored IPEX Exchange Transaction with Presentation Registry
 ![Presentation Registry Anchored Exchange Transaction](media/17841394794090.jpg)
+
+
+### Example SEDI
+
+So a little asynchrony here in thought. I have not digested your latest set of lengthy commentary. But I wanted to capture my second thoughts on this question first.
+
+After more thought, I think my answer to the SEDI iidentity credential as an aggregate credential (array of attributes instead of nested field map). I realized I was falling into the trap of letting prior usage dictate instead of first principles.
+
+So I now think that the SEDI core identity core identity credential should be an attribute credentials. Let me explain why.
+
+From a data correlation perspective (the first principle). The one feature that an aggrative credential provides over a attributative credential is that the attribute blocks at the top level are not labeled with meaningful labels. So the position of a block within the array can be managed so as not to leak information where such information could be leaked via relative position. In the case of the core SEDI identity credential, there are no fields that benefit from such arrangment. The field labels will be well known and all the fields are a defined set so there is no “advantage” to using the aggrative form and there is a definite disadvantage to using the aggrative form. The disadvantage is that reasoning about the fields to be disclosed now does not use fully labeled paths but either must a derived path. If one says that the array index is in the path, then one defeats the one property of the array that one wanted to preserve. That means pathing for apply messages means that under the hood one has to convert an abstraction to a path without being given the index. One has to create a reverse lookup table that maps the unique label embedded in each attribute block into an index so that a path can look up the array index.
+
+While this is no terribly complex, since there is no advantage to using an array for this credential, more complexity for the most used credential, the core SEDI identity credential feels like a poor decision.
+
+So, given you have already done an example with an aggregation. I think it’s useful example still. But it would be great to do another example one where the core SEDI credential was instead an attributive one, each attribute besides the issuer aid, gets a nested labeled partially disclosable block with a said and uuid in its block.
+
+This brings up the question of what is a valid use case for the aggrative credential that benefits from not labeling the attribute blocks where relative position in the array could leak information. The use case that I can think of is an array of Boolean flags for age thresholds. Each age threshold has an element so that the number of elements does not leak anything about which age thresholds are present. All are present but each is true or false.
+
+And to go further, one could add empty elements in the array and randomize the relative positions in the array of the age thresholds so that a disclosure of given array of age threshold does not leak information about which elements in the array correspond to which ages. But the later one is probably overkill.
+
+An aggrative array in this case is a poor mans sparse merkle tree.
+
+So in hindsight I got the answer backwards. A better example would be to use an attributive ACDC for the core SEDI identity credential and use an aggrative credential for the proof of age credential only includes several Boolean flags for a set of ages like 13, 16, 18, 21. For the most important minimum legal ages
+
+The plan is to eventually use a sparse merkle tree for this but using the Boolean array replicates how mdoc does so its at least as good as mdoc
+
+Anyway appreciate your feedback thoughts as too the inversion of the example.
