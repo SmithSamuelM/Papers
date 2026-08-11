@@ -155,7 +155,147 @@ The SerderACDC class has two relevant properties that provide the issuer AID as 
     assert acdc.issuee.qb64 == BOB
 ```
 
+### High Stakes Transactions
 
+I think I misunderstood your question. I assumed you meant should a failed transaction that starts over be one or two transaction but you were asking if a single linear transaction should be one or two where the boundary is where the anchors occur.
+
+For linear transactions I see no reason to split. What we are anchoring is the tail of the transaction not the head. Because the events in an exhange transaction are hash chained together, anchoring the tail also anchors the whole transation including the head.
+
+Multiple anchors are not meant to anchor multiple transactions but as continencies for the transaction to proceed.
+In a high-stakes transaction, the Discloser wants to see a perpetually verifiable commitment to the terms via the Agreement of the Disclosee before issuing a Grant to the agreeor. The Disclosee (agreeor, admitor) then wants to see that the Discloser (grantor) anchors the grant before producing an admit. Often there is mutual accountability in terms and conditions especially in high stakes transactions and so the Disclosee (recipient) wants to have perpetual verifiability of the Discloser's (grantor's) mutual committment before issuing its admit.
+
+Why the admit, because in contract law, a potential point of legal enforcement friction is that the Disclosee claims they never received the grant. The admit message removes any plausible deniability by the Disclosee. The anchor of the Grant message is incentivized by the following admit. The grantor wants the admit but cant get it until they anchor their grant. The terms of the contract could include an escape clause for the grantor if there is no admit message which incentivizes the admit. And since it must be anchored, the admitor has a way to prove it later, to nullify the escape clause.
+
+Typically high stakes transactions happen under the auspices of a trusted third party who ensures the transaction completes (settlment). But we want to have true peer-to-peer, legally enforceable transactions without trusted third parties, so we need a sequence of commitments that are are successively incentivized without a trusted third party to ensure the completion of the transaction (settlement).
+
+So the Offer/Agree/Grant/Admit removes plausible deniability which is the bane of peer-to-peer interactions. This is related to the byzantine generals problem which requires a multi-phase commit to solve.
+
+### Closure rules by section 
+
+The grammar is uniform; the closure is not
+This is a place I want to pick at. Your leaf-is-a-scalpel, node-is-a-hammer rule feels good. But what a leaf path closes over depend on the section, right?
+Yes, I just haven't looked at the edge section specifically in light of this conversation to say that it's definitely a different closure, but I agree that it could be different, so we need to be more deliberate in defining what the closure is for each section.
+
+ATT — the simple fields of a block share one SAID and one blinding nonce. You cannot reveal one without its simple siblings. So a leaf path closes over every simple field of its block, and nested sub-blocks stay SAIDs — exactly your rule.
+Good
+
+AGG — each element is blinded on its own, with its own d and u. A leaf to one element, say /A/over21, reveals that element and nothing beside it. There is no sibling closure, because there is no shared block.
+That means the same syntax can have different closures. So the function that turns a path list into a disclosed set has to branch on section type. Make that the normative object — disclosureSet(graph, paths), computed identically on both sides. The path list is the seed; the disclosed set is what the function returns. Nowhere for two implementations to drift.
+Yes I agree.
+We need to extend that to the Edge and Rule sections. We can have blinded edges for example so a partial disclosure of an ACDC attached to a blinded edge potentially has its own combinatorics for closure logic. Likewise for blinded rule section legal language where the negotiation first uses open terms that enable disclosure of sensistive terms. This is often the case in domestic abuse situations where the legally enforceable terms would leak sensitive information so the verifier must first be put under confidentiality with respect to those sensitive terms before disclosing the sensitive terms.
+
+Makes total sense. However, what are the expected consequences of a spurn at each of these stages? A spurn after offer is obvious. A spurn after agree just means the discloser backed out, right? But what about a spurn after grant? Is that just a simple "I didn't admit this after all, so I'm not bound by T&Cs" ?
+No we want to avoid such assumption. An agree is legally binding not sending an admit does not convey backing out. The purpose of the admit is not to amend the agreement. That agree defines the agreement. The admit is a corner case that enables easy enforcement by removing plausible deniablity. Confidentiality is about how one came by the information. So without an admit, the agreeer can claim they could not have leaked because they did not actually get the grant. The grant transmission failed. So the admit removes that excuse. The incentive for the admit would come from mutual commitments on the part of the grantor. The grantor gets an escape clause unless the admitter verifiably admits. So when and if enforcement happens, the grantor can't back out if the admitter produces proof of admission, which also means the admitter has no plausible deniability. It balances the enforceability by both parties.
+
+I see this kind of language in legal contracts and NDAs where the lawyers attempt to close off arguable defenses, not changing the terms but finding ways to make the contract more easily enforceable.
+
+This is why its related to the byzantine generals problem, if I send an order to attack I need an acknowledgment the other party got the order or I don't attack, but then the other party needs to know I got their acknowledgment or they don't attack which means I need to know they got my acknowledgement of their acknowledgment. It never resolves unless there is a ratchet mechanism and that looks like a 3 of 4 threshold.
+
+In legal contracts the problem is not so dire as the byantine generals problem. The problem is enforceability and eliminating easy defences to enforcement like I did not get the grant so even though I agreed to treat the data as confidential, I never got it so you can't punish me. The admit removes the easy out. But to incentivize the admit the grantor needs an escape clause. Neither becomes important unless and until there is an enforcement action and basically they nullify each other. Its a clever legal mechanism for confidentiality provisions.
+
+there are other legal mechanisms like a blanket clause that says no matter how you get this information you treat it as confidential going forward, but how can I enforce if they don't know what the information is in the first place. Usually this means I have to hand deliver the information so I can simultaneously prove they got it as they get it.
+When this happens remotely over the internet then that provability goes away.
+
+So when we are explicitly not disclosing until the terms are agreed to, we can't use these blanket clauses over the internet. The plausible deniability that the grant was never recieved offers and easy out. The admit message defeats that easy out. The challenge is then incentivizes the admit. Even without an admit, we can enforce the agreed-upon terms, but now we have a burden of proof problem. We have to show evidence that the receiver did indeed get the information in some way.
+
+This is why the duty of data loyalty is so useful. Because with the regulation of the duty of data loyalty, it doesn't matter how the receiver got the information, if they use information about us, no matter the source, in a self-dealing (not in our best interests) way, we have recourse.
+
+So CLC and DDL are mutually reinforcing. Once data processors understand that they have unlimited liability with a duty of data loyalty, then they will earnestly want a regulatory safe harbor, and in order to get that regulatory safe harbor, we can make it so that they have to provide the admission. So now we have an incentive that forces the receiver to remove their own plausible deniability. It really ties the bow on CLC and the duty of data loyalty in my opinion.
+
+
+I think I misunderstood your question. I assumed you meant should a failed transaction that starts over be one or two transaction but you were asking if a single linear transaction should be one or two where the boundary is where the anchors occur.
+
+For linear transactions I see no reason to split. What we are anchoring is the tail of the transaction not the head. Because the events in an exhange transaction are hash chained together, anchoring the tail also anchors the whole transation including the head.
+
+Multiple anchors are not meant to anchor multiple transactions but as continencies for the transaction to proceed.
+In a high-stakes transaction, the Discloser wants to see a perpetually verifiable commitment to the terms via the Agreement of the Disclosee before issuing a Grant to the agreeor. The Disclosee (agreeor, admitor) then wants to see that the Discloser (grantor) anchors the grant before producing an admit. Often there is mutual accountability in terms and conditions especially in high stakes transactions and so the Disclosee (recipient) wants to have perpetual verifiability of the Discloser's (grantor's) mutual committment before issuing its admit.
+
+Why the admit, because in contract law, a potential point of legal enforcement friction is that the Disclosee claims they never received the grant. The admit message removes any plausible deniability by the Disclosee. The anchor of the Grant message is incentivized by the following admit. The grantor wants the admit but cant get it until they anchor their grant. The terms of the contract could include an escape clause for the grantor if there is no admit message which incentivizes the admit. And since it must be anchored, the admitor has a way to prove it later, to nullify the escape clause.
+
+Typically, high-stakes transactions happen under the auspices of a trusted third party who ensures the transaction completes (settlement). But we want to have true peer-to-peer, legally enforceable transactions without trusted third parties, so we need a sequence of commitments that are are successively incentivized without a trusted third party to ensure the completion of the transaction (settlement).
+
+So the Offer/Agree/Grant/Admit removes plausible deniability which is the bane of peer-to-peer interactions. This is related to the byzantine generals problem which requires a multi-phase commit to solve.
+
+Both can work. We have to decide if a spurn ends the transaction and one starts over with a new xip for the apply. I think this is cleaner. But technically one could include the spurn in the transaction and chain a new apply there and just keep going. I can think of use cases where the actualy negotional back and forth wants to be memorialized not the linear final result. But for most use cases the final linear result is best.
+
+## New Unary Edge operators
+
+### Unary Delegative Operators
+
+With the exception of the NOT operator, the current set of Unary operators are delegative. They modulate delegation relations between the near and far ACDCs one an edge.
+
+| Unary Operator | Description | Default|
+|:-:|:--|:--|
+|`I2I`| Issuer-To-Issuee, The Issuer AID of this ACDC MUST be the Issuee AID of the node this Edge points to.  | Yes |
+|`NI2I`| Not-Issuer-To-Issuee, The Issuer AID of this ACDC MAY or MAY not be the Issuee AID of the node that this Edge points to. |  No |
+|`DI2I`| Delegated-Issuer-To-Issuee, The Issuer AID of this ACDC MUST be either the Issuee AID or a delegated AID of the Issuee AID of the node this Edge points to. | No |
+|`NOT`| Logical NOT. The validity of the node this Edge points to is inverted. If valid, then not valid. If invalid, then valid.  | No |
+
+When the Operator, `o`, field is missing or empty or is present but does not include any of the `I2I`, `NI2I` or `DI2I` Operators then:
+
+- If the node pointed to by the Edge is a targeted ACDC, i.e., has an Issuee, then the `I2I` Operator MUST be appended to the Operator, `o`, field's effective list value.
+
+- If the node pointed to by the Edge block is an Untargeted ACDC i.e., does not have an Issuee, then the `NI2I` Operator MUST be appended to the Operator, `o`, field's effective list value.
+
+Many ACDC chains use Targeted ACDCs (i.e., have Issuees). A chain of Issuer-To-Issuee-To-Issuer Targeted ACDCs in which each Issuee becomes the Issuer of the next ACDC in the chain can be used to provide a chain-of-authority. A common use case of a chain-of-authority is a delegation chain for authorization.
+
+The `I2I` unary operator, when present, means that the Issuer AID of the current ACDC in which the Edge resides MUST be the Issuee AID of the node to which the Edge points. Therefore, to be valid, the ACDC node pointed to by this Edge MUST be a Targeted ACDC. This is the default value when the Operator 'o' field value is missing or empty.
+
+The `NI2I` unary Operator, when present, removes or nullifies any requirement expressed by the `I2I` Operator described above. In other words, any REQUIREMENT that the Issuer AID of the current ACDC in which the Edge resides MUST be the Issuee AID, if any, of the node the Edge points to is relaxed (not applicable). To clarify, when operative (present), the `NI2I` Operator means that both an Untargeted ACDC or Targeted ACDC, as the node pointed to by the Edge, MAY be valid even when Untargeted or if Targeted even when the Issuer of the ACDC in which the Edge appears is not the Issuee AID, of that node to which the Edge points.
+
+The `DI2I` unary Operator, when present, expands the class of allowed Issuer AIDs of the node the Edge resides in to include not only the Issuee AID but also any delegated AIDs of the Issuee of the node to which the Edge points.  Therefore, to be valid, the ACDC node pointed to by this Edge MUST be a Targeted ACDC.
+
+The `NOT` unary Operator, when present, inverts the validation truthiness of the node pointed to by this Edge. If this Edge's far node ACDC is invalid, then the presence of the `NOT` operator makes this Edge valid. Conversely, if this Edge's far node ACDC is valid, then the presence of the `NOT` Operator makes this Edge invalid.
+
+### Unary Identity and Equivalence operators
+
+The unary operators needed by the vLEI ecosystem were delegative, i.e. the associated edge provides a delegation relationship. The SEDI ecosystem, however, benefits from additional classes of unary operators, (the worked example is such a case). In SEDI, a common case is that an edge provides an identity relationship or an equivalence relationship.  
+
+The syntax convention for edge operators in general is to use Base64 characters for the operator symbols to ensure the CESR serialization of the operator is compact. So far only uppercase and number characters have been used. This follows a convention in automated reasoning systems to make the operator symbols stand out from their operand symbols which are lowercase.
+
+An edge points backward from the near side ACDC holding to the edge to the far side acdc whose SAID is the node `n` field in the edge block.  
+
+In the case of `I2I` the number `2` is used to symbolize delegation that flows down from far side  to (`2`) near side on an edge that points from near side to (`2`) far side. The delegation authority flows in the opposite direction of the edge. To clarify, the edge points from near `2` far  and delegation authority points from far `2` near where far is the delegator and near is the delegatee.
+
+To clarify, `I2I`  means the Issuer AID of the near side is the Issuee AID of the far side. This means the far side ACDC Issuer delegated issuance authority to its Issuee AID, which AID is equal to the near side Issuer AID. To elaborate, in order for the edge to be valid, the near side Issuer AID MUST equal the far side's Issuee AID.
+In the shorthand expression Issuer-to-Issuee, the "to" is pointing along the edge direction not the delegation authority direction.  
+
+This convention can include a modifier on the identifier relationship defined by the edge. 
+
+For example: `DI2I` means the near side Issuer AID MUST either be the far side Issuee AID or be a delegated AID of the far side Issuee AID.  So from a delegation authority point-of-view the "D" modifies who the delegatee can be. From an edge point of view it modifies what the near side Issuer AID can be for the edge to be valid, and that modification is that the near side Issuer AID can be equal to the far side Issuee AID or a delegated AID of the far side Issuee AID.
+
+For SEDI, in addition to delegation relationships, we need identity and equivalence relationships. Specifically relationships between the near side issuee AID and the far side Issuee AID and also the near side Issuer AID and the far side Issuer AID. To clarify, these are not delegation relationships but either an identity or equivalence relationship. 
+
+For example, one identity relationship (reflexive) is that the Issuee AID on the near side must equal the Issuee AID on the far side of the edge. Another would be that the Issuer AID on the near side must equal the Issuer AID on the far side of the edge. This poses a problem for the syntax because Issuer and Issuee both start with the letter "I". This is not a problem for a delegation relationship; there is only one pairing between Issuer and Issuee that is meaningful, so I2I is not ambiguous. For identity and equivalence relationships, however, we need to disambiguate Issuer from Issuee. 
+
+Let's use E to represent IssueE, and continue to use I to represent Issuer. 
+We could then alias the existing `I2I` operator to be `I2E` for Issuer to Issuee.  In hindsight using `I2I` was nearsighted. But we can keep it and add the alias `I2E` or replace it with `I2E` or leave as is. Likewise for the pair `DI2I` and `DI2E`, and the pair `NI2I` and `NI2E`.
+
+Let's also use the number `1` to represent an identity relationship, which is evocative of the number `1` being the multiplicative identity. This is not the same as a delegation relationship. Delegation implies some form of transitivity.
+
+So we have the new proposed identity relationship operators
+
+`I1I` which means near side Issuer AID must equal far side Issuer AID.
+`E1E` which means near side IssueE AID must equal far side IssueE AID.
+
+And we could then have in addition.
+`I1E` which means near side Issuer AID must equal far side IssueE AID.  This would not imply a delegation relationship, just an equality. So its not the same semantics as `I2E` or
+`E1I` which means near side IssueE AID must equal far side Issuer AID.  
+
+In mathematics, an equivalence relationship adds symmetry and transitivity to the reflexivity of an identity relationship. While not the same mathematically, in ACDC land an analogous type of equivalence relationship is delegation. And there are two senses of the use of the term delegation in KERI/ACDC. We have ACDC edges that delegate and we have delegated identifiers this are not mutually exclusive so we can have delegated edges between delegated identifiers as is the case for the `DI2I` operator.
+
+So we can apply the same modifier to our identity relationships.
+`DI1I` would mean that the near side Issuer MUST must be either the far side Issuer AID or a delegated AID of the far side Issuer AID. This would allow an agency relationship where say a driver's license was issued by a different Issuer AID from the core SEDI credential but must be a delegated AID. Or we don't have an identity operator for the Issuer on the edge but allow the EGF to specify the relationship.
+
+So to describe more complex equivalent operators where what is meant by "equivalence" may be ecosystems specific. If we try to use unique operators for each ecosystem specific definition of equivalence we create for us a difficult configuration management task of tracking what might be an unlimited number of unary operators.  If instead we default to saying that "equivalence" is defined by the EGF for a given set of ACDC types then we can define a smaller set of Unary operators whose operation is assigned on an ecosystem (EGF) basis.
+
+The tradeoff is that we want to automate the process of validating or invalidating edges, so the more precisely we can define operators the more we can performance optimize tooling that is less prone to implementation errors.
+So its a tradespace judgement call.
+
+Lets use the number `3` to represent generic equivalence relationships where the actual meaning of equivalence is EGF defined. The `3` is evocative of the mathematical equivalence relation that has 3 properties, (reflexivity, symmetry, and transitivity). This provides a placeholder for explicitly requiring such a relationship on an edge, rather than merely implying it. But the relationship is looked up or relative to the EGF.
+
+This gives us:
+`I3I` and `E3E` for EGF defined edge equivalence relations between near side and far side Issuers and near side and far side IssueEs.
 
 
 ### Presentation Registries
@@ -203,3 +343,43 @@ So in hindsight I got the answer backwards. A better example would be to use an 
 The plan is to eventually use a sparse merkle tree for this but using the Boolean array replicates how mdoc does so its at least as good as mdoc
 
 Anyway appreciate your feedback thoughts as too the inversion of the example.
+
+# Tension between linkabiilty, correlatability, decorrelation, and exploitation
+
+@dhh1128 
+
+Your question about standing edges brings up the broader issue of what is the set of protection measures for privacy. Its easy to only think along one axis of privacy protection mechanisms.  My view is that privacy protection by merely technical means is an exercise in diminishing returns. Only a comprehensive approach that combines technical, legal, and regulatory mechanisms will result in meaningful reductions in data-driven exploitation.
+
+So any analysis is incomplete if it does not also include a more comprehensive take on  the different mechanisms.
+
+So I go out of my way to distinguish between (un)linkability (correlation of shared identifiers) and (un)correlatability to a natural person i.e. reidentifiability.
+As you well know and as commonly used in the decentralized identity community, (un)linkability has two types: verifier-to-verifier (vendor-to-vendor) and verifier-to-issuer (vendor-to-issuer).  
+
+Vendor-to-vendor linkability means that when a given presenter presents a given credential to two different verifiers in two different presentations, there are cryptographically verifiable commitments to identifiers that are shared between those two presentations.  In other words, the intersection of the two sets of identifiers used in the two presentations is not empty (the identifiers cannot be partitioned between the two presentation contexts. (In the rest of this discussion, i will focus on vendor-to-vendor (un) linkability as it exhibits differently and has different tradeoffs in its mitigation than vendor-to-issuer(un) linkability
+
+Uninkability does not mean uncorrelatability of the presenter as a natural person between presentation contexts. Mere unlinkability by itself does not guarantee that the two verifiers cannot figure out that the same presenter (as a natural person) was the presenter in both presentations.  This is because all real-world presentation contexts are leaky, and they can leak enough information to identify the presenter as a natural person across presentation contexts, regardless of whether any identifiers were used in the presentation, much less whether any explicitly used identifiers were shared between presentations. A set of vacuous presentations across different contexts can be correlated to the same natural person via contextual leakage. So any analysis that claims "privacy" without considering contextual leakage is potentially misleading and may be irresponsible.
+
+A stronger goal that can result in real functional privacy is that vendors do not exploit correlatable information between presentations. This is much stronger because it is not the fact of linkage or even the fact of correlation that matters to the presenter but the fact of exploitation. 
+
+Were they indeed exploited as a result of correlation?  If two presentations are surveilled and correlated, and this correlation includes explicitly presented information as well as contextually leaked information, but the correlator does not exploit that information against the best interests of the presenter, then the information is functionally decorrelated. It is correlatable, but it is not exploited in correlated form, so it is decorrelated.  
+
+The purpose of contractually protected disclosure is to decorrelate correlatable information.  The anti-assimilation clause in the example is meant to retroactively remove information the vendor has already collected through contextual leakage and decorrelate it so it is not used to exploit the presenter. CLC acts to continually decorrelate the information as it flows downstream to other consumers of the data.  That does not mean it is not a good idea to use the principle of least disclosure in the process of graduated disclosure. This is because one type of attack is when a malicious party impersonates a legitimate actor in order to harvest correlatable information before reaching a point of verifiability of the potential disclosee by the discloser.    The sooner one cuts off the interaction, the more expensive it is for the bad actor to harvest. So it adds an ephemeral time value to information protection.  It doesn't prevent correlatability but it fosters decorrelation by shifting the economics.
+
+Now, regulatory and legal means do not prevent illegitimate actors from acting illegitimately. But for many use cases, often the most important ones,  the presenter's best defense against illegitimate exploitation of their data is to not do business with illegitimate actors, not to falsely assume that they are protected by mere unlinkability.
+
+This becomes more useful when the regulatory regimes remove easy outs for illegitimate actors.  
+
+This is why Utah States recently passed SEDI law  is so profoundly important. The law mandates a duty of data loyalty that makes it illegal to exploit data collected about a user against the users best interests. It is comprehensive in scope.  
+
+The current bill does not define the precise enforcement mechanisms. These enforcement mechanisms are meant to be codified in the 2027 legislative session.   Where this impacts the KF SEDI work is that the contractually protected disclsoure can be used to remove loop holes and remove friction from enforcement.
+
+For the first time, comprehensive functional privacy becomes possible where data is functionally decorrelated, i.e., not used to exploit regardless of its linkability or degree of correlation.
+
+Given the inherent correlatability of information, even when using mechanisms like bulk issuance to eliminate linkability and make correlation more difficult, one could ask why even bother with bulk issuance. One cogent reason to use bulk issuance despite its eventual defeat by a super correlator (an AI) is that partitioning identifier sets makes enforcement easier. If one limits an identifier set to a given vendor context where the vendor makes non-repudiable agreements vis-a-vis that identifier set, then any appearance of that identifier set downstream of that vendor outside the bounds of its permitted usage becomes prima facie evidence of non-compliance with data loyalty. Moreover, having concrete identifier sets enables strict safe harbors and protects vendors from the potentially unlimited liability that the duty of data loyalty imposes. An audit is exculpatory under the safe harbor only if all data items used by the vendor are provenanced via verifiable identifier sets. So granular partitioning of identifier sets across vendors makes provenance granular and enforcement precise. Precise enforcement is more effective as it makes enforcement more cost-effective and therefore more broadly employed, which enhances deterrence. Its creates a virtuous feedback loop which changes the economics of correlation and exploitation.
+
+
+It is easy to show that all information intentionally disclosed or inadvertently leaked by a natural person, either in person or over the public internet, is eventually correlatable, given enough coverage by correlators. Empirically, unlinkability is easily defeated given the current coverage of AIs. This is because a natural person, as a bag of atoms, is not reproducible (physically clonable) and therefore their actual expression on the internet and in person is limited in extent, they cannot be everywhere at once, so by a process of elimination (type of correlation) using interaction graphs they can be reidentified with their online behavior. An interaction graph maps all online interactions between the potential set of participants which can be as large as everyone in the world for an AI. Given this degree of coverage, one  can eventually with high confidence reidentify every natural person via their online behavior even when using anonymization. This is because the public internet is routable and routing employs a static, identifiable structure, so this structure seeds the expansion algorithm that eventually correlates participants via their interactions.  (The technical class of algorithms often uses the term "seed set expansion algorithm" where a seed of identified interactions is used with an interaction graph that includes unknown participants that over time as more interactions are collected will eventually identify all participants. And once one has a corpus of interactions with a high percentage identified, the ability to maintain that graph gets easier and cheaper.
+
+The current set of AIs individually already has this degree of coverage. The rise of deep fakes only makes this correlatiblity a sure thing, because the AI countermeasure to a deep-faked online  persona is to create an even more high-fidelity real persona, which requires more correlation. To clarify, the industry-adopted counter-intelligence protections from deep-fakes digital personas are real digital personas that rely on even better correlation of real behavior. Thus, the identity security world is moving to security that requires correlating and tracking the real person's online behavior at increasingly invasive levels so as to build a higher fidelity persona than the deep fake persona. We have an arms race with billions being expended to produce higher and higher fidelity correlated real personas in order to distinguish from increasingly higher fidelity deep faked personas.
+
+The only way to be protected from such correlation is to truly and profoundly go off grid.  This is highly impractical for the vast majority. So its not a viable goal.  So the viable goal can not be uncorrelatability it must be decorrelation.
